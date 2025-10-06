@@ -23,8 +23,8 @@ import type {
 } from './admin.type'
 import { Prisma } from '@prisma/client'
 import { ClientGrpc } from '@nestjs/microservices'
-import { UploadService } from 'protos/generated/upload'
-import { UserConnectionService } from 'protos/generated/user-connection'
+import { UploadService } from 'protos/generated/media'
+import { UserConnectionService } from 'protos/generated/chat'
 
 @Injectable()
 export class AdminService {
@@ -34,8 +34,8 @@ export class AdminService {
   constructor(
     @Inject(EProviderTokens.PRISMA_CLIENT)
     private prisma: PrismaService,
-    @Inject(EGrpcPackages.UPLOAD_PACKAGE) private uploadClient: ClientGrpc,
-    @Inject(EGrpcPackages.USER_CONNECTION_PACKAGE) private userConnectionClient: ClientGrpc
+    @Inject(EGrpcPackages.MEDIA_PACKAGE) private uploadClient: ClientGrpc,
+    @Inject(EGrpcPackages.CHAT_PACKAGE) private userConnectionClient: ClientGrpc
   ) {
     this.uploadService = this.uploadClient.getService<UploadService>(EGrpcServices.UPLOAD_SERVICE)
     this.userConnectionService = this.userConnectionClient.getService<UserConnectionService>(

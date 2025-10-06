@@ -1,0 +1,19 @@
+syntax = "proto3";
+
+package conversation;
+
+import "google/protobuf/struct.proto";
+
+service GroupChatMemberService {
+  rpc GetGroupChatMember(GetGroupChatMemberRequest)
+      returns (GetGroupChatMemberResponse);
+}
+
+message GetGroupChatMemberRequest {
+  int32 groupChatId = 1;
+  int32 userId = 2;
+}
+
+message GetGroupChatMemberResponse {
+  google.protobuf.Struct member = 1;
+}

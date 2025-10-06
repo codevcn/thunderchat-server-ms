@@ -5,8 +5,13 @@
 // source: media.proto
 
 /* eslint-disable */
+import type { Empty } from "./google/protobuf/empty";
 
 export const protobufPackage = "media";
+
+export interface DeleteFileByUrlRequest {
+  url: string;
+}
 
 export interface UploadFileRequest {
   content: Uint8Array;
@@ -21,6 +26,21 @@ export interface UploadFileResponse {
   fileSize: string;
 }
 
-export interface MediaService {
+export interface UploadGroupChatAvatarRequest {
+  file: Uint8Array;
+}
+
+export interface UploadGroupChatAvatarResponse {
+  url: string;
+}
+
+export interface DeleteGroupChatAvatarRequest {
+  avatarUrl: string;
+}
+
+export interface S3UploadService {
+  DeleteFileByUrl(request: DeleteFileByUrlRequest): Promise<Empty>;
   UploadFile(request: UploadFileRequest): Promise<UploadFileResponse>;
+  UploadGroupChatAvatar(request: UploadGroupChatAvatarRequest): Promise<UploadGroupChatAvatarResponse>;
+  DeleteGroupChatAvatar(request: DeleteGroupChatAvatarRequest): Promise<Empty>;
 }

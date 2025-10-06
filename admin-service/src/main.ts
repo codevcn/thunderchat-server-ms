@@ -24,6 +24,7 @@ const getAppModule = async () => {
 
 async function bootstrap() {
   await beforeLaunch()
+  console.log('>>> Microservice [Conversation-Service] is launching...')
 
   const AppModule = await getAppModule()
   const app = await NestFactory.create<NestExpressApplication>(AppModule)

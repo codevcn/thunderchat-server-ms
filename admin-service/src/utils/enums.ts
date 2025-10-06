@@ -29,20 +29,15 @@ export enum EProviderTokens {
 }
 
 export enum EGrpcPackages {
-  AUTH_PACKAGE = 'AUTH_PACKAGE',
-  AUTH = 'auth',
-  USER_CONNECTION_PACKAGE = 'USER_CONNECTION_PACKAGE',
-  USER_CONNECTION = 'user_connection',
-  UPLOAD_PACKAGE = 'UPLOAD_PACKAGE',
-  UPLOAD = 'upload',
-  ADMIN_PACKAGE = 'ADMIN_PACKAGE',
-  ADMIN = 'admin',
+  CHAT = 'chat',
+  CHAT_PACKAGE = 'CHAT_PACKAGE',
+  MEDIA = 'MEDIA',
   MEDIA_PACKAGE = 'MEDIA_PACKAGE',
-  MEDIA = 'media',
+  ADMIN = 'admin',
+  ADMIN_PACKAGE = 'ADMIN_PACKAGE',
 }
 
 export enum EGrpcServices {
-  AUTH_SERVICE = 'AuthService',
   USER_CONNECTION_SERVICE = 'UserConnectionService',
   UPLOAD_SERVICE = 'UploadService',
 }

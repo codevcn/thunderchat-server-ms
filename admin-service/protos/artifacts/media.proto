@@ -2,8 +2,19 @@ syntax = "proto3";
 
 package media;
 
-service MediaService {
+import "google/protobuf/empty.proto";
+
+service S3UploadService {
+  rpc DeleteFileByUrl(DeleteFileByUrlRequest) returns (google.protobuf.Empty);
   rpc UploadFile(UploadFileRequest) returns (UploadFileResponse);
+  rpc UploadGroupChatAvatar(UploadGroupChatAvatarRequest)
+      returns (UploadGroupChatAvatarResponse);
+  rpc DeleteGroupChatAvatar(DeleteGroupChatAvatarRequest)
+      returns (google.protobuf.Empty);
+}
+
+message DeleteFileByUrlRequest {
+  string url = 1;
 }
 
 message UploadFileRequest {
@@ -17,4 +28,16 @@ message UploadFileResponse {
   string fileName = 4;
   optional string thumbnailUrl = 5;
   string fileSize = 6;
+}
+
+message UploadGroupChatAvatarRequest {
+  bytes file = 1;
+}
+
+message UploadGroupChatAvatarResponse {
+  string url = 1;
+}
+
+message DeleteGroupChatAvatarRequest {
+  string avatarUrl = 1;
 }

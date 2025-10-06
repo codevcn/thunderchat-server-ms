@@ -4,8 +4,8 @@ declare global {
       NODE_ENV: 'development' | 'production'
       HOST_ADDRESS: string
       PORT: string
-      UPLOAD_REMOTE_PORT: string
-      USER_CONNECTION_REMOTE_PORT: string
+      MEDIA_SERVICE_PORT: string
+      CHAT_SERVICE_PORT: string
       GRPC_PORT: string
       DATABASE_URL: string
       CLIENT_HOST: string

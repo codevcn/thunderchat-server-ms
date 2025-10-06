@@ -25,5 +25,5 @@ def copy_protos(dest_dirs):
 
 if __name__ == '__main__':
   # Ví dụ danh sách thư mục đích
-  dest_dirs = ['media-service', 'admin-service', 'direct-chat']
+  dest_dirs = ['media-service', 'admin-service', 'conversation-service', 'chat-service']
   copy_protos(dest_dirs)

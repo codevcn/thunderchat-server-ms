@@ -5,24 +5,24 @@ import { join } from 'path'
 export class GrpcClientConfig {
   static getUserConnectionClient(): ClientProviderOptions {
     return {
-      name: EGrpcPackages.USER_CONNECTION_PACKAGE,
+      name: EGrpcPackages.CHAT_PACKAGE,
       transport: Transport.GRPC,
       options: {
-        package: EGrpcPackages.USER_CONNECTION,
-        protoPath: join(__dirname, '/../../../../protos/artifacts/', 'user-connection.proto'),
-        url: `localhost:${process.env.USER_CONNECTION_REMOTE_PORT}`,
+        package: EGrpcPackages.CHAT,
+        protoPath: join(__dirname, '/../../../../protos/artifacts/', 'chat.proto'),
+        url: `localhost:${process.env.CHAT_SERVICE_PORT}`,
       },
     }
   }
 
   static getUploadClient(): ClientProviderOptions {
     return {
-      name: EGrpcPackages.UPLOAD_PACKAGE,
+      name: EGrpcPackages.MEDIA_PACKAGE,
       transport: Transport.GRPC,
       options: {
-        package: EGrpcPackages.UPLOAD,
-        protoPath: join(__dirname, '/../../../../protos/artifacts/', 'upload.proto'),
-        url: `localhost:${process.env.UPLOAD_REMOTE_PORT}`,
+        package: EGrpcPackages.MEDIA,
+        protoPath: join(__dirname, '/../../../../protos/artifacts/', 'media.proto'),
+        url: `localhost:${process.env.MEDIA_SERVICE_PORT}`,
       },
     }
   }
