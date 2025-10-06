@@ -17,8 +17,7 @@
     "test:watch": "jest --watch",
     "test:cov": "jest --coverage",
     "test:debug": "node --inspect-brk -r tsconfig-paths/register -r ts-node/register node_modules/.bin/jest --runInBand",
-    "test:e2e": "jest --config ./test/jest-e2e.json",
-    "gen:proto": "npx protoc --ts_proto_out=../protos/generated --ts_proto_opt=esModuleInterop=true,onlyTypes=true -I ../protos/artifacts ../protos/artifacts/*.proto"
+    "test:e2e": "jest --config ./test/jest-e2e.json"
   },
   "dependencies": {
     "@aws-sdk/client-s3": "^3.899.0",
@@ -57,13 +56,11 @@
     "eslint-plugin-prettier": "^5.0.0",
     "jest": "^29.5.0",
     "prettier": "^3.0.0",
-    "protoc": "^32.1.0",
     "source-map-support": "^0.5.21",
     "supertest": "^6.3.3",
     "ts-jest": "^29.1.0",
     "ts-loader": "^9.4.3",
     "ts-node": "^10.9.1",
-    "ts-proto": "^2.7.7",
     "tsconfig-paths": "^4.2.0",
     "typescript": "^5.1.3"
   },

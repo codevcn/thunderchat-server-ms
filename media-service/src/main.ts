@@ -1,5 +1,4 @@
 import { NestFactory } from '@nestjs/core'
-import { AppModule } from './app.module'
 import { MicroserviceOptions, Transport } from '@nestjs/microservices'
 import { join } from 'path'
 import type { NestExpressApplication } from '@nestjs/platform-express'
@@ -7,17 +6,33 @@ import { clearLogFiles } from './dev/helpers'
 import { ValidationPipe } from '@nestjs/common'
 import { BaseHttpExceptionFilter } from './utils/exception-filters/base-http-exception.filter'
 import cookieParser from 'cookie-parser'
+import { copyProtos } from '@/bootstrap/copy-protos-folder'
+import { EGrpcPackages } from './utils/enums'
 
-const apiPrefix: string = 'api'
+const beforeLaunch = async () => {
+  await clearLogFiles()
+  await copyProtos(
+    join(__dirname, '/../../protos/artifacts/'),
+    join(__dirname, '/../protos/artifacts/')
+  )
+}
+
+const getAppModule = async () => {
+  const { AppModule } = await import('./app.module')
+  return AppModule
+}
 
 async function bootstrap() {
+  await beforeLaunch()
+
+  const AppModule = await getAppModule()
   const app = await NestFactory.create<NestExpressApplication>(AppModule)
-  const { PORT, NODE_ENV } = process.env
+  const { PORT, NODE_ENV, GRPC_PORT, HOST_ADDRESS } = process.env
   const CLIENT_HOST =
     NODE_ENV === 'production' ? process.env.CLIENT_HOST : process.env.CLIENT_HOST_DEV
 
   // set api prefix
-  app.setGlobalPrefix(apiPrefix)
+  app.setGlobalPrefix('api')
 
   // for getting cookie in request
   app.use(cookieParser())
@@ -38,16 +53,16 @@ async function bootstrap() {
   app.connectMicroservice<MicroserviceOptions>({
     transport: Transport.GRPC,
     options: {
-      package: 'media',
-      protoPath: join(__dirname, '/../../protos/artifacts/media.proto'),
-      url: '0.0.0.0:50057',
+      package: EGrpcPackages.MEDIA,
+      protoPath: join(__dirname, '/../protos/artifacts/', 'media.proto'),
+      url: `${HOST_ADDRESS}:${GRPC_PORT}`,
     },
   })
 
-  await clearLogFiles()
-
   await app.startAllMicroservices()
-  await app.listen(PORT, '0.0.0.0')
-  console.log('>>> Microservice [Media-Service] is listening on port:', PORT)
+  console.log(`>>> Microservice [Media-Service] is listening on: ${HOST_ADDRESS}:${GRPC_PORT}`)
+
+  await app.listen(PORT, HOST_ADDRESS)
+  console.log(`>>> HTTP Server [Media-Service] is listening on: ${HOST_ADDRESS}:${PORT}`)
 }
 bootstrap()

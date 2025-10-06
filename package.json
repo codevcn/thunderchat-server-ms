@@ -1,0 +1,10 @@
+{
+  "devDependencies": {
+    "@grpc/grpc-js": "^1.14.0",
+    "@protobuf-ts/plugin": "^2.11.1",
+    "protobufjs": "^7.5.4",
+    "protoc": "^32.1.0",
+    "protoc-gen-ts": "^0.8.7",
+    "ts-proto": "^2.7.7"
+  }
+}

@@ -1,0 +1,1 @@
+rmdir /s /q .\\protos\\generated && mkdir .\\protos\\generated && npx protoc --ts_proto_out=./protos/generated --ts_proto_opt=esModuleInterop=true,onlyTypes=true -I ./protos/artifacts ./protos/artifacts/*.proto && python copy_protos.py

@@ -1,0 +1,13 @@
+syntax = "proto3";
+
+package upload;
+
+import "google/protobuf/empty.proto";
+
+service UploadService {
+  rpc DeleteFileByUrl(DeleteFileByUrlRequest) returns (google.protobuf.Empty);
+}
+
+message DeleteFileByUrlRequest {
+  string url = 1;
+}

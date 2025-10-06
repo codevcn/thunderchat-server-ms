@@ -1,0 +1,1 @@
+npx nest new %1
