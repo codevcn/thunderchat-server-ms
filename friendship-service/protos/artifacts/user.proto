@@ -1,0 +1,78 @@
+syntax = "proto3";
+
+package user;
+
+import "google/protobuf/timestamp.proto";
+
+// ==== ENTITY DEFINITIONS ====
+
+// Profile entity
+message Profile {
+  int32 id = 1;
+  string display_name = 2;
+  string avatar_url = 3;
+  string bio = 4;
+  google.protobuf.Timestamp created_at = 5;
+  google.protobuf.Timestamp updated_at = 6;
+}
+
+// User entity (TUser)
+message User {
+  int32 id = 1;
+  string email = 2;
+  string password = 3;
+  string role = 4; // AppRole enum as string
+  google.protobuf.Timestamp created_at = 5;
+}
+
+// User with Profile (TUserWithProfile)
+message UserWithProfile {
+  User user = 1;
+  Profile profile = 2; // optional, can be null
+}
+
+// ==== REQUEST & RESPONSE MESSAGES ====
+
+message FindUsersForGlobalSearchRequest {
+  repeated int32 ids = 1;
+  int32 self_user_id = 2;
+  int32 limit = 3;
+}
+
+message FindUsersForGlobalSearchResponse {
+  repeated UserWithProfile users = 1;
+}
+
+// ==== SERVICE ====
+
+// Kiểu dữ liệu chính tương đương với TBlockedUserFullInfo
+message BlockedUserFullInfo {
+  int32 id = 1;
+  string createdAt = 2; // Dùng string ISO format cho Date
+  int32 blockerUserId = 3;
+  int32 blockedUserId = 4;
+  int32 groupChatId = 5; // Cho phép null bằng cách để optional trong proto3
+  UserWithProfile userBlocker = 6;
+  UserWithProfile userBlocked = 7;
+}
+
+// Request và Response cho hàm checkBlockedUser
+message CheckBlockedUserRequest {
+  int32 blockerId = 1;
+  int32 blockedId = 2;
+}
+
+message CheckBlockedUserResponse {
+  BlockedUserFullInfo blockedUser = 1; // null => gRPC sẽ trả rỗng
+}
+
+message FindUserRequest {
+  int32 user_id = 1;
+}
+
+service UserService {
+  rpc FindUsersForGlobalSearch (FindUsersForGlobalSearchRequest)
+      returns (FindUsersForGlobalSearchResponse);
+   rpc CheckBlockedUser(CheckBlockedUserRequest) returns (CheckBlockedUserResponse);
+    rpc FindUserWithProfileById (FindUserRequest) returns (UserWithProfile);
+}

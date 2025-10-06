@@ -1,0 +1,15 @@
+syntax = "proto3";
+
+package friend;
+
+service FriendService {
+  rpc GetFriends (FriendRequest) returns (FriendResponse) {}
+}
+
+message FriendRequest {
+  string user_id = 1;
+}
+
+message FriendResponse {
+  repeated string friends = 1;
+}
