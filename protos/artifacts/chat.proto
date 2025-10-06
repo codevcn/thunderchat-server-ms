@@ -20,11 +20,11 @@ message ConnectedClientsCountResponse {
 
 message EmitToDirectChatRequest {
   string event = 1;
-  string direct_chat_id = 2;
+  int32 direct_chat_id = 2;
   google.protobuf.Any payload = 3;
 }
 
 message SendNewMessageToGroupChatRequest {
-  string group_chat_id = 2;
+  int32 group_chat_id = 2;
   google.protobuf.Struct new_message = 3;
 }

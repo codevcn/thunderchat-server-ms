@@ -1,0 +1,25 @@
+syntax = "proto3";
+
+package auth;
+
+import "google/protobuf/struct.proto";
+import "google/protobuf/empty.proto";
+
+service AuthService {
+  rpc ValidateSocketConnection(ValidateSocketConnectionRequest)
+      returns (google.protobuf.Empty);
+  rpc ValidateSocketAuth(ValidateSocketAuthRequest)
+      returns (ValidateSocketAuthResponse);
+}
+
+message ValidateSocketConnectionRequest {
+  google.protobuf.Struct socket = 1;
+}
+
+message ValidateSocketAuthRequest {
+  google.protobuf.Struct client_socket = 1;
+}
+
+message ValidateSocketAuthResponse {
+  google.protobuf.Struct client_socket_auth = 1;
+}

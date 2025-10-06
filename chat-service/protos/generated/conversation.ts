@@ -5,6 +5,10 @@
 // source: conversation.proto
 
 /* eslint-disable */
+import { BinaryReader, BinaryWriter } from "@bufbuild/protobuf/wire";
+import { Empty } from "./google/protobuf/empty";
+import { Struct } from "./google/protobuf/struct";
+import { Timestamp } from "./google/protobuf/timestamp";
 
 export const protobufPackage = "conversation";
 
@@ -17,6 +21,1288 @@ export interface GetGroupChatMemberResponse {
   member: { [key: string]: any } | undefined;
 }
 
+export interface GetNewerDirectMessagesRequest {
+  messageOffset: number;
+  directChatId: number;
+  groupChatId: number;
+  limit: number;
+}
+
+export interface GetNewerDirectMessagesResponse {
+  messages: { [key: string]: any }[];
+}
+
+export interface FindConversationWithOtherUserRequest {
+  userId: number;
+  otherUserId: number;
+}
+
+export interface FindConversationWithOtherUserResponse {
+  directChat: { [key: string]: any } | undefined;
+}
+
+export interface CreateNewDirectChatRequest {
+  creatorId: number;
+  recipientId: number;
+}
+
+export interface CreateNewDirectChatResponse {
+  newDirectChat: { [key: string]: any } | undefined;
+}
+
+export interface FindGroupChatMemberIdsRequest {
+  groupChatId: number;
+}
+
+export interface FindGroupChatMemberIdsResponse {
+  memberIds: number[];
+}
+
+export interface CreateNewMessageRequest {
+  encryptedContent: string;
+  authorId: number;
+  timestamp: Date | undefined;
+  type: string;
+  recipientId?: number | undefined;
+  stickerId?: number | undefined;
+  mediaId?: number | undefined;
+  replyToId?: number | undefined;
+  directChatId?: number | undefined;
+  groupChatId?: number | undefined;
+}
+
+export interface CreateNewMessageResponse {
+  newMessage: { [key: string]: any } | undefined;
+}
+
+export interface UpdateLastSentMessageRequest {
+  lastSentMessageId: number;
+  directChatId: number;
+}
+
+function createBaseGetGroupChatMemberRequest(): GetGroupChatMemberRequest {
+  return { groupChatId: 0, userId: 0 };
+}
+
+export const GetGroupChatMemberRequest: MessageFns<GetGroupChatMemberRequest> = {
+  encode(message: GetGroupChatMemberRequest, writer: BinaryWriter = new BinaryWriter()): BinaryWriter {
+    if (message.groupChatId !== 0) {
+      writer.uint32(8).int32(message.groupChatId);
+    }
+    if (message.userId !== 0) {
+      writer.uint32(16).int32(message.userId);
+    }
+    return writer;
+  },
+
+  decode(input: BinaryReader | Uint8Array, length?: number): GetGroupChatMemberRequest {
+    const reader = input instanceof BinaryReader ? input : new BinaryReader(input);
+    const end = length === undefined ? reader.len : reader.pos + length;
+    const message = createBaseGetGroupChatMemberRequest();
+    while (reader.pos < end) {
+      const tag = reader.uint32();
+      switch (tag >>> 3) {
+        case 1: {
+          if (tag !== 8) {
+            break;
+          }
+
+          message.groupChatId = reader.int32();
+          continue;
+        }
+        case 2: {
+          if (tag !== 16) {
+            break;
+          }
+
+          message.userId = reader.int32();
+          continue;
+        }
+      }
+      if ((tag & 7) === 4 || tag === 0) {
+        break;
+      }
+      reader.skip(tag & 7);
+    }
+    return message;
+  },
+
+  fromJSON(object: any): GetGroupChatMemberRequest {
+    return {
+      groupChatId: isSet(object.groupChatId) ? globalThis.Number(object.groupChatId) : 0,
+      userId: isSet(object.userId) ? globalThis.Number(object.userId) : 0,
+    };
+  },
+
+  toJSON(message: GetGroupChatMemberRequest): unknown {
+    const obj: any = {};
+    if (message.groupChatId !== 0) {
+      obj.groupChatId = Math.round(message.groupChatId);
+    }
+    if (message.userId !== 0) {
+      obj.userId = Math.round(message.userId);
+    }
+    return obj;
+  },
+
+  create<I extends Exact<DeepPartial<GetGroupChatMemberRequest>, I>>(base?: I): GetGroupChatMemberRequest {
+    return GetGroupChatMemberRequest.fromPartial(base ?? ({} as any));
+  },
+  fromPartial<I extends Exact<DeepPartial<GetGroupChatMemberRequest>, I>>(object: I): GetGroupChatMemberRequest {
+    const message = createBaseGetGroupChatMemberRequest();
+    message.groupChatId = object.groupChatId ?? 0;
+    message.userId = object.userId ?? 0;
+    return message;
+  },
+};
+
+function createBaseGetGroupChatMemberResponse(): GetGroupChatMemberResponse {
+  return { member: undefined };
+}
+
+export const GetGroupChatMemberResponse: MessageFns<GetGroupChatMemberResponse> = {
+  encode(message: GetGroupChatMemberResponse, writer: BinaryWriter = new BinaryWriter()): BinaryWriter {
+    if (message.member !== undefined) {
+      Struct.encode(Struct.wrap(message.member), writer.uint32(10).fork()).join();
+    }
+    return writer;
+  },
+
+  decode(input: BinaryReader | Uint8Array, length?: number): GetGroupChatMemberResponse {
+    const reader = input instanceof BinaryReader ? input : new BinaryReader(input);
+    const end = length === undefined ? reader.len : reader.pos + length;
+    const message = createBaseGetGroupChatMemberResponse();
+    while (reader.pos < end) {
+      const tag = reader.uint32();
+      switch (tag >>> 3) {
+        case 1: {
+          if (tag !== 10) {
+            break;
+          }
+
+          message.member = Struct.unwrap(Struct.decode(reader, reader.uint32()));
+          continue;
+        }
+      }
+      if ((tag & 7) === 4 || tag === 0) {
+        break;
+      }
+      reader.skip(tag & 7);
+    }
+    return message;
+  },
+
+  fromJSON(object: any): GetGroupChatMemberResponse {
+    return { member: isObject(object.member) ? object.member : undefined };
+  },
+
+  toJSON(message: GetGroupChatMemberResponse): unknown {
+    const obj: any = {};
+    if (message.member !== undefined) {
+      obj.member = message.member;
+    }
+    return obj;
+  },
+
+  create<I extends Exact<DeepPartial<GetGroupChatMemberResponse>, I>>(base?: I): GetGroupChatMemberResponse {
+    return GetGroupChatMemberResponse.fromPartial(base ?? ({} as any));
+  },
+  fromPartial<I extends Exact<DeepPartial<GetGroupChatMemberResponse>, I>>(object: I): GetGroupChatMemberResponse {
+    const message = createBaseGetGroupChatMemberResponse();
+    message.member = object.member ?? undefined;
+    return message;
+  },
+};
+
+function createBaseGetNewerDirectMessagesRequest(): GetNewerDirectMessagesRequest {
+  return { messageOffset: 0, directChatId: 0, groupChatId: 0, limit: 0 };
+}
+
+export const GetNewerDirectMessagesRequest: MessageFns<GetNewerDirectMessagesRequest> = {
+  encode(message: GetNewerDirectMessagesRequest, writer: BinaryWriter = new BinaryWriter()): BinaryWriter {
+    if (message.messageOffset !== 0) {
+      writer.uint32(8).int64(message.messageOffset);
+    }
+    if (message.directChatId !== 0) {
+      writer.uint32(16).int64(message.directChatId);
+    }
+    if (message.groupChatId !== 0) {
+      writer.uint32(24).int64(message.groupChatId);
+    }
+    if (message.limit !== 0) {
+      writer.uint32(32).int32(message.limit);
+    }
+    return writer;
+  },
+
+  decode(input: BinaryReader | Uint8Array, length?: number): GetNewerDirectMessagesRequest {
+    const reader = input instanceof BinaryReader ? input : new BinaryReader(input);
+    const end = length === undefined ? reader.len : reader.pos + length;
+    const message = createBaseGetNewerDirectMessagesRequest();
+    while (reader.pos < end) {
+      const tag = reader.uint32();
+      switch (tag >>> 3) {
+        case 1: {
+          if (tag !== 8) {
+            break;
+          }
+
+          message.messageOffset = longToNumber(reader.int64());
+          continue;
+        }
+        case 2: {
+          if (tag !== 16) {
+            break;
+          }
+
+          message.directChatId = longToNumber(reader.int64());
+          continue;
+        }
+        case 3: {
+          if (tag !== 24) {
+            break;
+          }
+
+          message.groupChatId = longToNumber(reader.int64());
+          continue;
+        }
+        case 4: {
+          if (tag !== 32) {
+            break;
+          }
+
+          message.limit = reader.int32();
+          continue;
+        }
+      }
+      if ((tag & 7) === 4 || tag === 0) {
+        break;
+      }
+      reader.skip(tag & 7);
+    }
+    return message;
+  },
+
+  fromJSON(object: any): GetNewerDirectMessagesRequest {
+    return {
+      messageOffset: isSet(object.messageOffset) ? globalThis.Number(object.messageOffset) : 0,
+      directChatId: isSet(object.directChatId) ? globalThis.Number(object.directChatId) : 0,
+      groupChatId: isSet(object.groupChatId) ? globalThis.Number(object.groupChatId) : 0,
+      limit: isSet(object.limit) ? globalThis.Number(object.limit) : 0,
+    };
+  },
+
+  toJSON(message: GetNewerDirectMessagesRequest): unknown {
+    const obj: any = {};
+    if (message.messageOffset !== 0) {
+      obj.messageOffset = Math.round(message.messageOffset);
+    }
+    if (message.directChatId !== 0) {
+      obj.directChatId = Math.round(message.directChatId);
+    }
+    if (message.groupChatId !== 0) {
+      obj.groupChatId = Math.round(message.groupChatId);
+    }
+    if (message.limit !== 0) {
+      obj.limit = Math.round(message.limit);
+    }
+    return obj;
+  },
+
+  create<I extends Exact<DeepPartial<GetNewerDirectMessagesRequest>, I>>(base?: I): GetNewerDirectMessagesRequest {
+    return GetNewerDirectMessagesRequest.fromPartial(base ?? ({} as any));
+  },
+  fromPartial<I extends Exact<DeepPartial<GetNewerDirectMessagesRequest>, I>>(
+    object: I,
+  ): GetNewerDirectMessagesRequest {
+    const message = createBaseGetNewerDirectMessagesRequest();
+    message.messageOffset = object.messageOffset ?? 0;
+    message.directChatId = object.directChatId ?? 0;
+    message.groupChatId = object.groupChatId ?? 0;
+    message.limit = object.limit ?? 0;
+    return message;
+  },
+};
+
+function createBaseGetNewerDirectMessagesResponse(): GetNewerDirectMessagesResponse {
+  return { messages: [] };
+}
+
+export const GetNewerDirectMessagesResponse: MessageFns<GetNewerDirectMessagesResponse> = {
+  encode(message: GetNewerDirectMessagesResponse, writer: BinaryWriter = new BinaryWriter()): BinaryWriter {
+    for (const v of message.messages) {
+      Struct.encode(Struct.wrap(v!), writer.uint32(10).fork()).join();
+    }
+    return writer;
+  },
+
+  decode(input: BinaryReader | Uint8Array, length?: number): GetNewerDirectMessagesResponse {
+    const reader = input instanceof BinaryReader ? input : new BinaryReader(input);
+    const end = length === undefined ? reader.len : reader.pos + length;
+    const message = createBaseGetNewerDirectMessagesResponse();
+    while (reader.pos < end) {
+      const tag = reader.uint32();
+      switch (tag >>> 3) {
+        case 1: {
+          if (tag !== 10) {
+            break;
+          }
+
+          message.messages.push(Struct.unwrap(Struct.decode(reader, reader.uint32())));
+          continue;
+        }
+      }
+      if ((tag & 7) === 4 || tag === 0) {
+        break;
+      }
+      reader.skip(tag & 7);
+    }
+    return message;
+  },
+
+  fromJSON(object: any): GetNewerDirectMessagesResponse {
+    return { messages: globalThis.Array.isArray(object?.messages) ? [...object.messages] : [] };
+  },
+
+  toJSON(message: GetNewerDirectMessagesResponse): unknown {
+    const obj: any = {};
+    if (message.messages?.length) {
+      obj.messages = message.messages;
+    }
+    return obj;
+  },
+
+  create<I extends Exact<DeepPartial<GetNewerDirectMessagesResponse>, I>>(base?: I): GetNewerDirectMessagesResponse {
+    return GetNewerDirectMessagesResponse.fromPartial(base ?? ({} as any));
+  },
+  fromPartial<I extends Exact<DeepPartial<GetNewerDirectMessagesResponse>, I>>(
+    object: I,
+  ): GetNewerDirectMessagesResponse {
+    const message = createBaseGetNewerDirectMessagesResponse();
+    message.messages = object.messages?.map((e) => e) || [];
+    return message;
+  },
+};
+
+function createBaseFindConversationWithOtherUserRequest(): FindConversationWithOtherUserRequest {
+  return { userId: 0, otherUserId: 0 };
+}
+
+export const FindConversationWithOtherUserRequest: MessageFns<FindConversationWithOtherUserRequest> = {
+  encode(message: FindConversationWithOtherUserRequest, writer: BinaryWriter = new BinaryWriter()): BinaryWriter {
+    if (message.userId !== 0) {
+      writer.uint32(8).int32(message.userId);
+    }
+    if (message.otherUserId !== 0) {
+      writer.uint32(16).int32(message.otherUserId);
+    }
+    return writer;
+  },
+
+  decode(input: BinaryReader | Uint8Array, length?: number): FindConversationWithOtherUserRequest {
+    const reader = input instanceof BinaryReader ? input : new BinaryReader(input);
+    const end = length === undefined ? reader.len : reader.pos + length;
+    const message = createBaseFindConversationWithOtherUserRequest();
+    while (reader.pos < end) {
+      const tag = reader.uint32();
+      switch (tag >>> 3) {
+        case 1: {
+          if (tag !== 8) {
+            break;
+          }
+
+          message.userId = reader.int32();
+          continue;
+        }
+        case 2: {
+          if (tag !== 16) {
+            break;
+          }
+
+          message.otherUserId = reader.int32();
+          continue;
+        }
+      }
+      if ((tag & 7) === 4 || tag === 0) {
+        break;
+      }
+      reader.skip(tag & 7);
+    }
+    return message;
+  },
+
+  fromJSON(object: any): FindConversationWithOtherUserRequest {
+    return {
+      userId: isSet(object.userId) ? globalThis.Number(object.userId) : 0,
+      otherUserId: isSet(object.otherUserId) ? globalThis.Number(object.otherUserId) : 0,
+    };
+  },
+
+  toJSON(message: FindConversationWithOtherUserRequest): unknown {
+    const obj: any = {};
+    if (message.userId !== 0) {
+      obj.userId = Math.round(message.userId);
+    }
+    if (message.otherUserId !== 0) {
+      obj.otherUserId = Math.round(message.otherUserId);
+    }
+    return obj;
+  },
+
+  create<I extends Exact<DeepPartial<FindConversationWithOtherUserRequest>, I>>(
+    base?: I,
+  ): FindConversationWithOtherUserRequest {
+    return FindConversationWithOtherUserRequest.fromPartial(base ?? ({} as any));
+  },
+  fromPartial<I extends Exact<DeepPartial<FindConversationWithOtherUserRequest>, I>>(
+    object: I,
+  ): FindConversationWithOtherUserRequest {
+    const message = createBaseFindConversationWithOtherUserRequest();
+    message.userId = object.userId ?? 0;
+    message.otherUserId = object.otherUserId ?? 0;
+    return message;
+  },
+};
+
+function createBaseFindConversationWithOtherUserResponse(): FindConversationWithOtherUserResponse {
+  return { directChat: undefined };
+}
+
+export const FindConversationWithOtherUserResponse: MessageFns<FindConversationWithOtherUserResponse> = {
+  encode(message: FindConversationWithOtherUserResponse, writer: BinaryWriter = new BinaryWriter()): BinaryWriter {
+    if (message.directChat !== undefined) {
+      Struct.encode(Struct.wrap(message.directChat), writer.uint32(10).fork()).join();
+    }
+    return writer;
+  },
+
+  decode(input: BinaryReader | Uint8Array, length?: number): FindConversationWithOtherUserResponse {
+    const reader = input instanceof BinaryReader ? input : new BinaryReader(input);
+    const end = length === undefined ? reader.len : reader.pos + length;
+    const message = createBaseFindConversationWithOtherUserResponse();
+    while (reader.pos < end) {
+      const tag = reader.uint32();
+      switch (tag >>> 3) {
+        case 1: {
+          if (tag !== 10) {
+            break;
+          }
+
+          message.directChat = Struct.unwrap(Struct.decode(reader, reader.uint32()));
+          continue;
+        }
+      }
+      if ((tag & 7) === 4 || tag === 0) {
+        break;
+      }
+      reader.skip(tag & 7);
+    }
+    return message;
+  },
+
+  fromJSON(object: any): FindConversationWithOtherUserResponse {
+    return { directChat: isObject(object.directChat) ? object.directChat : undefined };
+  },
+
+  toJSON(message: FindConversationWithOtherUserResponse): unknown {
+    const obj: any = {};
+    if (message.directChat !== undefined) {
+      obj.directChat = message.directChat;
+    }
+    return obj;
+  },
+
+  create<I extends Exact<DeepPartial<FindConversationWithOtherUserResponse>, I>>(
+    base?: I,
+  ): FindConversationWithOtherUserResponse {
+    return FindConversationWithOtherUserResponse.fromPartial(base ?? ({} as any));
+  },
+  fromPartial<I extends Exact<DeepPartial<FindConversationWithOtherUserResponse>, I>>(
+    object: I,
+  ): FindConversationWithOtherUserResponse {
+    const message = createBaseFindConversationWithOtherUserResponse();
+    message.directChat = object.directChat ?? undefined;
+    return message;
+  },
+};
+
+function createBaseCreateNewDirectChatRequest(): CreateNewDirectChatRequest {
+  return { creatorId: 0, recipientId: 0 };
+}
+
+export const CreateNewDirectChatRequest: MessageFns<CreateNewDirectChatRequest> = {
+  encode(message: CreateNewDirectChatRequest, writer: BinaryWriter = new BinaryWriter()): BinaryWriter {
+    if (message.creatorId !== 0) {
+      writer.uint32(8).int32(message.creatorId);
+    }
+    if (message.recipientId !== 0) {
+      writer.uint32(16).int32(message.recipientId);
+    }
+    return writer;
+  },
+
+  decode(input: BinaryReader | Uint8Array, length?: number): CreateNewDirectChatRequest {
+    const reader = input instanceof BinaryReader ? input : new BinaryReader(input);
+    const end = length === undefined ? reader.len : reader.pos + length;
+    const message = createBaseCreateNewDirectChatRequest();
+    while (reader.pos < end) {
+      const tag = reader.uint32();
+      switch (tag >>> 3) {
+        case 1: {
+          if (tag !== 8) {
+            break;
+          }
+
+          message.creatorId = reader.int32();
+          continue;
+        }
+        case 2: {
+          if (tag !== 16) {
+            break;
+          }
+
+          message.recipientId = reader.int32();
+          continue;
+        }
+      }
+      if ((tag & 7) === 4 || tag === 0) {
+        break;
+      }
+      reader.skip(tag & 7);
+    }
+    return message;
+  },
+
+  fromJSON(object: any): CreateNewDirectChatRequest {
+    return {
+      creatorId: isSet(object.creatorId) ? globalThis.Number(object.creatorId) : 0,
+      recipientId: isSet(object.recipientId) ? globalThis.Number(object.recipientId) : 0,
+    };
+  },
+
+  toJSON(message: CreateNewDirectChatRequest): unknown {
+    const obj: any = {};
+    if (message.creatorId !== 0) {
+      obj.creatorId = Math.round(message.creatorId);
+    }
+    if (message.recipientId !== 0) {
+      obj.recipientId = Math.round(message.recipientId);
+    }
+    return obj;
+  },
+
+  create<I extends Exact<DeepPartial<CreateNewDirectChatRequest>, I>>(base?: I): CreateNewDirectChatRequest {
+    return CreateNewDirectChatRequest.fromPartial(base ?? ({} as any));
+  },
+  fromPartial<I extends Exact<DeepPartial<CreateNewDirectChatRequest>, I>>(object: I): CreateNewDirectChatRequest {
+    const message = createBaseCreateNewDirectChatRequest();
+    message.creatorId = object.creatorId ?? 0;
+    message.recipientId = object.recipientId ?? 0;
+    return message;
+  },
+};
+
+function createBaseCreateNewDirectChatResponse(): CreateNewDirectChatResponse {
+  return { newDirectChat: undefined };
+}
+
+export const CreateNewDirectChatResponse: MessageFns<CreateNewDirectChatResponse> = {
+  encode(message: CreateNewDirectChatResponse, writer: BinaryWriter = new BinaryWriter()): BinaryWriter {
+    if (message.newDirectChat !== undefined) {
+      Struct.encode(Struct.wrap(message.newDirectChat), writer.uint32(10).fork()).join();
+    }
+    return writer;
+  },
+
+  decode(input: BinaryReader | Uint8Array, length?: number): CreateNewDirectChatResponse {
+    const reader = input instanceof BinaryReader ? input : new BinaryReader(input);
+    const end = length === undefined ? reader.len : reader.pos + length;
+    const message = createBaseCreateNewDirectChatResponse();
+    while (reader.pos < end) {
+      const tag = reader.uint32();
+      switch (tag >>> 3) {
+        case 1: {
+          if (tag !== 10) {
+            break;
+          }
+
+          message.newDirectChat = Struct.unwrap(Struct.decode(reader, reader.uint32()));
+          continue;
+        }
+      }
+      if ((tag & 7) === 4 || tag === 0) {
+        break;
+      }
+      reader.skip(tag & 7);
+    }
+    return message;
+  },
+
+  fromJSON(object: any): CreateNewDirectChatResponse {
+    return { newDirectChat: isObject(object.newDirectChat) ? object.newDirectChat : undefined };
+  },
+
+  toJSON(message: CreateNewDirectChatResponse): unknown {
+    const obj: any = {};
+    if (message.newDirectChat !== undefined) {
+      obj.newDirectChat = message.newDirectChat;
+    }
+    return obj;
+  },
+
+  create<I extends Exact<DeepPartial<CreateNewDirectChatResponse>, I>>(base?: I): CreateNewDirectChatResponse {
+    return CreateNewDirectChatResponse.fromPartial(base ?? ({} as any));
+  },
+  fromPartial<I extends Exact<DeepPartial<CreateNewDirectChatResponse>, I>>(object: I): CreateNewDirectChatResponse {
+    const message = createBaseCreateNewDirectChatResponse();
+    message.newDirectChat = object.newDirectChat ?? undefined;
+    return message;
+  },
+};
+
+function createBaseFindGroupChatMemberIdsRequest(): FindGroupChatMemberIdsRequest {
+  return { groupChatId: 0 };
+}
+
+export const FindGroupChatMemberIdsRequest: MessageFns<FindGroupChatMemberIdsRequest> = {
+  encode(message: FindGroupChatMemberIdsRequest, writer: BinaryWriter = new BinaryWriter()): BinaryWriter {
+    if (message.groupChatId !== 0) {
+      writer.uint32(8).int32(message.groupChatId);
+    }
+    return writer;
+  },
+
+  decode(input: BinaryReader | Uint8Array, length?: number): FindGroupChatMemberIdsRequest {
+    const reader = input instanceof BinaryReader ? input : new BinaryReader(input);
+    const end = length === undefined ? reader.len : reader.pos + length;
+    const message = createBaseFindGroupChatMemberIdsRequest();
+    while (reader.pos < end) {
+      const tag = reader.uint32();
+      switch (tag >>> 3) {
+        case 1: {
+          if (tag !== 8) {
+            break;
+          }
+
+          message.groupChatId = reader.int32();
+          continue;
+        }
+      }
+      if ((tag & 7) === 4 || tag === 0) {
+        break;
+      }
+      reader.skip(tag & 7);
+    }
+    return message;
+  },
+
+  fromJSON(object: any): FindGroupChatMemberIdsRequest {
+    return { groupChatId: isSet(object.groupChatId) ? globalThis.Number(object.groupChatId) : 0 };
+  },
+
+  toJSON(message: FindGroupChatMemberIdsRequest): unknown {
+    const obj: any = {};
+    if (message.groupChatId !== 0) {
+      obj.groupChatId = Math.round(message.groupChatId);
+    }
+    return obj;
+  },
+
+  create<I extends Exact<DeepPartial<FindGroupChatMemberIdsRequest>, I>>(base?: I): FindGroupChatMemberIdsRequest {
+    return FindGroupChatMemberIdsRequest.fromPartial(base ?? ({} as any));
+  },
+  fromPartial<I extends Exact<DeepPartial<FindGroupChatMemberIdsRequest>, I>>(
+    object: I,
+  ): FindGroupChatMemberIdsRequest {
+    const message = createBaseFindGroupChatMemberIdsRequest();
+    message.groupChatId = object.groupChatId ?? 0;
+    return message;
+  },
+};
+
+function createBaseFindGroupChatMemberIdsResponse(): FindGroupChatMemberIdsResponse {
+  return { memberIds: [] };
+}
+
+export const FindGroupChatMemberIdsResponse: MessageFns<FindGroupChatMemberIdsResponse> = {
+  encode(message: FindGroupChatMemberIdsResponse, writer: BinaryWriter = new BinaryWriter()): BinaryWriter {
+    writer.uint32(10).fork();
+    for (const v of message.memberIds) {
+      writer.int32(v);
+    }
+    writer.join();
+    return writer;
+  },
+
+  decode(input: BinaryReader | Uint8Array, length?: number): FindGroupChatMemberIdsResponse {
+    const reader = input instanceof BinaryReader ? input : new BinaryReader(input);
+    const end = length === undefined ? reader.len : reader.pos + length;
+    const message = createBaseFindGroupChatMemberIdsResponse();
+    while (reader.pos < end) {
+      const tag = reader.uint32();
+      switch (tag >>> 3) {
+        case 1: {
+          if (tag === 8) {
+            message.memberIds.push(reader.int32());
+
+            continue;
+          }
+
+          if (tag === 10) {
+            const end2 = reader.uint32() + reader.pos;
+            while (reader.pos < end2) {
+              message.memberIds.push(reader.int32());
+            }
+
+            continue;
+          }
+
+          break;
+        }
+      }
+      if ((tag & 7) === 4 || tag === 0) {
+        break;
+      }
+      reader.skip(tag & 7);
+    }
+    return message;
+  },
+
+  fromJSON(object: any): FindGroupChatMemberIdsResponse {
+    return {
+      memberIds: globalThis.Array.isArray(object?.memberIds)
+        ? object.memberIds.map((e: any) => globalThis.Number(e))
+        : [],
+    };
+  },
+
+  toJSON(message: FindGroupChatMemberIdsResponse): unknown {
+    const obj: any = {};
+    if (message.memberIds?.length) {
+      obj.memberIds = message.memberIds.map((e) => Math.round(e));
+    }
+    return obj;
+  },
+
+  create<I extends Exact<DeepPartial<FindGroupChatMemberIdsResponse>, I>>(base?: I): FindGroupChatMemberIdsResponse {
+    return FindGroupChatMemberIdsResponse.fromPartial(base ?? ({} as any));
+  },
+  fromPartial<I extends Exact<DeepPartial<FindGroupChatMemberIdsResponse>, I>>(
+    object: I,
+  ): FindGroupChatMemberIdsResponse {
+    const message = createBaseFindGroupChatMemberIdsResponse();
+    message.memberIds = object.memberIds?.map((e) => e) || [];
+    return message;
+  },
+};
+
+function createBaseCreateNewMessageRequest(): CreateNewMessageRequest {
+  return {
+    encryptedContent: "",
+    authorId: 0,
+    timestamp: undefined,
+    type: "",
+    recipientId: undefined,
+    stickerId: undefined,
+    mediaId: undefined,
+    replyToId: undefined,
+    directChatId: undefined,
+    groupChatId: undefined,
+  };
+}
+
+export const CreateNewMessageRequest: MessageFns<CreateNewMessageRequest> = {
+  encode(message: CreateNewMessageRequest, writer: BinaryWriter = new BinaryWriter()): BinaryWriter {
+    if (message.encryptedContent !== "") {
+      writer.uint32(10).string(message.encryptedContent);
+    }
+    if (message.authorId !== 0) {
+      writer.uint32(16).int32(message.authorId);
+    }
+    if (message.timestamp !== undefined) {
+      Timestamp.encode(toTimestamp(message.timestamp), writer.uint32(26).fork()).join();
+    }
+    if (message.type !== "") {
+      writer.uint32(34).string(message.type);
+    }
+    if (message.recipientId !== undefined) {
+      writer.uint32(40).int32(message.recipientId);
+    }
+    if (message.stickerId !== undefined) {
+      writer.uint32(48).int32(message.stickerId);
+    }
+    if (message.mediaId !== undefined) {
+      writer.uint32(56).int32(message.mediaId);
+    }
+    if (message.replyToId !== undefined) {
+      writer.uint32(64).int32(message.replyToId);
+    }
+    if (message.directChatId !== undefined) {
+      writer.uint32(72).int64(message.directChatId);
+    }
+    if (message.groupChatId !== undefined) {
+      writer.uint32(80).int64(message.groupChatId);
+    }
+    return writer;
+  },
+
+  decode(input: BinaryReader | Uint8Array, length?: number): CreateNewMessageRequest {
+    const reader = input instanceof BinaryReader ? input : new BinaryReader(input);
+    const end = length === undefined ? reader.len : reader.pos + length;
+    const message = createBaseCreateNewMessageRequest();
+    while (reader.pos < end) {
+      const tag = reader.uint32();
+      switch (tag >>> 3) {
+        case 1: {
+          if (tag !== 10) {
+            break;
+          }
+
+          message.encryptedContent = reader.string();
+          continue;
+        }
+        case 2: {
+          if (tag !== 16) {
+            break;
+          }
+
+          message.authorId = reader.int32();
+          continue;
+        }
+        case 3: {
+          if (tag !== 26) {
+            break;
+          }
+
+          message.timestamp = fromTimestamp(Timestamp.decode(reader, reader.uint32()));
+          continue;
+        }
+        case 4: {
+          if (tag !== 34) {
+            break;
+          }
+
+          message.type = reader.string();
+          continue;
+        }
+        case 5: {
+          if (tag !== 40) {
+            break;
+          }
+
+          message.recipientId = reader.int32();
+          continue;
+        }
+        case 6: {
+          if (tag !== 48) {
+            break;
+          }
+
+          message.stickerId = reader.int32();
+          continue;
+        }
+        case 7: {
+          if (tag !== 56) {
+            break;
+          }
+
+          message.mediaId = reader.int32();
+          continue;
+        }
+        case 8: {
+          if (tag !== 64) {
+            break;
+          }
+
+          message.replyToId = reader.int32();
+          continue;
+        }
+        case 9: {
+          if (tag !== 72) {
+            break;
+          }
+
+          message.directChatId = longToNumber(reader.int64());
+          continue;
+        }
+        case 10: {
+          if (tag !== 80) {
+            break;
+          }
+
+          message.groupChatId = longToNumber(reader.int64());
+          continue;
+        }
+      }
+      if ((tag & 7) === 4 || tag === 0) {
+        break;
+      }
+      reader.skip(tag & 7);
+    }
+    return message;
+  },
+
+  fromJSON(object: any): CreateNewMessageRequest {
+    return {
+      encryptedContent: isSet(object.encryptedContent) ? globalThis.String(object.encryptedContent) : "",
+      authorId: isSet(object.authorId) ? globalThis.Number(object.authorId) : 0,
+      timestamp: isSet(object.timestamp) ? fromJsonTimestamp(object.timestamp) : undefined,
+      type: isSet(object.type) ? globalThis.String(object.type) : "",
+      recipientId: isSet(object.recipientId) ? globalThis.Number(object.recipientId) : undefined,
+      stickerId: isSet(object.stickerId) ? globalThis.Number(object.stickerId) : undefined,
+      mediaId: isSet(object.mediaId) ? globalThis.Number(object.mediaId) : undefined,
+      replyToId: isSet(object.replyToId) ? globalThis.Number(object.replyToId) : undefined,
+      directChatId: isSet(object.directChatId) ? globalThis.Number(object.directChatId) : undefined,
+      groupChatId: isSet(object.groupChatId) ? globalThis.Number(object.groupChatId) : undefined,
+    };
+  },
+
+  toJSON(message: CreateNewMessageRequest): unknown {
+    const obj: any = {};
+    if (message.encryptedContent !== "") {
+      obj.encryptedContent = message.encryptedContent;
+    }
+    if (message.authorId !== 0) {
+      obj.authorId = Math.round(message.authorId);
+    }
+    if (message.timestamp !== undefined) {
+      obj.timestamp = message.timestamp.toISOString();
+    }
+    if (message.type !== "") {
+      obj.type = message.type;
+    }
+    if (message.recipientId !== undefined) {
+      obj.recipientId = Math.round(message.recipientId);
+    }
+    if (message.stickerId !== undefined) {
+      obj.stickerId = Math.round(message.stickerId);
+    }
+    if (message.mediaId !== undefined) {
+      obj.mediaId = Math.round(message.mediaId);
+    }
+    if (message.replyToId !== undefined) {
+      obj.replyToId = Math.round(message.replyToId);
+    }
+    if (message.directChatId !== undefined) {
+      obj.directChatId = Math.round(message.directChatId);
+    }
+    if (message.groupChatId !== undefined) {
+      obj.groupChatId = Math.round(message.groupChatId);
+    }
+    return obj;
+  },
+
+  create<I extends Exact<DeepPartial<CreateNewMessageRequest>, I>>(base?: I): CreateNewMessageRequest {
+    return CreateNewMessageRequest.fromPartial(base ?? ({} as any));
+  },
+  fromPartial<I extends Exact<DeepPartial<CreateNewMessageRequest>, I>>(object: I): CreateNewMessageRequest {
+    const message = createBaseCreateNewMessageRequest();
+    message.encryptedContent = object.encryptedContent ?? "";
+    message.authorId = object.authorId ?? 0;
+    message.timestamp = object.timestamp ?? undefined;
+    message.type = object.type ?? "";
+    message.recipientId = object.recipientId ?? undefined;
+    message.stickerId = object.stickerId ?? undefined;
+    message.mediaId = object.mediaId ?? undefined;
+    message.replyToId = object.replyToId ?? undefined;
+    message.directChatId = object.directChatId ?? undefined;
+    message.groupChatId = object.groupChatId ?? undefined;
+    return message;
+  },
+};
+
+function createBaseCreateNewMessageResponse(): CreateNewMessageResponse {
+  return { newMessage: undefined };
+}
+
+export const CreateNewMessageResponse: MessageFns<CreateNewMessageResponse> = {
+  encode(message: CreateNewMessageResponse, writer: BinaryWriter = new BinaryWriter()): BinaryWriter {
+    if (message.newMessage !== undefined) {
+      Struct.encode(Struct.wrap(message.newMessage), writer.uint32(10).fork()).join();
+    }
+    return writer;
+  },
+
+  decode(input: BinaryReader | Uint8Array, length?: number): CreateNewMessageResponse {
+    const reader = input instanceof BinaryReader ? input : new BinaryReader(input);
+    const end = length === undefined ? reader.len : reader.pos + length;
+    const message = createBaseCreateNewMessageResponse();
+    while (reader.pos < end) {
+      const tag = reader.uint32();
+      switch (tag >>> 3) {
+        case 1: {
+          if (tag !== 10) {
+            break;
+          }
+
+          message.newMessage = Struct.unwrap(Struct.decode(reader, reader.uint32()));
+          continue;
+        }
+      }
+      if ((tag & 7) === 4 || tag === 0) {
+        break;
+      }
+      reader.skip(tag & 7);
+    }
+    return message;
+  },
+
+  fromJSON(object: any): CreateNewMessageResponse {
+    return { newMessage: isObject(object.newMessage) ? object.newMessage : undefined };
+  },
+
+  toJSON(message: CreateNewMessageResponse): unknown {
+    const obj: any = {};
+    if (message.newMessage !== undefined) {
+      obj.newMessage = message.newMessage;
+    }
+    return obj;
+  },
+
+  create<I extends Exact<DeepPartial<CreateNewMessageResponse>, I>>(base?: I): CreateNewMessageResponse {
+    return CreateNewMessageResponse.fromPartial(base ?? ({} as any));
+  },
+  fromPartial<I extends Exact<DeepPartial<CreateNewMessageResponse>, I>>(object: I): CreateNewMessageResponse {
+    const message = createBaseCreateNewMessageResponse();
+    message.newMessage = object.newMessage ?? undefined;
+    return message;
+  },
+};
+
+function createBaseUpdateLastSentMessageRequest(): UpdateLastSentMessageRequest {
+  return { lastSentMessageId: 0, directChatId: 0 };
+}
+
+export const UpdateLastSentMessageRequest: MessageFns<UpdateLastSentMessageRequest> = {
+  encode(message: UpdateLastSentMessageRequest, writer: BinaryWriter = new BinaryWriter()): BinaryWriter {
+    if (message.lastSentMessageId !== 0) {
+      writer.uint32(8).int32(message.lastSentMessageId);
+    }
+    if (message.directChatId !== 0) {
+      writer.uint32(16).int64(message.directChatId);
+    }
+    return writer;
+  },
+
+  decode(input: BinaryReader | Uint8Array, length?: number): UpdateLastSentMessageRequest {
+    const reader = input instanceof BinaryReader ? input : new BinaryReader(input);
+    const end = length === undefined ? reader.len : reader.pos + length;
+    const message = createBaseUpdateLastSentMessageRequest();
+    while (reader.pos < end) {
+      const tag = reader.uint32();
+      switch (tag >>> 3) {
+        case 1: {
+          if (tag !== 8) {
+            break;
+          }
+
+          message.lastSentMessageId = reader.int32();
+          continue;
+        }
+        case 2: {
+          if (tag !== 16) {
+            break;
+          }
+
+          message.directChatId = longToNumber(reader.int64());
+          continue;
+        }
+      }
+      if ((tag & 7) === 4 || tag === 0) {
+        break;
+      }
+      reader.skip(tag & 7);
+    }
+    return message;
+  },
+
+  fromJSON(object: any): UpdateLastSentMessageRequest {
+    return {
+      lastSentMessageId: isSet(object.lastSentMessageId) ? globalThis.Number(object.lastSentMessageId) : 0,
+      directChatId: isSet(object.directChatId) ? globalThis.Number(object.directChatId) : 0,
+    };
+  },
+
+  toJSON(message: UpdateLastSentMessageRequest): unknown {
+    const obj: any = {};
+    if (message.lastSentMessageId !== 0) {
+      obj.lastSentMessageId = Math.round(message.lastSentMessageId);
+    }
+    if (message.directChatId !== 0) {
+      obj.directChatId = Math.round(message.directChatId);
+    }
+    return obj;
+  },
+
+  create<I extends Exact<DeepPartial<UpdateLastSentMessageRequest>, I>>(base?: I): UpdateLastSentMessageRequest {
+    return UpdateLastSentMessageRequest.fromPartial(base ?? ({} as any));
+  },
+  fromPartial<I extends Exact<DeepPartial<UpdateLastSentMessageRequest>, I>>(object: I): UpdateLastSentMessageRequest {
+    const message = createBaseUpdateLastSentMessageRequest();
+    message.lastSentMessageId = object.lastSentMessageId ?? 0;
+    message.directChatId = object.directChatId ?? 0;
+    return message;
+  },
+};
+
+export interface DirectChatService {
+  FindConversationWithOtherUser(
+    request: FindConversationWithOtherUserRequest,
+  ): Promise<FindConversationWithOtherUserResponse>;
+  CreateNewDirectChat(request: CreateNewDirectChatRequest): Promise<CreateNewDirectChatResponse>;
+}
+
+export const DirectChatServiceServiceName = "conversation.DirectChatService";
+export class DirectChatServiceClientImpl implements DirectChatService {
+  private readonly rpc: Rpc;
+  private readonly service: string;
+  constructor(rpc: Rpc, opts?: { service?: string }) {
+    this.service = opts?.service || DirectChatServiceServiceName;
+    this.rpc = rpc;
+    this.FindConversationWithOtherUser = this.FindConversationWithOtherUser.bind(this);
+    this.CreateNewDirectChat = this.CreateNewDirectChat.bind(this);
+  }
+  FindConversationWithOtherUser(
+    request: FindConversationWithOtherUserRequest,
+  ): Promise<FindConversationWithOtherUserResponse> {
+    const data = FindConversationWithOtherUserRequest.encode(request).finish();
+    const promise = this.rpc.request(this.service, "FindConversationWithOtherUser", data);
+    return promise.then((data) => FindConversationWithOtherUserResponse.decode(new BinaryReader(data)));
+  }
+
+  CreateNewDirectChat(request: CreateNewDirectChatRequest): Promise<CreateNewDirectChatResponse> {
+    const data = CreateNewDirectChatRequest.encode(request).finish();
+    const promise = this.rpc.request(this.service, "CreateNewDirectChat", data);
+    return promise.then((data) => CreateNewDirectChatResponse.decode(new BinaryReader(data)));
+  }
+}
+
 export interface GroupChatMemberService {
   GetGroupChatMember(request: GetGroupChatMemberRequest): Promise<GetGroupChatMemberResponse>;
+  FindGroupChatMemberIds(request: FindGroupChatMemberIdsRequest): Promise<FindGroupChatMemberIdsResponse>;
+}
+
+export const GroupChatMemberServiceServiceName = "conversation.GroupChatMemberService";
+export class GroupChatMemberServiceClientImpl implements GroupChatMemberService {
+  private readonly rpc: Rpc;
+  private readonly service: string;
+  constructor(rpc: Rpc, opts?: { service?: string }) {
+    this.service = opts?.service || GroupChatMemberServiceServiceName;
+    this.rpc = rpc;
+    this.GetGroupChatMember = this.GetGroupChatMember.bind(this);
+    this.FindGroupChatMemberIds = this.FindGroupChatMemberIds.bind(this);
+  }
+  GetGroupChatMember(request: GetGroupChatMemberRequest): Promise<GetGroupChatMemberResponse> {
+    const data = GetGroupChatMemberRequest.encode(request).finish();
+    const promise = this.rpc.request(this.service, "GetGroupChatMember", data);
+    return promise.then((data) => GetGroupChatMemberResponse.decode(new BinaryReader(data)));
+  }
+
+  FindGroupChatMemberIds(request: FindGroupChatMemberIdsRequest): Promise<FindGroupChatMemberIdsResponse> {
+    const data = FindGroupChatMemberIdsRequest.encode(request).finish();
+    const promise = this.rpc.request(this.service, "FindGroupChatMemberIds", data);
+    return promise.then((data) => FindGroupChatMemberIdsResponse.decode(new BinaryReader(data)));
+  }
+}
+
+export interface MessageService {
+  GetNewerDirectMessages(request: GetNewerDirectMessagesRequest): Promise<GetNewerDirectMessagesResponse>;
+  CreateNewMessage(request: CreateNewMessageRequest): Promise<CreateNewMessageResponse>;
+  UpdateLastSentMessage(request: UpdateLastSentMessageRequest): Promise<Empty>;
+}
+
+export const MessageServiceServiceName = "conversation.MessageService";
+export class MessageServiceClientImpl implements MessageService {
+  private readonly rpc: Rpc;
+  private readonly service: string;
+  constructor(rpc: Rpc, opts?: { service?: string }) {
+    this.service = opts?.service || MessageServiceServiceName;
+    this.rpc = rpc;
+    this.GetNewerDirectMessages = this.GetNewerDirectMessages.bind(this);
+    this.CreateNewMessage = this.CreateNewMessage.bind(this);
+    this.UpdateLastSentMessage = this.UpdateLastSentMessage.bind(this);
+  }
+  GetNewerDirectMessages(request: GetNewerDirectMessagesRequest): Promise<GetNewerDirectMessagesResponse> {
+    const data = GetNewerDirectMessagesRequest.encode(request).finish();
+    const promise = this.rpc.request(this.service, "GetNewerDirectMessages", data);
+    return promise.then((data) => GetNewerDirectMessagesResponse.decode(new BinaryReader(data)));
+  }
+
+  CreateNewMessage(request: CreateNewMessageRequest): Promise<CreateNewMessageResponse> {
+    const data = CreateNewMessageRequest.encode(request).finish();
+    const promise = this.rpc.request(this.service, "CreateNewMessage", data);
+    return promise.then((data) => CreateNewMessageResponse.decode(new BinaryReader(data)));
+  }
+
+  UpdateLastSentMessage(request: UpdateLastSentMessageRequest): Promise<Empty> {
+    const data = UpdateLastSentMessageRequest.encode(request).finish();
+    const promise = this.rpc.request(this.service, "UpdateLastSentMessage", data);
+    return promise.then((data) => Empty.decode(new BinaryReader(data)));
+  }
+}
+
+interface Rpc {
+  request(service: string, method: string, data: Uint8Array): Promise<Uint8Array>;
+}
+
+type Builtin = Date | Function | Uint8Array | string | number | boolean | undefined;
+
+export type DeepPartial<T> = T extends Builtin ? T
+  : T extends globalThis.Array<infer U> ? globalThis.Array<DeepPartial<U>>
+  : T extends ReadonlyArray<infer U> ? ReadonlyArray<DeepPartial<U>>
+  : T extends {} ? { [K in keyof T]?: DeepPartial<T[K]> }
+  : Partial<T>;
+
+type KeysOfUnion<T> = T extends T ? keyof T : never;
+export type Exact<P, I extends P> = P extends Builtin ? P
+  : P & { [K in keyof P]: Exact<P[K], I[K]> } & { [K in Exclude<keyof I, KeysOfUnion<P>>]: never };
+
+function toTimestamp(date: Date): Timestamp {
+  const seconds = Math.trunc(date.getTime() / 1_000);
+  const nanos = (date.getTime() % 1_000) * 1_000_000;
+  return { seconds, nanos };
+}
+
+function fromTimestamp(t: Timestamp): Date {
+  let millis = (t.seconds || 0) * 1_000;
+  millis += (t.nanos || 0) / 1_000_000;
+  return new globalThis.Date(millis);
+}
+
+function fromJsonTimestamp(o: any): Date {
+  if (o instanceof globalThis.Date) {
+    return o;
+  } else if (typeof o === "string") {
+    return new globalThis.Date(o);
+  } else {
+    return fromTimestamp(Timestamp.fromJSON(o));
+  }
+}
+
+function longToNumber(int64: { toString(): string }): number {
+  const num = globalThis.Number(int64.toString());
+  if (num > globalThis.Number.MAX_SAFE_INTEGER) {
+    throw new globalThis.Error("Value is larger than Number.MAX_SAFE_INTEGER");
+  }
+  if (num < globalThis.Number.MIN_SAFE_INTEGER) {
+    throw new globalThis.Error("Value is smaller than Number.MIN_SAFE_INTEGER");
+  }
+  return num;
+}
+
+function isObject(value: any): boolean {
+  return typeof value === "object" && value !== null;
+}
+
+function isSet(value: any): boolean {
+  return value !== null && value !== undefined;
+}
+
+export interface MessageFns<T> {
+  encode(message: T, writer?: BinaryWriter): BinaryWriter;
+  decode(input: BinaryReader | Uint8Array, length?: number): T;
+  fromJSON(object: any): T;
+  toJSON(message: T): unknown;
+  create<I extends Exact<DeepPartial<T>, I>>(base?: I): T;
+  fromPartial<I extends Exact<DeepPartial<T>, I>>(object: I): T;
 }

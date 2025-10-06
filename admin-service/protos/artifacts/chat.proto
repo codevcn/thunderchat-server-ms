@@ -4,11 +4,14 @@ package chat;
 
 import "google/protobuf/empty.proto";
 import "google/protobuf/any.proto";
+import "google/protobuf/struct.proto";
 
 service UserConnectionService {
   rpc GetConnectedClientsCountForAdmin(google.protobuf.Empty)
       returns (ConnectedClientsCountResponse);
   rpc EmitToDirectChat(EmitToDirectChatRequest) returns (google.protobuf.Empty);
+  rpc SendNewMessageToGroupChat(SendNewMessageToGroupChatRequest)
+      returns (google.protobuf.Empty);
 }
 
 message ConnectedClientsCountResponse {
@@ -17,6 +20,11 @@ message ConnectedClientsCountResponse {
 
 message EmitToDirectChatRequest {
   string event = 1;
-  string direct_chat_id = 2;
+  int32 direct_chat_id = 2;
   google.protobuf.Any payload = 3;
+}
+
+message SendNewMessageToGroupChatRequest {
+  int32 group_chat_id = 2;
+  google.protobuf.Struct new_message = 3;
 }

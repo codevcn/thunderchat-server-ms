@@ -1,9 +1,8 @@
 import { MessageService } from '@/message/message.service'
 import { ERoutes } from '@/utils/enums'
-import { Controller, Get, Param, Query, UseGuards } from '@nestjs/common'
+import { Controller, Get, Param, Query } from '@nestjs/common'
 import { IMessageController } from './message.interface'
 import { FetchMsgsParamsDTO, FetchMsgsParamsForGroupChatDTO } from './message.dto'
-import { AuthGuard } from '@/auth/auth.guard'
 import { ESortTypes } from './message.enum'
 import { canSendDirectMessage } from './can-send-message.helper'
 import { User } from '@/user/user.decorator'
@@ -11,7 +10,6 @@ import { CheckCanSendMessageDto } from './message.dto'
 import { ValidationPipe } from '@nestjs/common'
 
 @Controller(ERoutes.MESSAGE)
-@UseGuards(AuthGuard)
 export class MessageController implements IMessageController {
   constructor(private MessageService: MessageService) {}
 

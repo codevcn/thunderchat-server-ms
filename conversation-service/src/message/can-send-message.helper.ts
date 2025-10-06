@@ -1,6 +1,5 @@
 import { ForbiddenException, BadRequestException } from '@nestjs/common'
 import { PrismaService } from '../configs/db/prisma.service'
-import { EMsgMessages } from './message.message'
 import { EUserSettingsMessages } from '@/user/user-settings/user-settings.message'
 
 export async function canSendDirectMessage(

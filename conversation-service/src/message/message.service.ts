@@ -1,6 +1,11 @@
 import { Inject, Injectable } from '@nestjs/common'
 import { PrismaService } from '../configs/db/prisma.service'
-import { EProviderTokens, ESyncDataToESWorkerType } from '@/utils/enums'
+import {
+  EGrpcPackages,
+  EGrpcServices,
+  EProviderTokens,
+  ESyncDataToESWorkerType,
+} from '@/utils/enums'
 import type {
   TMessage,
   TMessageWithMedia,
@@ -14,7 +19,8 @@ import type {
   TMessageOffset,
   TMessageUpdates,
 } from './message.type'
-import { SyncDataToESService } from '@/configs/elasticsearch/sync-data-to-ES/sync-data-to-ES.service'
+import { ClientGrpc } from '@nestjs/microservices'
+import { IElasticSearchService } from '@/configs/communication/grpc/types/search-service.type'
 
 @Injectable()
 export class MessageService {
@@ -38,11 +44,16 @@ export class MessageService {
     Media: true,
     Sticker: true,
   }
+  private syncDataToESService: IElasticSearchService
 
   constructor(
     @Inject(EProviderTokens.PRISMA_CLIENT) private PrismaService: PrismaService,
-    private syncDataToESService: SyncDataToESService
-  ) {}
+    @Inject(EGrpcPackages.SEARCH_PACKAGE) private searchClient: ClientGrpc
+  ) {
+    this.syncDataToESService = this.searchClient.getService<IElasticSearchService>(
+      EGrpcServices.ELASTIC_SEARCH_SERVICE
+    )
+  }
 
   async fidMsgById(msgId: number): Promise<TMessage | null> {
     return await this.PrismaService.message.findUnique({
@@ -92,9 +103,9 @@ export class MessageService {
       },
       include: this.messageFullInfo,
     })
-    this.syncDataToESService.syncDataToES({
+    this.syncDataToESService.SyncDataToES({
       type: ESyncDataToESWorkerType.CREATE_MESSAGE,
-      data: message,
+      dataObject: { data: message },
       // msgEncryptor: this.syncDataToESService.getESMessageEncryptor(authorId),
     })
     return message
@@ -108,9 +119,9 @@ export class MessageService {
         Media: true,
       },
     })
-    this.syncDataToESService.syncDataToES({
+    this.syncDataToESService.SyncDataToES({
       type: ESyncDataToESWorkerType.UPDATE_MESSAGE,
-      data: message,
+      dataObject: { data: message },
     })
     return message
   }

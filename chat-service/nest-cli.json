@@ -4,5 +4,7 @@
   "sourceRoot": "src",
   "compilerOptions": {
     "deleteOutDir": true
-  }
+  },
+  "watch": ["src"],
+  "exclude": ["node_modules", "dist"]
 }
