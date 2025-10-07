@@ -1,4 +1,4 @@
-import { EGroupChatPermissions } from '@/group-chat/group-chat.enum'
+import type { EGroupChatPermissions } from '@/group-chat/group-chat.enum'
 import type { TCastedFieldObject } from '@/utils/types'
 import type {
   CheckGroupChatPermissionResponse,

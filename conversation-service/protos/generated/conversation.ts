@@ -1611,17 +1611,17 @@ export class DirectChatServiceClientImpl implements DirectChatService {
   }
 }
 
-export interface GroupChatMemberService {
+export interface GroupMemberService {
   FindMemberInGroupChat(request: FindMemberInGroupChatRequest): Promise<FindMemberInGroupChatResponse>;
   FindGroupChatMemberIds(request: FindGroupChatMemberIdsRequest): Promise<FindGroupChatMemberIdsResponse>;
 }
 
-export const GroupChatMemberServiceServiceName = "conversation.GroupChatMemberService";
-export class GroupChatMemberServiceClientImpl implements GroupChatMemberService {
+export const GroupMemberServiceServiceName = "conversation.GroupMemberService";
+export class GroupMemberServiceClientImpl implements GroupMemberService {
   private readonly rpc: Rpc;
   private readonly service: string;
   constructor(rpc: Rpc, opts?: { service?: string }) {
-    this.service = opts?.service || GroupChatMemberServiceServiceName;
+    this.service = opts?.service || GroupMemberServiceServiceName;
     this.rpc = rpc;
     this.FindMemberInGroupChat = this.FindMemberInGroupChat.bind(this);
     this.FindGroupChatMemberIds = this.FindGroupChatMemberIds.bind(this);

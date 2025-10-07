@@ -1,13 +1,13 @@
-import { TGroupChatMemberWithUserAndGroupChat } from '@/utils/entities/group-chat-member.entity'
+import type { TGroupChatMemberWithUserAndGroupChat } from '@/utils/entities/group-chat-member.entity'
 import type { TCastedFieldObject } from '@/utils/types'
 import type {
   FindGroupChatMemberIdsResponse,
   FindMemberInGroupChatResponse,
-  GroupChatMemberService as GroupChatMemberServiceType,
+  GroupMemberService as GroupMemberServiceType,
 } from 'protos/generated/conversation'
 
 export class GroupMemberService {
-  constructor(private instance: GroupChatMemberServiceType) {}
+  constructor(private instance: GroupMemberServiceType) {}
 
   async findMemberInGroupChat(groupChatId: number, userId: number): Promise<any | null> {
     return (

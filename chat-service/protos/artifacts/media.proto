@@ -3,8 +3,9 @@ syntax = "proto3";
 package media;
 
 import "google/protobuf/empty.proto";
+import "google/protobuf/struct.proto";
 
-service S3UploadService {
+service UploadService {
   rpc DeleteFileByUrl(DeleteFileByUrlRequest) returns (google.protobuf.Empty);
   rpc UploadFile(UploadFileRequest) returns (UploadFileResponse);
   rpc UploadGroupChatAvatar(UploadGroupChatAvatarRequest)
@@ -22,12 +23,7 @@ message UploadFileRequest {
 }
 
 message UploadFileResponse {
-  int32 id = 1;
-  string url = 2;
-  string fileType = 3;
-  string fileName = 4;
-  optional string thumbnailUrl = 5;
-  string fileSize = 6;
+  google.protobuf.Struct file_info = 1;
 }
 
 message UploadGroupChatAvatarRequest {

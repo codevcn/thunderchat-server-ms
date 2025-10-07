@@ -29,16 +29,16 @@ import { EventEmitter2 } from '@nestjs/event-emitter'
 import { typeToRawObject } from '@/utils/helpers'
 import type { Express } from 'express'
 import { ClientGrpc } from '@nestjs/microservices'
-import { S3UploadService } from 'protos/generated/media'
-import { ElasticSearchService } from 'protos/generated/search'
 import { EGroupMemberMessages } from '@/group-member/group-member.message'
 import { GroupMemberService } from '@/group-member/group-member.service'
+import { UploadService } from '@/configs/communication/grpc/services/upload.service'
+import { ElasticSearchService } from '@/configs/communication/grpc/services/es.service'
 
 @Injectable()
 export class GroupChatService {
   private readonly MIN_GROUP_CHAT_NAME_LENGTH: number = 2
   private readonly MIN_GROUP_CHAT_MEMBERS_COUNT: number = 2
-  private s3UploadService: S3UploadService
+  private s3UploadService: UploadService
   private syncDataToESService: ElasticSearchService
 
   constructor(
@@ -48,11 +48,11 @@ export class GroupChatService {
     @Inject(EGrpcPackages.SEARCH_PACKAGE) private searchClient: ClientGrpc,
     private readonly groupMemberService: GroupMemberService
   ) {
-    this.s3UploadService = this.mediaClient.getService<S3UploadService>(
-      EGrpcServices.S3_UPLOAD_SERVICE
+    this.s3UploadService = new UploadService(
+      this.mediaClient.getService(EGrpcServices.UPLOAD_SERVICE)
     )
-    this.syncDataToESService = this.searchClient.getService<ElasticSearchService>(
-      EGrpcServices.ELASTIC_SEARCH_SERVICE
+    this.syncDataToESService = new ElasticSearchService(
+      this.searchClient.getService(EGrpcServices.ELASTIC_SEARCH_SERVICE)
     )
   }
 
@@ -64,7 +64,7 @@ export class GroupChatService {
   }
 
   async uploadGroupChatAvatar(avatar: Express.Multer.File): Promise<TUploadGroupChatAvatar> {
-    const uploadedFile = await this.s3UploadService.UploadGroupChatAvatar({ file: avatar.buffer })
+    const uploadedFile = await this.s3UploadService.uploadGroupChatAvatar(avatar)
     const avatarUrl = uploadedFile.url
     if (!avatarUrl) {
       throw new InternalServerErrorException(EGroupChatMessages.FAILED_TO_UPDATE_GROUP_CHAT_AVATAR)
@@ -73,7 +73,7 @@ export class GroupChatService {
   }
 
   async deleteGroupChatAvatar(avatarUrl: string): Promise<void> {
-    await this.s3UploadService.DeleteGroupChatAvatar({ avatarUrl })
+    await this.s3UploadService.deleteGroupChatAvatar(avatarUrl)
   }
 
   async createGroupChat(
@@ -297,11 +297,9 @@ export class GroupChatService {
       await tx.message.deleteMany({
         where: { groupChatId },
       })
-      this.syncDataToESService.SyncDataToES({
+      this.syncDataToESService.syncDataToES({
         type: ESyncDataToESWorkerType.DELETE_MESSAGES_IN_BULK,
-        dataArray: {
-          data: messages.map(({ id }) => id),
-        },
+        data: messages.map(({ id }) => id),
       })
       await tx.groupChat.delete({
         where: { id: groupChatId },

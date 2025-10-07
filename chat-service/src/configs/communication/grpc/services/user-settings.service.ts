@@ -1,6 +1,6 @@
-import { TUserSettings } from '@/utils/entities/user.entity'
-import { TCastedFieldObject } from '@/utils/types'
-import {
+import type { TUserSettings } from '@/utils/entities/user.entity'
+import type { TCastedFieldObject } from '@/utils/types'
+import type {
   FindByUserIdResponse,
   UserSettingsService as UserSettingsServiceType,
 } from 'protos/generated/user'

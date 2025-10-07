@@ -3,7 +3,13 @@ import { ClientsModule } from '@nestjs/microservices'
 import { GrpcClientConfig } from './grpc-client.config'
 
 @Module({
-  imports: [ClientsModule.register([GrpcClientConfig.getSearchClient()])],
+  imports: [
+    ClientsModule.register([
+      GrpcClientConfig.getSearchClient(),
+      GrpcClientConfig.getUserConnectionClient(),
+      GrpcClientConfig.getMediaClient(),
+    ]),
+  ],
   exports: [ClientsModule],
 })
 export class GrpcClientModule {}

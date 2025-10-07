@@ -1,7 +1,7 @@
 import { EMessageStatus, EMessageTypes } from '@/message/message.enum'
 import type { TMessageOffset } from '@/message/message.type'
 import type { TMessageFullInfo } from '@/utils/entities/message.entity'
-import { TMessage } from '@/utils/entities/message.entity copy'
+import type { TMessage } from '@/utils/entities/message.entity copy'
 import type { TCastedFieldObject } from '@/utils/types'
 import type {
   CreateNewMessageResponse,

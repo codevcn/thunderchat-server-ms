@@ -20,7 +20,7 @@ import type {
   TMessageUpdates,
 } from './message.type'
 import { ClientGrpc } from '@nestjs/microservices'
-import { IElasticSearchService } from '@/configs/communication/grpc/types/search-service.type'
+import { ElasticSearchService } from '@/configs/communication/grpc/services/es.service'
 
 @Injectable()
 export class MessageService {
@@ -44,14 +44,14 @@ export class MessageService {
     Media: true,
     Sticker: true,
   }
-  private syncDataToESService: IElasticSearchService
+  private syncDataToESService: ElasticSearchService
 
   constructor(
     @Inject(EProviderTokens.PRISMA_CLIENT) private PrismaService: PrismaService,
     @Inject(EGrpcPackages.SEARCH_PACKAGE) private searchClient: ClientGrpc
   ) {
-    this.syncDataToESService = this.searchClient.getService<IElasticSearchService>(
-      EGrpcServices.ELASTIC_SEARCH_SERVICE
+    this.syncDataToESService = new ElasticSearchService(
+      this.searchClient.getService(EGrpcServices.ELASTIC_SEARCH_SERVICE)
     )
   }
 
@@ -103,9 +103,9 @@ export class MessageService {
       },
       include: this.messageFullInfo,
     })
-    this.syncDataToESService.SyncDataToES({
+    this.syncDataToESService.syncDataToES({
       type: ESyncDataToESWorkerType.CREATE_MESSAGE,
-      dataObject: { data: message },
+      data: message,
       // msgEncryptor: this.syncDataToESService.getESMessageEncryptor(authorId),
     })
     return message
@@ -119,9 +119,9 @@ export class MessageService {
         Media: true,
       },
     })
-    this.syncDataToESService.SyncDataToES({
+    this.syncDataToESService.syncDataToES({
       type: ESyncDataToESWorkerType.UPDATE_MESSAGE,
-      dataObject: { data: message },
+      data: message,
     })
     return message
   }

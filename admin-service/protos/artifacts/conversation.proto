@@ -16,7 +16,7 @@ service DirectChatService {
   rpc findById(FindDirectChatByIdRequest) returns (FindDirectChatByIdResponse);
 }
 
-service GroupChatMemberService {
+service GroupMemberService {
   rpc FindMemberInGroupChat(FindMemberInGroupChatRequest)
       returns (FindMemberInGroupChatResponse);
   rpc FindGroupChatMemberIds(FindGroupChatMemberIdsRequest)

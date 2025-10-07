@@ -9,17 +9,15 @@ import {
 import { EMessageMediaTypes, EMessageStatus, EMessageTypes } from '../message.enum'
 import type { TMessageWithMedia } from '@/utils/entities/message.entity'
 import { EPinMessages } from './pin.message'
-import { createGroupChatRoomName } from '@/utils/helpers'
 import { GroupMemberService } from '@/group-member/group-member.service'
 import { GroupChatService } from '@/group-chat/group-chat.service'
 import { EGroupChatPermissions, EGroupChatRoles } from '@/group-chat/group-chat.enum'
 import { EGroupMemberMessages } from '@/group-member/group-member.message'
-import { IElasticSearchService } from '@/configs/communication/grpc/types/search-service.type'
-import { IUserConnectionService } from '@/configs/communication/grpc/types/user-connection-service.type'
 import { ClientGrpc } from '@nestjs/microservices'
 import { EMessagingEmitSocketEvents } from '@/utils/events/socket.event'
-import { Any } from 'protos/generated/google/protobuf/any'
 import { createAnyFromObject } from '@/configs/communication/grpc/grpc-client.helper'
+import { ElasticSearchService } from '@/configs/communication/grpc/services/es.service'
+import { UserConnectionService } from '@/configs/communication/grpc/services/user-connection.service'
 
 // Helper mô tả nội dung tin nhắn
 function getMessageDescription(message: TMessageWithMedia): string {
@@ -44,8 +42,8 @@ function getMessageDescription(message: TMessageWithMedia): string {
 
 @Injectable()
 export class PinService {
-  private syncDataToESService: IElasticSearchService
-  private userConnectionService: IUserConnectionService
+  private syncDataToESService: ElasticSearchService
+  private userConnectionService: UserConnectionService
 
   constructor(
     @Inject(EProviderTokens.PRISMA_CLIENT) private prismaService: PrismaService,
@@ -56,11 +54,11 @@ export class PinService {
     @Inject(EGrpcPackages.USER_CONNECTION_PACKAGE)
     private readonly userConnectionGrpcClient: ClientGrpc
   ) {
-    this.syncDataToESService = this.elasticSearchClient.getService<IElasticSearchService>(
-      EGrpcServices.ELASTIC_SEARCH_SERVICE
+    this.syncDataToESService = new ElasticSearchService(
+      this.elasticSearchClient.getService(EGrpcServices.ELASTIC_SEARCH_SERVICE)
     )
-    this.userConnectionService = this.userConnectionGrpcClient.getService<IUserConnectionService>(
-      EGrpcServices.USER_CONNECTION
+    this.userConnectionService = new UserConnectionService(
+      this.userConnectionGrpcClient.getService(EGrpcServices.USER_CONNECTION)
     )
   }
 
@@ -166,30 +164,30 @@ export class PinService {
         },
       })
 
-      this.syncDataToESService.SyncDataToES({
+      this.syncDataToESService.syncDataToES({
         type: ESyncDataToESWorkerType.CREATE_MESSAGE,
-        dataObject: { data: pinNoticeMessage },
+        data: pinNoticeMessage,
       })
 
       // Emit socket event gửi message mới cho cả 2 user
-      this.userConnectionService.EmitToDirectChat({
+      this.userConnectionService.emitToDirectChat(
         directChatId,
-        event: EMessagingEmitSocketEvents.send_message_direct,
-        payload: createAnyFromObject(pinNoticeMessage),
-      })
+        EMessagingEmitSocketEvents.send_message_direct,
+        pinNoticeMessage
+      )
 
       // PHÁT SOCKET EVENT ĐẾN TẤT CẢ CLIENT CÙNG PHÒNG
-      this.userConnectionService.EmitToDirectChat({
+      this.userConnectionService.emitToDirectChat(
         directChatId,
-        event: EMessagingEmitSocketEvents.pin_message,
-        payload: createAnyFromObject({
+        EMessagingEmitSocketEvents.pin_message,
+        {
           messageId,
           directChatId,
           isPinned: true,
           userId,
           pinnedMessage,
-        }),
-      })
+        }
+      )
 
       return pinnedMessage
     } else {
@@ -245,29 +243,29 @@ export class PinService {
         },
       })
 
-      this.syncDataToESService.SyncDataToES({
+      this.syncDataToESService.syncDataToES({
         type: ESyncDataToESWorkerType.CREATE_MESSAGE,
-        dataObject: { data: pinNoticeMessage },
+        data: pinNoticeMessage,
       })
 
       // Emit socket event gửi message mới cho cả 2 user
-      this.userConnectionService.EmitToDirectChat({
+      this.userConnectionService.emitToDirectChat(
         directChatId,
-        event: EMessagingEmitSocketEvents.send_message_direct,
-        payload: createAnyFromObject(pinNoticeMessage),
-      })
+        EMessagingEmitSocketEvents.send_message_direct,
+        pinNoticeMessage
+      )
 
       // PHÁT SOCKET EVENT ĐẾN TẤT CẢ CLIENT CÙNG PHÒNG
-      this.userConnectionService.EmitToDirectChat({
+      this.userConnectionService.emitToDirectChat(
         directChatId,
-        event: EMessagingEmitSocketEvents.pin_message,
-        payload: createAnyFromObject({
+        EMessagingEmitSocketEvents.pin_message,
+        {
           messageId,
           directChatId,
           isPinned: false,
           userId,
-        }),
-      })
+        }
+      )
 
       return { success: true, deletedCount: deletedPin.count }
     }
@@ -463,16 +461,13 @@ export class PinService {
         },
       })
 
-      this.syncDataToESService.SyncDataToES({
+      this.syncDataToESService.syncDataToES({
         type: ESyncDataToESWorkerType.CREATE_MESSAGE,
-        dataObject: { data: pinNoticeMessage },
+        data: pinNoticeMessage,
       })
 
       // Emit socket event gửi message mới cho cả thành viên trong group
-      this.userConnectionService.SendNewMessageToGroupChat({
-        groupChatId,
-        newMessage: pinNoticeMessage,
-      })
+      this.userConnectionService.sendNewMessageToGroupChat(groupChatId, pinNoticeMessage)
 
       //>>> websocket
       // // PHÁT SOCKET EVENT ĐẾN TẤT CẢ CLIENT CÙNG PHÒNG
@@ -537,16 +532,13 @@ export class PinService {
         },
       })
 
-      this.syncDataToESService.SyncDataToES({
+      this.syncDataToESService.syncDataToES({
         type: ESyncDataToESWorkerType.CREATE_MESSAGE,
-        dataObject: { data: pinNoticeMessage },
+        data: pinNoticeMessage,
       })
 
       // Emit socket event gửi message mới cho cả 2 user
-      this.userConnectionService.SendNewMessageToGroupChat({
-        groupChatId,
-        newMessage: pinNoticeMessage,
-      })
+      this.userConnectionService.sendNewMessageToGroupChat(groupChatId, pinNoticeMessage)
 
       //>>> websocket
       // // PHÁT SOCKET EVENT ĐẾN TẤT CẢ CLIENT CÙNG PHÒNG
