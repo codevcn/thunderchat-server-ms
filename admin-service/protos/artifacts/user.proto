@@ -10,7 +10,7 @@ service UserService {
 }
 
 service UserSettingsService {
-  rpc findByUserId(FindByUserIdRequest) returns (FindByUserIdResponse);
+  rpc FindByUserId(FindByUserIdRequest) returns (FindByUserIdResponse);
 }
 
 service BlockUserService {

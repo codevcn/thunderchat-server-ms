@@ -11,7 +11,7 @@ export class UserSettingsService {
   async findByUserId(userId: number): Promise<TUserSettings | null> {
     return (
       (
-        (await this.instance.findByUserId({ userId })) as TCastedFieldObject<
+        (await this.instance.FindByUserId({ userId })) as TCastedFieldObject<
           FindByUserIdResponse,
           'userSettings',
           TUserSettings | undefined

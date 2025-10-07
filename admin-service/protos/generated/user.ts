@@ -426,7 +426,7 @@ export class UserServiceClientImpl implements UserService {
 }
 
 export interface UserSettingsService {
-  findByUserId(request: FindByUserIdRequest): Promise<FindByUserIdResponse>;
+  FindByUserId(request: FindByUserIdRequest): Promise<FindByUserIdResponse>;
 }
 
 export const UserSettingsServiceServiceName = "user.UserSettingsService";
@@ -436,11 +436,11 @@ export class UserSettingsServiceClientImpl implements UserSettingsService {
   constructor(rpc: Rpc, opts?: { service?: string }) {
     this.service = opts?.service || UserSettingsServiceServiceName;
     this.rpc = rpc;
-    this.findByUserId = this.findByUserId.bind(this);
+    this.FindByUserId = this.FindByUserId.bind(this);
   }
-  findByUserId(request: FindByUserIdRequest): Promise<FindByUserIdResponse> {
+  FindByUserId(request: FindByUserIdRequest): Promise<FindByUserIdResponse> {
     const data = FindByUserIdRequest.encode(request).finish();
-    const promise = this.rpc.request(this.service, "findByUserId", data);
+    const promise = this.rpc.request(this.service, "FindByUserId", data);
     return promise.then((data) => FindByUserIdResponse.decode(new BinaryReader(data)));
   }
 }
