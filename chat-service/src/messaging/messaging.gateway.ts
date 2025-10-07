@@ -51,7 +51,13 @@ import { ConversationTypingManager } from './helpers/conversation-typing.helper'
 import { DevLogger } from '@/dev/dev-logger'
 import { Socket } from 'socket.io'
 import type { TMessageFullInfo, TMessageWithAuthor } from '@/utils/entities/message.entity'
-import { EChatType, EGrpcServices, EInternalEvents, EUserOnlineStatus } from '@/utils/enums'
+import {
+  EChatType,
+  EGrpcPackages,
+  EGrpcServices,
+  EInternalEvents,
+  EUserOnlineStatus,
+} from '@/utils/enums'
 import { EGatewayMessages } from './messaging.message'
 import { MessagingGatewayInterceptor } from './messaging.interceptor'
 import type { TGroupChat } from '@/utils/entities/group-chat.entity'
@@ -66,9 +72,16 @@ import type { TUserId } from '@/user/user.type'
 import { UpdateProfileDto } from '@/profile/profile.dto'
 import { gatewayValidationPipe } from '@/utils/validation/gateway.validation'
 import { ClientGrpc } from '@nestjs/microservices/interfaces/client-grpc.interface'
-import type { IMessageService } from '@/configs/communication/grpc/types/message-service.type'
-import type { IAuthService } from '@/configs/communication/grpc/types/auth-service.type'
-import type { INotificationService } from '@/configs/communication/grpc/types/notification-service.type'
+import { DirectChatService } from '@/configs/communication/grpc/services/direct-chat.service'
+import { AuthService } from '@/configs/communication/grpc/services/auth.service'
+import { MessageService } from '@/configs/communication/grpc/services/message.service'
+import { PushNotificationService } from '@/configs/communication/grpc/services/notification.service'
+import { GroupChatService } from '@/configs/communication/grpc/services/group-chat.service'
+import { GroupMemberService } from '@/configs/communication/grpc/services/group-member.service'
+import { UserService } from '@/configs/communication/grpc/services/user.service'
+import { UserSettingsService } from '@/configs/communication/grpc/services/user-settings.service'
+import { BlockUserService } from '@/configs/communication/grpc/services/block-user.service'
+import { FriendService } from '@/configs/communication/grpc/services/friend.service'
 
 @WebSocketGateway({
   cors: {
@@ -92,52 +105,56 @@ export class MessagingGateway
 {
   private readonly messageTokensManager = new MessageTokensManager()
   private readonly convTypingManager = new ConversationTypingManager()
-  // private friendService: FriendService
-  private messageService: IMessageService
-  private authService: IAuthService
-  // private directChatService: DirectChatService
-  // private syncDataToESService: SyncDataToESService
-  // private userService: UserService
-  // private groupChatService: GroupChatService
-  // private groupMemberService: GroupMemberService
-  // private userSettingsService: UserSettingsService
-  // private blockUserService: BlockUserService
-  private pushNotificationService: INotificationService
+  private friendService: FriendService
+  private messageService: MessageService
+  private authService: AuthService
+  private directChatService: DirectChatService
+  private userService: UserService
+  private groupChatService: GroupChatService
+  private groupMemberService: GroupMemberService
+  private userSettingsService: UserSettingsService
+  private blockUserService: BlockUserService
+  private pushNotificationService: PushNotificationService
 
   constructor(
     private userConnectionService: UserConnectionService,
-    @Inject('FRIEND_SERVICE_CLIENT') private friendClient: ClientGrpc,
-    @Inject('MESSAGE_SERVICE_CLIENT') private messageClient: ClientGrpc,
-    @Inject('AUTH_SERVICE_CLIENT') private authClient: ClientGrpc,
-    @Inject('DIRECT_CHAT_SERVICE_CLIENT') private directChatClient: ClientGrpc,
-    @Inject('SYNC_DATA_TO_ES_SERVICE_CLIENT') private syncDataToESClient: ClientGrpc,
-    @Inject('USER_SERVICE_CLIENT') private userClient: ClientGrpc,
-    @Inject('GROUP_CHAT_SERVICE_CLIENT') private groupChatClient: ClientGrpc,
-    @Inject('GROUP_MEMBER_SERVICE_CLIENT') private groupMemberClient: ClientGrpc,
-    @Inject('USER_SETTINGS_SERVICE_CLIENT') private userSettingsClient: ClientGrpc,
-    @Inject('BLOCK_USER_SERVICE_CLIENT') private blockUserClient: ClientGrpc,
-    @Inject('PUSH_NOTIFICATION_SERVICE_CLIENT') private pushNotificationClient: ClientGrpc
+    @Inject(EGrpcPackages.FRIEND_PACKAGE) private friendClient: ClientGrpc,
+    @Inject(EGrpcPackages.CONVERSATION_PACKAGE) private messageClient: ClientGrpc,
+    @Inject(EGrpcPackages.AUTH_PACKAGE) private authClient: ClientGrpc,
+    @Inject(EGrpcPackages.CONVERSATION_PACKAGE) private directChatClient: ClientGrpc,
+    @Inject(EGrpcPackages.USER_PACKAGE) private userClient: ClientGrpc,
+    @Inject(EGrpcPackages.CONVERSATION_PACKAGE) private groupChatClient: ClientGrpc,
+    @Inject(EGrpcPackages.CONVERSATION_PACKAGE) private groupMemberClient: ClientGrpc,
+    @Inject(EGrpcPackages.USER_PACKAGE) private userSettingsClient: ClientGrpc,
+    @Inject(EGrpcPackages.USER_PACKAGE) private blockUserClient: ClientGrpc,
+    @Inject(EGrpcPackages.NOTIFICATION_PACKAGE) private pushNotificationClient: ClientGrpc
   ) {
-    // this.friendService = this.friendServiceClient.getService<FriendService>('FriendService')
-    this.messageService = this.messageClient.getService<IMessageService>(
-      EGrpcServices.MESSAGE_SERVICE
+    // Initialize all gRPC services
+    this.friendService = new FriendService(
+      this.friendClient.getService(EGrpcServices.FRIEND_SERVICE)
     )
-    this.authService = this.authClient.getService<IAuthService>(EGrpcServices.AUTH_SERVICE)
-    // this.directChatService =
-    //   this.directChatServiceClient.getService<DirectChatService>('DirectChatService')
-    // this.syncDataToESService =
-    //   this.syncDataToESServiceClient.getService<SyncDataToESService>('SyncDataToESService')
-    // this.userService = this.userServiceClient.getService<UserService>('UserService')
-    // this.groupChatService =
-    //   this.groupChatServiceClient.getService<GroupChatService>('GroupChatService')
-    // this.groupMemberService =
-    //   this.groupMemberServiceClient.getService<GroupMemberService>('GroupMemberService')
-    // this.userSettingsService =
-    //   this.userSettingsServiceClient.getService<UserSettingsService>('UserSettingsService')
-    // this.blockUserService =
-    //   this.blockUserServiceClient.getService<BlockUserService>('BlockUserService')
-    this.pushNotificationService = this.pushNotificationClient.getService<INotificationService>(
-      EGrpcServices.NOTIFICATION_SERVICE
+    this.messageService = new MessageService(
+      this.messageClient.getService(EGrpcServices.MESSAGE_SERVICE)
+    )
+    this.authService = new AuthService(this.authClient.getService(EGrpcServices.AUTH_SERVICE))
+    this.directChatService = new DirectChatService(
+      this.directChatClient.getService(EGrpcServices.DIRECT_CHAT_SERVICE)
+    )
+    this.userService = new UserService(this.userClient.getService(EGrpcServices.USER_SERVICE))
+    this.groupChatService = new GroupChatService(
+      this.groupChatClient.getService(EGrpcServices.GROUP_CHAT_SERVICE)
+    )
+    this.groupMemberService = new GroupMemberService(
+      this.groupMemberClient.getService(EGrpcServices.GROUP_MEMBER_SERVICE)
+    )
+    this.userSettingsService = new UserSettingsService(
+      this.userSettingsClient.getService(EGrpcServices.USER_SETTINGS_SERVICE)
+    )
+    this.blockUserService = new BlockUserService(
+      this.blockUserClient.getService(EGrpcServices.BLOCK_USER_SERVICE)
+    )
+    this.pushNotificationService = new PushNotificationService(
+      this.pushNotificationClient.getService(EGrpcServices.NOTIFICATION_SERVICE)
     )
   }
 
@@ -151,7 +168,7 @@ export class MessagingGateway
     this.userConnectionService.setMessagingServer(server)
     this.userConnectionService.setMessagingServerMiddleware(async (socket, next) => {
       try {
-        await this.authService.ValidateSocketConnection({ socket })
+        await this.authService.validateSocketConnection(socket)
       } catch (error) {
         next(error)
         return
@@ -171,9 +188,8 @@ export class MessagingGateway
       auth: client.handshake.auth,
     })
     try {
-      const { clientId, messageOffset, directChatId, groupId } = (
-        await this.authService.ValidateSocketAuth({ clientSocket: client })
-      ).clientSocketAuth
+      const { clientId, messageOffset, directChatId, groupId } =
+        await this.authService.validateSocketAuth(client)
       // await this.syncDataToESService.initESMessageEncryptor(clientId)
       this.userConnectionService.addConnectedClient(clientId, client)
       this.userConnectionService.broadcastUserOnlineStatus(clientId, EUserOnlineStatus.ONLINE)
@@ -214,7 +230,7 @@ export class MessagingGateway
     limit?: number
   ): Promise<void> {
     if (directChatId) {
-      const messages = await this.messageService.GetNewerDirectMessages(
+      const messages = await this.messageService.getNewerDirectMessages(
         messageOffset,
         directChatId,
         groupChatId,

@@ -11,11 +11,14 @@ service DirectChatService {
       returns (FindConversationWithOtherUserResponse);
   rpc CreateNewDirectChat(CreateNewDirectChatRequest)
       returns (CreateNewDirectChatResponse);
+  rpc UpdateLastSentMessage(UpdateLastSentMessageRequest)
+      returns (google.protobuf.Empty);
+  rpc findById(FindDirectChatByIdRequest) returns (FindDirectChatByIdResponse);
 }
 
 service GroupChatMemberService {
-  rpc GetGroupChatMember(GetGroupChatMemberRequest)
-      returns (GetGroupChatMemberResponse);
+  rpc FindMemberInGroupChat(FindMemberInGroupChatRequest)
+      returns (FindMemberInGroupChatResponse);
   rpc FindGroupChatMemberIds(FindGroupChatMemberIdsRequest)
       returns (FindGroupChatMemberIdsResponse);
 }
@@ -25,23 +28,19 @@ service MessageService {
       returns (GetNewerDirectMessagesResponse);
   rpc CreateNewMessage(CreateNewMessageRequest)
       returns (CreateNewMessageResponse);
-  rpc UpdateLastSentMessage(UpdateLastSentMessageRequest)
-      returns (google.protobuf.Empty);
+  rpc UpdateMessageStatus(UpdateMessageStatusRequest)
+      returns (UpdateMessageStatusResponse);
 }
 
-message GetGroupChatMemberRequest {
-  int32 groupChatId = 1;
-  int32 userId = 2;
-}
-
-message GetGroupChatMemberResponse {
-  google.protobuf.Struct member = 1;
+service GroupChatService {
+  rpc CheckGroupChatPermission(CheckGroupChatPermissionRequest)
+      returns (CheckGroupChatPermissionResponse);
 }
 
 message GetNewerDirectMessagesRequest {
   int64 message_offset = 1;
-  int64 direct_chat_id = 2;
-  int64 group_chat_id = 3;
+  optional int64 direct_chat_id = 2;
+  optional int64 group_chat_id = 3;
   int32 limit = 4;
 }
 
@@ -84,8 +83,8 @@ message CreateNewMessageRequest {
   optional int32 sticker_id = 6;
   optional int32 media_id = 7;
   optional int32 reply_to_id = 8;
-  optional int64 direct_chat_id = 9;
-  optional int64 group_chat_id = 10;
+  optional int32 direct_chat_id = 9;
+  optional int32 group_chat_id = 10;
 }
 
 message CreateNewMessageResponse {
@@ -94,5 +93,40 @@ message CreateNewMessageResponse {
 
 message UpdateLastSentMessageRequest {
   int32 last_sent_message_id = 1;
-  int64 direct_chat_id = 2;
+  int32 direct_chat_id = 2;
+}
+
+message UpdateMessageStatusRequest {
+  int32 msg_id = 1;
+  string status = 2;
+}
+
+message UpdateMessageStatusResponse {
+  google.protobuf.Struct message = 1;
+}
+
+message FindDirectChatByIdRequest {
+  int32 direct_chat_id = 1;
+}
+
+message FindDirectChatByIdResponse {
+  optional google.protobuf.Struct direct_chat = 1;
+}
+
+message FindMemberInGroupChatRequest {
+  int32 group_chat_id = 1;
+  int32 user_id = 2;
+}
+
+message FindMemberInGroupChatResponse {
+  optional google.protobuf.Struct group_chat_member = 1;
+}
+
+message CheckGroupChatPermissionRequest {
+  int32 group_chat_id = 1;
+  string permission = 2;
+}
+
+message CheckGroupChatPermissionResponse {
+  bool allowed = 1;
 }
