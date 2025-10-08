@@ -6,10 +6,11 @@ import { CredentialService } from './credentials/credentials.service';
 
 import { AdminRoleModule } from './role/admin/admin.module';
 import { GrpcClientModule } from '@/configs/communication/grpc/grpc-client.module';
+import { JwtModule, JwtService } from '@nestjs/jwt';
 @Module({
   imports: [AdminRoleModule, GrpcClientModule],
   controllers: [AuthController],
-  providers: [AuthService, CredentialService],
-  exports: [AuthService, CredentialService],
+  providers: [AuthService, JWTService, JwtService, CredentialService],
+  exports: [AuthService, JWTService, CredentialService],
 })
 export class AuthModule {}

@@ -1,5 +1,4 @@
 import { NestFactory } from '@nestjs/core';
-import { AppModule } from './app.module';
 import { MicroserviceOptions, Transport } from '@nestjs/microservices';
 import { join } from 'path';
 import type { NestExpressApplication } from '@nestjs/platform-express';
@@ -17,9 +16,16 @@ const beforeLaunch = async () => {
     join(__dirname, '/../protos/artifacts/'),
   );
 };
+
+const getAppModule = async () => {
+  const { AppModule } = await import('./app.module');
+  return AppModule;
+};
 async function bootstrap() {
   await beforeLaunch();
   console.log('>>> Microservice [Chat-Service] is launching...');
+
+  const AppModule = await getAppModule();
   const app = await NestFactory.create<NestExpressApplication>(AppModule);
   const { PORT, NODE_ENV } = process.env;
   const CLIENT_HOST =
