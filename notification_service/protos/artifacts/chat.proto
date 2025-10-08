@@ -7,11 +7,33 @@ import "google/protobuf/any.proto";
 import "google/protobuf/struct.proto";
 
 service UserConnectionService {
-  rpc SendFriendRequest(SendFriendRq) returns(google.protobuf.Empty);
+  rpc GetConnectedClientsCountForAdmin(google.protobuf.Empty)
+      returns (ConnectedClientsCountResponse);
+  rpc EmitToDirectChat(EmitToDirectChatRequest) returns (google.protobuf.Empty);
+  rpc SendNewMessageToGroupChat(SendNewMessageToGroupChatRequest)
+      returns (google.protobuf.Empty);
+
+        rpc SendFriendRequest(SendFriendRq) returns(google.protobuf.Empty);
   rpc RemoveConnectedClient(RemoveConnectedClientRequest) returns(google.protobuf.Empty);
   rpc CheckUserIsOnline(CheckUserIsOnlineRequest) returns(CheckUserIsOnlineResponse);
   rpc FriendRequestAction(FriendRequestActionRequest) returns(google.protobuf.Empty);
 }
+
+message ConnectedClientsCountResponse {
+  int32 count = 1;
+}
+
+message EmitToDirectChatRequest {
+  string event = 1;
+  int32 direct_chat_id = 2;
+  google.protobuf.Any payload = 3;
+}
+
+message SendNewMessageToGroupChatRequest {
+  int32 group_chat_id = 2;
+  google.protobuf.Struct new_message = 3;
+}
+
 
 message SendFriendRq {
   google.protobuf.Struct sender = 1;

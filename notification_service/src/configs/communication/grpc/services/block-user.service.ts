@@ -3,7 +3,7 @@ import { TCastedFieldObject } from '@/utils/types';
 import type {
   BlockUserService as BlockUserServiceType,
   CheckBlockedUserResponse,
-} from '../../../../../../protos/generated/user';
+} from '../../../../../protos/generated/user';
 
 export class BlockUserService {
   constructor(private instance: BlockUserServiceType) {}

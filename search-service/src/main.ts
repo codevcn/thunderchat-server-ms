@@ -18,9 +18,16 @@ const beforeLaunch = async () => {
   );
 };
 
+const getAppModule = async () => {
+  const { AppModule } = await import('./app.module');
+  return AppModule;
+};
+
 async function bootstrap() {
   await beforeLaunch();
   console.log('>>> Microservice [Chat-Service] is launching...');
+
+  const AppModule = await getAppModule();
   const app = await NestFactory.create<NestExpressApplication>(AppModule);
   const { PORT, NODE_ENV } = process.env;
   const CLIENT_HOST =
