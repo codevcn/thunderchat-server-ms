@@ -27,6 +27,31 @@ export interface SendNewMessageToGroupChatRequest {
   newMessage: { [key: string]: any } | undefined;
 }
 
+export interface SendFriendRq {
+  sender: { [key: string]: any } | undefined;
+  recipientId: number;
+  requestData: { [key: string]: any } | undefined;
+}
+
+export interface RemoveConnectedClientRequest {
+  userId: number;
+  socketId?: string | undefined;
+}
+
+export interface CheckUserIsOnlineRequest {
+  userId: number;
+}
+
+export interface CheckUserIsOnlineResponse {
+  isOnline: boolean;
+}
+
+export interface FriendRequestActionRequest {
+  senderId: number;
+  requestId: number;
+  action: string;
+}
+
 function createBaseConnectedClientsCountResponse(): ConnectedClientsCountResponse {
   return { count: 0 };
 }
@@ -261,10 +286,390 @@ export const SendNewMessageToGroupChatRequest: MessageFns<SendNewMessageToGroupC
   },
 };
 
+function createBaseSendFriendRq(): SendFriendRq {
+  return { sender: undefined, recipientId: 0, requestData: undefined };
+}
+
+export const SendFriendRq: MessageFns<SendFriendRq> = {
+  encode(message: SendFriendRq, writer: BinaryWriter = new BinaryWriter()): BinaryWriter {
+    if (message.sender !== undefined) {
+      Struct.encode(Struct.wrap(message.sender), writer.uint32(10).fork()).join();
+    }
+    if (message.recipientId !== 0) {
+      writer.uint32(16).int32(message.recipientId);
+    }
+    if (message.requestData !== undefined) {
+      Struct.encode(Struct.wrap(message.requestData), writer.uint32(26).fork()).join();
+    }
+    return writer;
+  },
+
+  decode(input: BinaryReader | Uint8Array, length?: number): SendFriendRq {
+    const reader = input instanceof BinaryReader ? input : new BinaryReader(input);
+    const end = length === undefined ? reader.len : reader.pos + length;
+    const message = createBaseSendFriendRq();
+    while (reader.pos < end) {
+      const tag = reader.uint32();
+      switch (tag >>> 3) {
+        case 1: {
+          if (tag !== 10) {
+            break;
+          }
+
+          message.sender = Struct.unwrap(Struct.decode(reader, reader.uint32()));
+          continue;
+        }
+        case 2: {
+          if (tag !== 16) {
+            break;
+          }
+
+          message.recipientId = reader.int32();
+          continue;
+        }
+        case 3: {
+          if (tag !== 26) {
+            break;
+          }
+
+          message.requestData = Struct.unwrap(Struct.decode(reader, reader.uint32()));
+          continue;
+        }
+      }
+      if ((tag & 7) === 4 || tag === 0) {
+        break;
+      }
+      reader.skip(tag & 7);
+    }
+    return message;
+  },
+
+  fromJSON(object: any): SendFriendRq {
+    return {
+      sender: isObject(object.sender) ? object.sender : undefined,
+      recipientId: isSet(object.recipientId) ? globalThis.Number(object.recipientId) : 0,
+      requestData: isObject(object.requestData) ? object.requestData : undefined,
+    };
+  },
+
+  toJSON(message: SendFriendRq): unknown {
+    const obj: any = {};
+    if (message.sender !== undefined) {
+      obj.sender = message.sender;
+    }
+    if (message.recipientId !== 0) {
+      obj.recipientId = Math.round(message.recipientId);
+    }
+    if (message.requestData !== undefined) {
+      obj.requestData = message.requestData;
+    }
+    return obj;
+  },
+
+  create<I extends Exact<DeepPartial<SendFriendRq>, I>>(base?: I): SendFriendRq {
+    return SendFriendRq.fromPartial(base ?? ({} as any));
+  },
+  fromPartial<I extends Exact<DeepPartial<SendFriendRq>, I>>(object: I): SendFriendRq {
+    const message = createBaseSendFriendRq();
+    message.sender = object.sender ?? undefined;
+    message.recipientId = object.recipientId ?? 0;
+    message.requestData = object.requestData ?? undefined;
+    return message;
+  },
+};
+
+function createBaseRemoveConnectedClientRequest(): RemoveConnectedClientRequest {
+  return { userId: 0, socketId: undefined };
+}
+
+export const RemoveConnectedClientRequest: MessageFns<RemoveConnectedClientRequest> = {
+  encode(message: RemoveConnectedClientRequest, writer: BinaryWriter = new BinaryWriter()): BinaryWriter {
+    if (message.userId !== 0) {
+      writer.uint32(8).int32(message.userId);
+    }
+    if (message.socketId !== undefined) {
+      writer.uint32(18).string(message.socketId);
+    }
+    return writer;
+  },
+
+  decode(input: BinaryReader | Uint8Array, length?: number): RemoveConnectedClientRequest {
+    const reader = input instanceof BinaryReader ? input : new BinaryReader(input);
+    const end = length === undefined ? reader.len : reader.pos + length;
+    const message = createBaseRemoveConnectedClientRequest();
+    while (reader.pos < end) {
+      const tag = reader.uint32();
+      switch (tag >>> 3) {
+        case 1: {
+          if (tag !== 8) {
+            break;
+          }
+
+          message.userId = reader.int32();
+          continue;
+        }
+        case 2: {
+          if (tag !== 18) {
+            break;
+          }
+
+          message.socketId = reader.string();
+          continue;
+        }
+      }
+      if ((tag & 7) === 4 || tag === 0) {
+        break;
+      }
+      reader.skip(tag & 7);
+    }
+    return message;
+  },
+
+  fromJSON(object: any): RemoveConnectedClientRequest {
+    return {
+      userId: isSet(object.userId) ? globalThis.Number(object.userId) : 0,
+      socketId: isSet(object.socketId) ? globalThis.String(object.socketId) : undefined,
+    };
+  },
+
+  toJSON(message: RemoveConnectedClientRequest): unknown {
+    const obj: any = {};
+    if (message.userId !== 0) {
+      obj.userId = Math.round(message.userId);
+    }
+    if (message.socketId !== undefined) {
+      obj.socketId = message.socketId;
+    }
+    return obj;
+  },
+
+  create<I extends Exact<DeepPartial<RemoveConnectedClientRequest>, I>>(base?: I): RemoveConnectedClientRequest {
+    return RemoveConnectedClientRequest.fromPartial(base ?? ({} as any));
+  },
+  fromPartial<I extends Exact<DeepPartial<RemoveConnectedClientRequest>, I>>(object: I): RemoveConnectedClientRequest {
+    const message = createBaseRemoveConnectedClientRequest();
+    message.userId = object.userId ?? 0;
+    message.socketId = object.socketId ?? undefined;
+    return message;
+  },
+};
+
+function createBaseCheckUserIsOnlineRequest(): CheckUserIsOnlineRequest {
+  return { userId: 0 };
+}
+
+export const CheckUserIsOnlineRequest: MessageFns<CheckUserIsOnlineRequest> = {
+  encode(message: CheckUserIsOnlineRequest, writer: BinaryWriter = new BinaryWriter()): BinaryWriter {
+    if (message.userId !== 0) {
+      writer.uint32(8).int32(message.userId);
+    }
+    return writer;
+  },
+
+  decode(input: BinaryReader | Uint8Array, length?: number): CheckUserIsOnlineRequest {
+    const reader = input instanceof BinaryReader ? input : new BinaryReader(input);
+    const end = length === undefined ? reader.len : reader.pos + length;
+    const message = createBaseCheckUserIsOnlineRequest();
+    while (reader.pos < end) {
+      const tag = reader.uint32();
+      switch (tag >>> 3) {
+        case 1: {
+          if (tag !== 8) {
+            break;
+          }
+
+          message.userId = reader.int32();
+          continue;
+        }
+      }
+      if ((tag & 7) === 4 || tag === 0) {
+        break;
+      }
+      reader.skip(tag & 7);
+    }
+    return message;
+  },
+
+  fromJSON(object: any): CheckUserIsOnlineRequest {
+    return { userId: isSet(object.userId) ? globalThis.Number(object.userId) : 0 };
+  },
+
+  toJSON(message: CheckUserIsOnlineRequest): unknown {
+    const obj: any = {};
+    if (message.userId !== 0) {
+      obj.userId = Math.round(message.userId);
+    }
+    return obj;
+  },
+
+  create<I extends Exact<DeepPartial<CheckUserIsOnlineRequest>, I>>(base?: I): CheckUserIsOnlineRequest {
+    return CheckUserIsOnlineRequest.fromPartial(base ?? ({} as any));
+  },
+  fromPartial<I extends Exact<DeepPartial<CheckUserIsOnlineRequest>, I>>(object: I): CheckUserIsOnlineRequest {
+    const message = createBaseCheckUserIsOnlineRequest();
+    message.userId = object.userId ?? 0;
+    return message;
+  },
+};
+
+function createBaseCheckUserIsOnlineResponse(): CheckUserIsOnlineResponse {
+  return { isOnline: false };
+}
+
+export const CheckUserIsOnlineResponse: MessageFns<CheckUserIsOnlineResponse> = {
+  encode(message: CheckUserIsOnlineResponse, writer: BinaryWriter = new BinaryWriter()): BinaryWriter {
+    if (message.isOnline !== false) {
+      writer.uint32(8).bool(message.isOnline);
+    }
+    return writer;
+  },
+
+  decode(input: BinaryReader | Uint8Array, length?: number): CheckUserIsOnlineResponse {
+    const reader = input instanceof BinaryReader ? input : new BinaryReader(input);
+    const end = length === undefined ? reader.len : reader.pos + length;
+    const message = createBaseCheckUserIsOnlineResponse();
+    while (reader.pos < end) {
+      const tag = reader.uint32();
+      switch (tag >>> 3) {
+        case 1: {
+          if (tag !== 8) {
+            break;
+          }
+
+          message.isOnline = reader.bool();
+          continue;
+        }
+      }
+      if ((tag & 7) === 4 || tag === 0) {
+        break;
+      }
+      reader.skip(tag & 7);
+    }
+    return message;
+  },
+
+  fromJSON(object: any): CheckUserIsOnlineResponse {
+    return { isOnline: isSet(object.isOnline) ? globalThis.Boolean(object.isOnline) : false };
+  },
+
+  toJSON(message: CheckUserIsOnlineResponse): unknown {
+    const obj: any = {};
+    if (message.isOnline !== false) {
+      obj.isOnline = message.isOnline;
+    }
+    return obj;
+  },
+
+  create<I extends Exact<DeepPartial<CheckUserIsOnlineResponse>, I>>(base?: I): CheckUserIsOnlineResponse {
+    return CheckUserIsOnlineResponse.fromPartial(base ?? ({} as any));
+  },
+  fromPartial<I extends Exact<DeepPartial<CheckUserIsOnlineResponse>, I>>(object: I): CheckUserIsOnlineResponse {
+    const message = createBaseCheckUserIsOnlineResponse();
+    message.isOnline = object.isOnline ?? false;
+    return message;
+  },
+};
+
+function createBaseFriendRequestActionRequest(): FriendRequestActionRequest {
+  return { senderId: 0, requestId: 0, action: "" };
+}
+
+export const FriendRequestActionRequest: MessageFns<FriendRequestActionRequest> = {
+  encode(message: FriendRequestActionRequest, writer: BinaryWriter = new BinaryWriter()): BinaryWriter {
+    if (message.senderId !== 0) {
+      writer.uint32(8).int32(message.senderId);
+    }
+    if (message.requestId !== 0) {
+      writer.uint32(16).int32(message.requestId);
+    }
+    if (message.action !== "") {
+      writer.uint32(26).string(message.action);
+    }
+    return writer;
+  },
+
+  decode(input: BinaryReader | Uint8Array, length?: number): FriendRequestActionRequest {
+    const reader = input instanceof BinaryReader ? input : new BinaryReader(input);
+    const end = length === undefined ? reader.len : reader.pos + length;
+    const message = createBaseFriendRequestActionRequest();
+    while (reader.pos < end) {
+      const tag = reader.uint32();
+      switch (tag >>> 3) {
+        case 1: {
+          if (tag !== 8) {
+            break;
+          }
+
+          message.senderId = reader.int32();
+          continue;
+        }
+        case 2: {
+          if (tag !== 16) {
+            break;
+          }
+
+          message.requestId = reader.int32();
+          continue;
+        }
+        case 3: {
+          if (tag !== 26) {
+            break;
+          }
+
+          message.action = reader.string();
+          continue;
+        }
+      }
+      if ((tag & 7) === 4 || tag === 0) {
+        break;
+      }
+      reader.skip(tag & 7);
+    }
+    return message;
+  },
+
+  fromJSON(object: any): FriendRequestActionRequest {
+    return {
+      senderId: isSet(object.senderId) ? globalThis.Number(object.senderId) : 0,
+      requestId: isSet(object.requestId) ? globalThis.Number(object.requestId) : 0,
+      action: isSet(object.action) ? globalThis.String(object.action) : "",
+    };
+  },
+
+  toJSON(message: FriendRequestActionRequest): unknown {
+    const obj: any = {};
+    if (message.senderId !== 0) {
+      obj.senderId = Math.round(message.senderId);
+    }
+    if (message.requestId !== 0) {
+      obj.requestId = Math.round(message.requestId);
+    }
+    if (message.action !== "") {
+      obj.action = message.action;
+    }
+    return obj;
+  },
+
+  create<I extends Exact<DeepPartial<FriendRequestActionRequest>, I>>(base?: I): FriendRequestActionRequest {
+    return FriendRequestActionRequest.fromPartial(base ?? ({} as any));
+  },
+  fromPartial<I extends Exact<DeepPartial<FriendRequestActionRequest>, I>>(object: I): FriendRequestActionRequest {
+    const message = createBaseFriendRequestActionRequest();
+    message.senderId = object.senderId ?? 0;
+    message.requestId = object.requestId ?? 0;
+    message.action = object.action ?? "";
+    return message;
+  },
+};
+
 export interface UserConnectionService {
   GetConnectedClientsCountForAdmin(request: Empty): Promise<ConnectedClientsCountResponse>;
   EmitToDirectChat(request: EmitToDirectChatRequest): Promise<Empty>;
   SendNewMessageToGroupChat(request: SendNewMessageToGroupChatRequest): Promise<Empty>;
+  SendFriendRequest(request: SendFriendRq): Promise<Empty>;
+  RemoveConnectedClient(request: RemoveConnectedClientRequest): Promise<Empty>;
+  CheckUserIsOnline(request: CheckUserIsOnlineRequest): Promise<CheckUserIsOnlineResponse>;
+  FriendRequestAction(request: FriendRequestActionRequest): Promise<Empty>;
 }
 
 export const UserConnectionServiceServiceName = "chat.UserConnectionService";
@@ -277,6 +682,10 @@ export class UserConnectionServiceClientImpl implements UserConnectionService {
     this.GetConnectedClientsCountForAdmin = this.GetConnectedClientsCountForAdmin.bind(this);
     this.EmitToDirectChat = this.EmitToDirectChat.bind(this);
     this.SendNewMessageToGroupChat = this.SendNewMessageToGroupChat.bind(this);
+    this.SendFriendRequest = this.SendFriendRequest.bind(this);
+    this.RemoveConnectedClient = this.RemoveConnectedClient.bind(this);
+    this.CheckUserIsOnline = this.CheckUserIsOnline.bind(this);
+    this.FriendRequestAction = this.FriendRequestAction.bind(this);
   }
   GetConnectedClientsCountForAdmin(request: Empty): Promise<ConnectedClientsCountResponse> {
     const data = Empty.encode(request).finish();
@@ -293,6 +702,30 @@ export class UserConnectionServiceClientImpl implements UserConnectionService {
   SendNewMessageToGroupChat(request: SendNewMessageToGroupChatRequest): Promise<Empty> {
     const data = SendNewMessageToGroupChatRequest.encode(request).finish();
     const promise = this.rpc.request(this.service, "SendNewMessageToGroupChat", data);
+    return promise.then((data) => Empty.decode(new BinaryReader(data)));
+  }
+
+  SendFriendRequest(request: SendFriendRq): Promise<Empty> {
+    const data = SendFriendRq.encode(request).finish();
+    const promise = this.rpc.request(this.service, "SendFriendRequest", data);
+    return promise.then((data) => Empty.decode(new BinaryReader(data)));
+  }
+
+  RemoveConnectedClient(request: RemoveConnectedClientRequest): Promise<Empty> {
+    const data = RemoveConnectedClientRequest.encode(request).finish();
+    const promise = this.rpc.request(this.service, "RemoveConnectedClient", data);
+    return promise.then((data) => Empty.decode(new BinaryReader(data)));
+  }
+
+  CheckUserIsOnline(request: CheckUserIsOnlineRequest): Promise<CheckUserIsOnlineResponse> {
+    const data = CheckUserIsOnlineRequest.encode(request).finish();
+    const promise = this.rpc.request(this.service, "CheckUserIsOnline", data);
+    return promise.then((data) => CheckUserIsOnlineResponse.decode(new BinaryReader(data)));
+  }
+
+  FriendRequestAction(request: FriendRequestActionRequest): Promise<Empty> {
+    const data = FriendRequestActionRequest.encode(request).finish();
+    const promise = this.rpc.request(this.service, "FriendRequestAction", data);
     return promise.then((data) => Empty.decode(new BinaryReader(data)));
   }
 }

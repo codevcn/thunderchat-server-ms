@@ -1,6 +1,7 @@
 import type { TMessage, TMessageFullInfo } from '@/utils/entities/message.entity'
 import type { EMessageStatus } from '@/utils/enums'
 import type { EMessageTypes } from '@/message/message.enum'
+import { FindMessagesForGlobalSearchRequest } from 'protos/generated/conversation'
 
 export type TNewGroupMessage = {
   id: number
@@ -31,3 +32,5 @@ export type TSendMessageDto = {
 }
 
 export type TGetDirectMessagesMessage = TMessageFullInfo
+
+export type TFindMessagesForGlobalSearchPayload = FindMessagesForGlobalSearchRequest

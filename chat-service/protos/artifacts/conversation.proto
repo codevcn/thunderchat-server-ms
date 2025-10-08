@@ -30,6 +30,8 @@ service MessageService {
       returns (CreateNewMessageResponse);
   rpc UpdateMessageStatus(UpdateMessageStatusRequest)
       returns (UpdateMessageStatusResponse);
+  rpc FindMessagesForGlobalSearch(FindMessagesForGlobalSearchRequest)
+      returns (FindMessagesForGlobalSearchResponse);
 }
 
 service GroupChatService {
@@ -129,4 +131,13 @@ message CheckGroupChatPermissionRequest {
 
 message CheckGroupChatPermissionResponse {
   bool allowed = 1;
+}
+
+message FindMessagesForGlobalSearchRequest {
+  repeated int32 ids = 1;
+  int32 limit = 2;
+}
+
+message FindMessagesForGlobalSearchResponse {
+  repeated google.protobuf.Struct messages = 1;
 }

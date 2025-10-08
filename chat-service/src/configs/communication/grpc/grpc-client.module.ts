@@ -4,7 +4,7 @@ import { GrpcClientConfig } from './grpc-client.config'
 
 @Module({
   imports: [
-    ClientsModule.register([
+    ClientsModule.registerAsync([
       GrpcClientConfig.getFriendClient(),
       GrpcClientConfig.getConversationClient(),
       GrpcClientConfig.getAuthClient(),
