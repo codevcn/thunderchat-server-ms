@@ -1,11 +1,16 @@
 import { Injectable, UnauthorizedException, Inject } from '@nestjs/common';
-import { UserService } from '@/user/user.service';
+// import { UserService } from '@/user/user.service';
 import { JWTService } from './jwt/jwt.service';
 import { CredentialService } from './credentials/credentials.service';
 import { Response } from 'express';
 import type { TLoginUserParams } from './auth.type';
 import { Socket } from 'socket.io';
-import { EClientCookieNames, EProviderTokens } from '@/utils/enums';
+import {
+  EClientCookieNames,
+  EGrpcPackages,
+  EGrpcServices,
+  EProviderTokens,
+} from '@/utils/enums';
 import type { TClientCookie } from '@/utils/types';
 import * as cookie from 'cookie';
 import { EAuthMessages } from '@/auth/auth.message';
@@ -22,18 +27,23 @@ import { SystemException } from '@/utils/exceptions/system.exception';
 import { EAppRoles } from '@/utils/enums';
 import { EAdminMessages } from './role/admin/admin.message';
 import { PrismaService } from '@/configs/db/prisma.service';
-// import { UserConnectionService } from '@/connection/user-connection.service'
-// import type { TSocketId } from '@/connection/user-connection.type'
+import { UserConnectionService } from '@/configs/communication/grpc/services/user-connection.service';
+import type { TSocketId } from '@/connection/user-connection.type';
 import { ClientGrpc } from '@nestjs/microservices';
 @Injectable()
 export class AuthService {
   constructor(
-    // private jwtService: JWTService,
+    private jwtService: JWTService,
     // private userService: UserService,
-
+    @Inject(EGrpcPackages.USER_CONNECTION_PACKAGE)
+    private readonly userConnectionGrpcClient: ClientGrpc,
     @Inject(EProviderTokens.PRISMA_CLIENT) private prisma: PrismaService,
-    // private userConnectionService: UserConnectionService
-  ) {}
+    private userConnectionService: UserConnectionService,
+  ) {
+    this.userConnectionService = new UserConnectionService(
+      this.userConnectionGrpcClient.getService(EGrpcServices.USER_CONNECTION),
+    );
+  }
 
   /**
    * Kiểm tra xem user có bị ban không
@@ -210,10 +220,14 @@ export class AuthService {
   //   }
   // }
 
-  // async logoutUser(res: Response, userId: number, socketId?: TSocketId): Promise<void> {
-  //   await this.jwtService.removeJWT({ response: res })
-  //   this.userConnectionService.removeConnectedClient(userId, socketId)
-  // }
+  async logoutUser(
+    res: Response,
+    userId: number,
+    socketId?: TSocketId,
+  ): Promise<void> {
+    await this.jwtService.removeJWT({ response: res });
+    this.userConnectionService.removeConnectedClient(userId, socketId);
+  }
 
   // async adminLogout(res: Response, userId: number): Promise<void> {
   //   const user = await this.userService.findById(userId)
@@ -225,19 +239,19 @@ export class AuthService {
   //   this.userConnectionService.removeConnectedClient(userId)
   // }
 
-  // async validateSocketConnection(socket: Socket): Promise<void> {
-  //   const clientCookie = socket.handshake.headers.cookie
-  //   if (!clientCookie) {
-  //     throw new SystemException(EAuthMessages.INVALID_CREDENTIALS)
-  //   }
-  //   const parsed_cookie = cookie.parse(clientCookie) as TClientCookie
-  //   const jwt = parsed_cookie[EClientCookieNames.JWT_TOKEN_AUTH]
-  //   try {
-  //     await this.jwtService.verifyToken(jwt)
-  //   } catch (error) {
-  //     throw new SystemException(EAuthMessages.AUTHENTICATION_FAILED)
-  //   }
-  // }
+  async validateSocketConnection(socket: Socket): Promise<void> {
+    const clientCookie = socket.handshake.headers.cookie;
+    if (!clientCookie) {
+      throw new SystemException(EAuthMessages.INVALID_CREDENTIALS);
+    }
+    const parsed_cookie = cookie.parse(clientCookie) as TClientCookie;
+    const jwt = parsed_cookie[EClientCookieNames.JWT_TOKEN_AUTH];
+    try {
+      await this.jwtService.verifyToken(jwt);
+    } catch (error) {
+      throw new SystemException(EAuthMessages.AUTHENTICATION_FAILED);
+    }
+  }
 
   async validateSocketAuth(
     clientSocket: TClientSocket,

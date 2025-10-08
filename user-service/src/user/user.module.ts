@@ -4,10 +4,8 @@ import { UserService } from '@/user/user.service';
 import { BlockUserService } from '@/user/block-user.service';
 import { CredentialService } from '@/auth/credentials/credentials.service';
 
-import { BlockUserGrpcController } from './grpc/block-user.grpc.controller';
-import { UserGrpcController } from './grpc/user.grpc.controller';
 @Module({
-  controllers: [UserController, BlockUserGrpcController, UserGrpcController],
+  controllers: [UserController],
   providers: [UserService, CredentialService, BlockUserService],
   exports: [UserService, CredentialService, BlockUserService],
 })

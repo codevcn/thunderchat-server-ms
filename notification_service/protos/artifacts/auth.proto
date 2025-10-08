@@ -2,110 +2,24 @@ syntax = "proto3";
 
 package auth;
 
-import "google/protobuf/timestamp.proto";
+import "google/protobuf/struct.proto";
+import "google/protobuf/empty.proto";
 
 service AuthService {
-  rpc LoginUser(LoginUserRequest) returns (LoginUserResponse);
-  rpc LoginAdmin(LoginAdminRequest) returns (LoginAdminResponse);
-  rpc CheckAdminEmail(CheckAdminEmailRequest) returns (CheckAdminEmailResponse);
-  rpc CheckUserBanStatus(CheckUserBanStatusRequest) returns (CheckUserBanStatusResponse);
-  rpc LogoutUser(LogoutUserRequest) returns (LogoutUserResponse);
-  rpc AdminLogout(AdminLogoutRequest) returns (AdminLogoutResponse);
-  rpc VerifyToken(VerifyTokenRequest) returns (VerifyTokenResponse);
+  rpc ValidateSocketConnection(ValidateSocketConnectionRequest)
+      returns (google.protobuf.Empty);
+  rpc ValidateSocketAuth(ValidateSocketAuthRequest)
+      returns (ValidateSocketAuthResponse);
 }
 
-// ========== AUTH REQUESTS / RESPONSES ==========
-
-message LoginUserRequest {
-  string email = 1;
-  string password = 2;
+message ValidateSocketConnectionRequest {
+  google.protobuf.Struct socket = 1;
 }
 
-message LoginUserResponse {
-  bool success = 1;
-  string token = 2;
+message ValidateSocketAuthRequest {
+  google.protobuf.Struct client_socket = 1;
 }
 
-message LoginAdminRequest {
-  string email = 1;
-  string password = 2;
-}
-
-message LoginAdminResponse {
-  bool success = 1;
-  string token = 2;
-}
-
-message CheckAdminEmailRequest {
-  string email = 1;
-}
-
-message CheckAdminEmailResponse {
-  bool isAdmin = 1;
-  string message = 2;
-}
-
-message CheckUserBanStatusRequest {
-  int32 userId = 1;
-}
-
-message BanStatus {
-  bool isBanned = 1;
-  string banType = 2;
-  string banReason = 3;
-  string bannedUntil = 4; // ISO datetime string
-  string message = 5;
-}
-
-message CheckUserBanStatusResponse {
-  BanStatus banStatus = 1;
-}
-
-message LogoutUserRequest {
-  int32 userId = 1;
-  string socketId = 2;
-}
-
-message LogoutUserResponse {
-  bool success = 1;
-}
-
-message AdminLogoutRequest {
-  int32 userId = 1;
-}
-
-message AdminLogoutResponse {
-  bool success = 1;
-}
-
-// ========== VERIFY TOKEN ==========
-
-message VerifyTokenRequest {
-  string token = 1;
-}
-
-message VerifyTokenResponse {
-  bool valid = 1;
-  UserWithProfile user = 2; // full user info with profile
-  string message = 3;
-}
-
-// ========== USER & PROFILE MODELS ==========
-
-message User {
-  int32 id = 1;
-  string email = 2;
-  string role = 3; // map với AppRole enum trong prisma
-  google.protobuf.Timestamp createdAt = 4;
-}
-
-message Profile {
-  string fullName = 1;
-  string avatar = 2;
-  string bio = 3;
-}
-
-message UserWithProfile {
-  User user = 1;
-  Profile profile = 2;
+message ValidateSocketAuthResponse {
+  google.protobuf.Struct client_socket_auth = 1;
 }

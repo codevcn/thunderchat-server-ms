@@ -42,12 +42,12 @@ export class FriendRequestController implements IFriendRequestController {
     );
   }
 
-  @Get()
-  async checkBlockUser(@Query() payload: CheckBlockedUserDTO) {
-    const { blockerId, blockedId } = payload;
-    return await this.friendRequestService.checkBlockedUser({
-      blockerId,
-      blockedId,
-    });
-  }
+  // @Get()
+  // async checkBlockUser(@Query() payload: CheckBlockedUserDTO) {
+  //   const { blockerId, blockedId } = payload;
+  //   return await this.friendRequestService.checkBlockedUser({
+  //     blockerId,
+  //     blockedId,
+  //   });
+  // }
 }

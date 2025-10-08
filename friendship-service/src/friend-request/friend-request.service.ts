@@ -1,6 +1,6 @@
 import { PrismaService } from '@/configs/db/prisma.service';
 import type { TFriendRequest } from '@/utils/entities/friend.entity';
-import { EProviderTokens } from '@/utils/enums';
+import { EGrpcPackages, EGrpcServices, EProviderTokens } from '@/utils/enums';
 import { BadRequestException, Inject, Injectable } from '@nestjs/common';
 import { EFriendRequestMessages } from './friend-request.message';
 // import { UserService } from '@/user/user.service'
@@ -18,25 +18,20 @@ import type {
 import { Prisma } from '@prisma/client';
 // import { BlockUserService } from '@/user/block-user.service'
 import { EUserMessages } from '@/user/user.message';
+import { BlockUserService } from '@/configs/communication/grpc/services/block-user.service';
 import { ClientGrpc } from '@nestjs/microservices';
-import type {
-  CheckBlockedUserRequest,
-  CheckBlockedUserResponse,
-  FindUserRequest,
-  UserService,
-  UserWithProfile,
-} from './user';
 @Injectable()
 export class FriendRequestService {
-  private userServiceClient: UserService;
+  private blockUserService: BlockUserService;
   constructor(
     @Inject(EProviderTokens.PRISMA_CLIENT) private PrismaService: PrismaService,
-    @Inject('USER_PACKAGE') private UserService: ClientGrpc,
+    // private userService: UserService,
     private userConnectionService: UserConnectionService,
-    //  private blockUserService: BlockUserService
+    @Inject(EGrpcPackages.USER_PACKAGE) private blockUserClient: ClientGrpc,
   ) {
-    this.userServiceClient =
-      this.UserService.getService<UserService>('UserService');
+    this.blockUserService = new BlockUserService(
+      this.blockUserClient.getService(EGrpcServices.BLOCK_USER_SERVICE),
+    );
   }
 
   async create<R extends TFriendRequest>(
@@ -105,110 +100,97 @@ export class FriendRequestService {
     });
   }
 
-  async checkBlockedUser(
-    data: CheckBlockedUserRequest,
-  ): Promise<CheckBlockedUserResponse> {
-    const response = await this.userServiceClient.CheckBlockedUser(data);
-
-    return response;
-  }
-
-  async findUserWithProfileById(
-    data: FindUserRequest,
-  ): Promise<UserWithProfile> {
-    const response = await this.userServiceClient.FindUserWithProfileById(data);
-
-    return response;
-  }
-
-  async sendFriendRequest(
+  private async checkBlockedUser(
     senderId: number,
     recipientId: number,
-  ): Promise<TGetFriendRequestsData> {
-    // Kiểm tra nếu người gửi và người nhận là cùng một người
-    if (senderId === recipientId) {
-      throw new BadRequestException(EFriendRequestMessages.SEND_TO_MYSELF);
+  ): Promise<void> {
+    const blockedUser = await this.blockUserService.checkBlockedUser(
+      senderId,
+      recipientId,
+    );
+    if (blockedUser?.blockedUserId === senderId) {
+      throw new BadRequestException(EUserMessages.YOU_ARE_BLOCKED_BY_THIS_USER);
     }
-
-    const blockCheck = await this.checkBlockedUser({
-      blockerId: senderId,
-      blockedId: recipientId,
-    });
-
-    const existing = await this.findSentFriendRequest(senderId, recipientId);
-    let friendRequest: TGetFriendRequestsData;
-
-    if (existing) {
-      // Nếu yêu cầu đã tồn tại và ở trạng thái PENDING hoặc ACCEPTED, báo lỗi
-      if (
-        existing.status === EFriendRequestStatus.PENDING ||
-        existing.status === EFriendRequestStatus.ACCEPTED
-      ) {
-        throw new BadRequestException(
-          EFriendRequestMessages.INVITATION_SENT_BEFORE,
-        );
-      }
-
-      // Cập nhật yêu cầu kết bạn hiện có (ví dụ: từ REJECTED sang PENDING)
-      friendRequest = await this.update(
-        existing.id,
-        senderId,
-        recipientId,
-        EFriendRequestStatus.PENDING,
-        {
-          include: {
-            Sender: {
-              include: {
-                Profile: true,
-              },
-            },
-            Recipient: {
-              include: {
-                Profile: true,
-              },
-            },
-          },
-        },
-      );
-    } else {
-      friendRequest = await this.create<TGetFriendRequestsData>(
-        senderId,
-        recipientId,
-        {
-          include: {
-            Sender: {
-              include: {
-                Profile: true,
-              },
-            },
-            Recipient: {
-              include: {
-                Profile: true,
-              },
-            },
-          },
-        },
-      );
+    if (blockedUser?.blockerUserId === senderId) {
+      throw new BadRequestException(EUserMessages.YOU_HAVE_BLOCKED_THIS_USER);
     }
-
-    if (!friendRequest) {
-      throw new BadRequestException(
-        EFriendRequestMessages.FRIEND_REQUEST_NOT_FOUND,
-      );
-    }
-
-    try {
-      await this.userConnectionService.sendFriendRequest(
-        friendRequest.Sender,
-        recipientId,
-        friendRequest,
-      );
-    } catch (error) {
-      console.error('Failed to send friend request notification:', error);
-    }
-
-    return friendRequest;
   }
+
+  // async sendFriendRequest(
+  //   senderId: number,
+  //   recipientId: number,
+  // ): Promise<TGetFriendRequestsData> {
+  //   if (senderId === recipientId) {
+  //     throw new BadRequestException(EFriendRequestMessages.SEND_TO_MYSELF);
+  //   }
+  //   await this.checkBlockedUser(senderId, recipientId);
+  //   const existing = await this.findSentFriendRequest(senderId, recipientId);
+  //   let friendRequest: TGetFriendRequestsData | null = null;
+  //   if (existing) {
+  //     if (
+  //       existing.status === EFriendRequestStatus.PENDING ||
+  //       existing.status === EFriendRequestStatus.ACCEPTED
+  //     ) {
+  //       throw new BadRequestException(
+  //         EFriendRequestMessages.INVITATION_SENT_BEFORE,
+  //       );
+  //     }
+  //     friendRequest = await this.update(
+  //       existing.id,
+  //       senderId,
+  //       recipientId,
+  //       EFriendRequestStatus.PENDING,
+  //       {
+  //         include: {
+  //           Sender: {
+  //             include: {
+  //               Profile: true,
+  //             },
+  //           },
+  //           Recipient: {
+  //             include: {
+  //               Profile: true,
+  //             },
+  //           },
+  //         },
+  //       },
+  //     );
+  //   } else {
+  //     friendRequest = await this.create<TGetFriendRequestsData>(
+  //       senderId,
+  //       recipientId,
+  //       {
+  //         include: {
+  //           Sender: {
+  //             include: {
+  //               Profile: true,
+  //             },
+  //           },
+  //           Recipient: {
+  //             include: {
+  //               Profile: true,
+  //             },
+  //           },
+  //         },
+  //       },
+  //     );
+  //   }
+  //   if (!friendRequest) {
+  //     throw new BadRequestException(
+  //       EFriendRequestMessages.FRIEND_REQUEST_NOT_FOUND,
+  //     );
+  //   }
+  //   const sender = await this.userService.findUserWithProfileById(senderId);
+  //   if (!sender) {
+  //     throw new BadRequestException(EFriendRequestMessages.SENDER_NOT_FOUND);
+  //   }
+  //   this.userConnectionService.sendFriendRequest(
+  //     sender,
+  //     recipientId,
+  //     friendRequest,
+  //   );
+  //   return friendRequest;
+  // }
 
   async friendRequestAction(
     friendRequestPayload: FriendRequestActionDTO,

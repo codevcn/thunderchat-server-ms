@@ -43,3 +43,16 @@ export interface IUserController {
     user: TUserWithProfile,
   ) => Promise<TBlockedUserFullInfo[]>;
 }
+
+export interface IUserGrpcController {
+  FindUserWithProfileById: (data: {
+    userId: number;
+  }) => Promise<{ user: TUserWithProfile | null }>;
+}
+
+export interface IBlockUserGrpcController {
+  CheckBlockedUser: (data: {
+    blockerId: number;
+    blockedId: number;
+  }) => Promise<{ blockUser: TBlockedUserFullInfo | null }>;
+}

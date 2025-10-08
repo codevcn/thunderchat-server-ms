@@ -6,9 +6,8 @@ import { CredentialService } from './credentials/credentials.service';
 
 import { AdminRoleModule } from './role/admin/admin.module';
 import { GrpcClientModule } from '@/configs/communication/grpc/grpc-client.module';
-import { UserModule } from '@/user/user.module';
 @Module({
-  imports: [AdminRoleModule, GrpcClientModule, UserModule],
+  imports: [AdminRoleModule, GrpcClientModule],
   controllers: [AuthController],
   providers: [AuthService, CredentialService],
   exports: [AuthService, CredentialService],

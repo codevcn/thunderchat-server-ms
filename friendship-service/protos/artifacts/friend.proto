@@ -3,13 +3,14 @@ syntax = "proto3";
 package friend;
 
 service FriendService {
-  rpc GetFriends (FriendRequest) returns (FriendResponse) {}
+  rpc IsFriend(IsFriendRequest) returns (IsFriendResponse);
 }
 
-message FriendRequest {
-  string user_id = 1;
+message IsFriendRequest {
+  int64 user_id = 1;
+  int64 friend_id = 2;
 }
 
-message FriendResponse {
-  repeated string friends = 1;
+message IsFriendResponse {
+  bool is_friend = 1;
 }

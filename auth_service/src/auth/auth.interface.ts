@@ -5,9 +5,12 @@ import type {
   CheckAuthDataDTO,
   CheckAdminEmailDTO,
   LogoutPayloadDTO,
+  ClientSocketAuthDTO,
 } from './auth.dto';
 import type { TUserWithProfile } from '@/utils/entities/user.entity';
 import type { TSuccess } from '@/utils/types';
+import { TClientSocket } from '@/utils/events/event.type';
+import { Socket } from 'socket.io';
 
 export interface IAuthController {
   // login: (loginUserPayload: LoginUserDTO, res: Response) => Promise<TSuccess>
@@ -18,4 +21,10 @@ export interface IAuthController {
   //logout: (res: Response, user: TUserWithProfile, reqBody: LogoutPayloadDTO) => Promise<TSuccess>
   checkAuth: (user: TUserWithProfile) => Promise<CheckAuthDataDTO>;
   checkAdminAuth: (user: TUserWithProfile) => Promise<CheckAuthDataDTO>;
+}
+
+export interface IAuthGrpcController {
+  ValidateSocketAuth: (data: TClientSocket) => Promise<ClientSocketAuthDTO>;
+
+  ValidateSocketConnection: (data: Socket) => Promise<void>;
 }

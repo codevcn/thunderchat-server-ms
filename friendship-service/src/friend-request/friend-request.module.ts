@@ -4,21 +4,9 @@ import { FriendRequestService } from './friend-request.service';
 import { UserConnectionModule } from '@/connection/user-connection.module';
 import { ClientsModule, Transport } from '@nestjs/microservices';
 import { join } from 'path';
+import { GrpcClientModule } from '@/configs/communication/grpc/grpc-client.module';
 @Module({
-  imports: [
-    UserConnectionModule,
-    ClientsModule.register([
-      {
-        name: 'USER_PACKAGE',
-        transport: Transport.GRPC,
-        options: {
-          package: 'user',
-          protoPath: join(__dirname, '../../protos/artifacts/user.proto'),
-          url: '0.0.0.0:50054',
-        },
-      },
-    ]),
-  ],
+  imports: [UserConnectionModule, GrpcClientModule],
   controllers: [FriendRequestController],
   providers: [FriendRequestService],
 })

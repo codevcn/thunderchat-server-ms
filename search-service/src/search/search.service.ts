@@ -30,70 +30,70 @@ export class SearchService {
     @Inject(EProviderTokens.PRISMA_CLIENT) private prismaService: PrismaService,
   ) {}
 
-  async searchGlobally(
-    keyword: string,
-    userId: number,
-    limit: number,
-    selfUserId: number,
-    messageSearchOffset?: TMessageSearchOffset,
-    userSearchOffset?: TUserSearchOffset
-  ): Promise<TGlobalSearchData> {
-    const [messageHits, userHits] = await Promise.all([
-      this.elasticSearchService.searchMessages(keyword, userId, limit, messageSearchOffset),
-      this.elasticSearchService.searchUsers(keyword, limit, userSearchOffset),
-    ])
-    const messageIdObjects = messageHits
-      .filter((message) => !!message._source)
-      .map((message) => ({
-        id: parseInt(message._id!),
-        highlight: message.highlight,
-      }))
-    const messageIds = messageIdObjects.map((message) => message.id)
-    const userIds = userHits.filter((user) => !!user._source).map((user) => parseInt(user._id!))
-    // find messages and users by ids in database
-    const [messages, users] = await Promise.all([
-      this.MessageService.findMessagesForGlobalSearch(messageIds, limit),
-      this.userService.findUsersForGlobalSearch(userIds, selfUserId, limit),
-    ])
-    const finalMessages = messages.map<TGlobalSearchData['messages'][number]>(
-      ({ id, GroupChat, content, directChatId, groupChatId, createdAt, Author, Media }) => {
-        let avatarUrl: string | undefined,
-          conversationName: string = ''
-        if (Author) {
-          const authorProfile = Author.Profile
-          avatarUrl = authorProfile?.avatar || undefined
-          conversationName = authorProfile?.fullName || ''
-        } else {
-          avatarUrl = GroupChat!.Members[0].User.Profile!.avatar || undefined
-          conversationName = GroupChat!.name
-        }
-        return {
-          id,
-          avatarUrl,
-          conversationName,
-          messageContent: replaceHTMLTagInMessageContent(content),
-          mediaContent: Media?.fileName,
-          highlights: messageIdObjects.find((m) => m.id === id)!.highlight?.content || [],
-          chatType: directChatId ? EChatType.DIRECT : EChatType.GROUP,
-          chatId: (directChatId || groupChatId)!,
-          createdAt: createdAt.toISOString(),
-        }
-      }
-    )
-    const finalUsers = users.map((user) => ({
-      ...user,
-      isOnline: this.userConnectionService.checkUserIsOnline(user.id),
-    }))
-    const nextSearchOffset: TGlobalSearchData['nextSearchOffset'] = {
-      messageSearchOffset: messageHits.at(-1)?.sort,
-      userSearchOffset: userHits.at(-1)?.sort,
-    }
-    return {
-      messages: finalMessages,
-      users: finalUsers,
-      nextSearchOffset,
-    }
-  }
+  // async searchGlobally(
+  //   keyword: string,
+  //   userId: number,
+  //   limit: number,
+  //   selfUserId: number,
+  //   messageSearchOffset?: TMessageSearchOffset,
+  //   userSearchOffset?: TUserSearchOffset
+  // ): Promise<TGlobalSearchData> {
+  //   const [messageHits, userHits] = await Promise.all([
+  //     this.elasticSearchService.searchMessages(keyword, userId, limit, messageSearchOffset),
+  //     this.elasticSearchService.searchUsers(keyword, limit, userSearchOffset),
+  //   ])
+  //   const messageIdObjects = messageHits
+  //     .filter((message) => !!message._source)
+  //     .map((message) => ({
+  //       id: parseInt(message._id!),
+  //       highlight: message.highlight,
+  //     }))
+  //   const messageIds = messageIdObjects.map((message) => message.id)
+  //   const userIds = userHits.filter((user) => !!user._source).map((user) => parseInt(user._id!))
+  //   // find messages and users by ids in database
+  //   // const [messages, users] = await Promise.all([
+  //   //   this.MessageService.findMessagesForGlobalSearch(messageIds, limit),
+  //   //   this.userService.findUsersForGlobalSearch(userIds, selfUserId, limit),
+  //   // ])
+  //   const finalMessages = messages.map<TGlobalSearchData['messages'][number]>(
+  //     ({ id, GroupChat, content, directChatId, groupChatId, createdAt, Author, Media }) => {
+  //       let avatarUrl: string | undefined,
+  //         conversationName: string = ''
+  //       if (Author) {
+  //         const authorProfile = Author.Profile
+  //         avatarUrl = authorProfile?.avatar || undefined
+  //         conversationName = authorProfile?.fullName || ''
+  //       } else {
+  //         avatarUrl = GroupChat!.Members[0].User.Profile!.avatar || undefined
+  //         conversationName = GroupChat!.name
+  //       }
+  //       return {
+  //         id,
+  //         avatarUrl,
+  //         conversationName,
+  //         messageContent: replaceHTMLTagInMessageContent(content),
+  //         mediaContent: Media?.fileName,
+  //         highlights: messageIdObjects.find((m) => m.id === id)!.highlight?.content || [],
+  //         chatType: directChatId ? EChatType.DIRECT : EChatType.GROUP,
+  //         chatId: (directChatId || groupChatId)!,
+  //         createdAt: createdAt.toISOString(),
+  //       }
+  //     }
+  //   )
+  //   const finalUsers = users.map((user) => ({
+  //     ...user,
+  //     isOnline: this.userConnectionService.checkUserIsOnline(user.id),
+  //   }))
+  //   const nextSearchOffset: TGlobalSearchData['nextSearchOffset'] = {
+  //     messageSearchOffset: messageHits.at(-1)?.sort,
+  //     userSearchOffset: userHits.at(-1)?.sort,
+  //   }
+  //   return {
+  //     messages: finalMessages,
+  //     users: finalUsers,
+  //     nextSearchOffset,
+  //   }
+  // }
 
   async searchConversations(
     keyword: string,

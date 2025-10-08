@@ -17,6 +17,7 @@ declare global {
       VAPID_PUBLIC_KEY: string;
       ELASTIC_API_KEY: string;
       AUTH_SERVICE_PORT: string;
+      JWT_TOKEN_MAX_AGE_IN_HOUR: string;
     }
   }
 }

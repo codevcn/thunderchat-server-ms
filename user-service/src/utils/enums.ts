@@ -13,6 +13,35 @@ export enum ERoutes {
   PROFILE = 'profile',
   PIN_CONVERSATION = 'pin-conversation',
   PUSH_NOTIFICATION = 'push-notification',
+  UPLOAD = 'upload',
+}
+
+export enum EGrpcPackages {
+  CHAT = 'chat',
+  CHAT_PACKAGE = 'CHAT_PACKAGE',
+  AUTH = 'auth',
+  AUTH_PACKAGE = 'AUTH_PACKAGE',
+  NOTIFICATION = 'notification',
+  NOTIFICATION_PACKAGE = 'NOTIFICATION_PACKAGE',
+  USER = 'user',
+  USER_PACKAGE = 'USER_PACKAGE',
+  CONVERSATION = 'conversation',
+  CONVERSATION_PACKAGE = 'CONVERSATION_PACKAGE',
+  FRIEND = 'friend',
+  FRIEND_PACKAGE = 'FRIEND_PACKAGE',
+}
+
+export enum EGrpcServices {
+  AUTH_SERVICE = 'AuthService',
+  MESSAGE_SERVICE = 'MessageService',
+  NOTIFICATION_SERVICE = 'NotificationService',
+  USER_SERVICE = 'UserService',
+  DIRECT_CHAT_SERVICE = 'DirectChatService',
+  FRIEND_SERVICE = 'FriendService',
+  GROUP_CHAT_SERVICE = 'GroupChatService',
+  GROUP_MEMBER_SERVICE = 'GroupMemberService',
+  USER_SETTINGS_SERVICE = 'UserSettingsService',
+  BLOCK_USER_SERVICE = 'BlockUserService',
 }
 
 export enum EClientCookieNames {

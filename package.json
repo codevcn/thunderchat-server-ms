@@ -7,5 +7,8 @@
     "protoc-gen-ts": "^0.8.7",
     "protolint": "^0.56.4",
     "ts-proto": "^2.7.7"
+  },
+  "dependencies": {
+    "@bufbuild/protobuf": "^2.9.0"
   }
 }

@@ -25,7 +25,7 @@ import type { Response } from 'express';
 import type { IAuthController } from './auth.interface';
 import { User } from '@/user/user.decorator';
 import { TUserWithProfile } from '@/utils/entities/user.entity';
-import { UserService } from '@/user/user.service';
+
 import { EAuthMessages } from './auth.message';
 export interface getUserByEmailRequest {
   email: string;
@@ -34,7 +34,7 @@ export interface getUserByEmailRequest {
 export class AuthController implements IAuthController {
   constructor(
     private authService: AuthService,
-    private userService: UserService,
+    //   private userService: UserService,
   ) {}
 
   // @Post('login')
@@ -95,11 +95,11 @@ export class AuthController implements IAuthController {
     return new CheckAuthDataDTO(user);
   }
 
-  @Get()
-  async checkBlockUser(@Query() payload: getUserByEmailRequest) {
-    const { email } = payload;
-    return await this.userService.findUserByEmail({
-      email,
-    });
-  }
+  // @Get()
+  // async checkBlockUser(@Query() payload: getUserByEmailRequest) {
+  //   const { email } = payload;
+  //   return await this.userService.findUserByEmail({
+  //     email,
+  //   });
+  // }
 }

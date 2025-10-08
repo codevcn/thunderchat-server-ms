@@ -7,10 +7,21 @@ import { clearLogFiles } from './dev/helpers';
 import { ValidationPipe } from '@nestjs/common';
 import { BaseHttpExceptionFilter } from './utils/exception-filters/base-http-exception.filter';
 import cookieParser from 'cookie-parser';
-
+import { copyProtos } from '@/bootstrap/copy-protos-folder';
 const apiPrefix: string = 'api';
 
+const beforeLaunch = async () => {
+  await clearLogFiles();
+  await copyProtos(
+    join(__dirname, '/../../protos/artifacts/'),
+    join(__dirname, '/../protos/artifacts/'),
+  );
+};
+
 async function bootstrap() {
+  await beforeLaunch();
+  console.log('>>> Microservice [Chat-Service] is launching...');
+
   const app = await NestFactory.create<NestExpressApplication>(AppModule);
   const { PORT, NODE_ENV } = process.env;
   const CLIENT_HOST =
@@ -41,7 +52,7 @@ async function bootstrap() {
     transport: Transport.GRPC,
     options: {
       package: 'user',
-      protoPath: join(__dirname, '../protos/artifacts/user.proto'),
+      protoPath: join(__dirname, '/../protos/artifacts/user.proto'),
       url: '0.0.0.0:50054',
     },
   });
@@ -50,6 +61,9 @@ async function bootstrap() {
 
   await app.startAllMicroservices();
   await app.listen(PORT, '0.0.0.0');
-  console.log('>>> Microservice [Notification-Service] is listening on port:', PORT);
+  console.log(
+    '>>> Microservice [Notification-Service] is listening on port:',
+    PORT,
+  );
 }
 bootstrap();
