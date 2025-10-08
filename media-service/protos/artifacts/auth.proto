@@ -10,6 +10,9 @@ service AuthService {
       returns (google.protobuf.Empty);
   rpc ValidateSocketAuth(ValidateSocketAuthRequest)
       returns (ValidateSocketAuthResponse);
+  rpc ValidateVoiceCallSocketAuth(ValidateVoiceCallSocketAuthRequest)
+      returns (ValidateVoiceCallSocketAuthResponse);
+  rpc VerifyToken(VerifyTokenRequest) returns (VerifyTokenResponse);
 }
 
 message ValidateSocketConnectionRequest {
@@ -22,4 +25,20 @@ message ValidateSocketAuthRequest {
 
 message ValidateSocketAuthResponse {
   google.protobuf.Struct client_socket_auth = 1;
+}
+
+message ValidateVoiceCallSocketAuthRequest {
+  google.protobuf.Struct client_socket = 1;
+}
+
+message ValidateVoiceCallSocketAuthResponse {
+  google.protobuf.Struct voice_call_socket_auth = 1;
+}
+
+message VerifyTokenRequest {
+  string token = 1;
+}
+
+message VerifyTokenResponse {
+  google.protobuf.Struct user = 1;
 }
