@@ -39,136 +39,170 @@ function createBaseFindUserWithProfileByIdRequest(): FindUserWithProfileByIdRequ
   return { userId: 0 };
 }
 
-export const FindUserWithProfileByIdRequest: MessageFns<FindUserWithProfileByIdRequest> = {
-  encode(message: FindUserWithProfileByIdRequest, writer: BinaryWriter = new BinaryWriter()): BinaryWriter {
-    if (message.userId !== 0) {
-      writer.uint32(8).int64(message.userId);
-    }
-    return writer;
-  },
+export const FindUserWithProfileByIdRequest: MessageFns<FindUserWithProfileByIdRequest> =
+  {
+    encode(
+      message: FindUserWithProfileByIdRequest,
+      writer: BinaryWriter = new BinaryWriter()
+    ): BinaryWriter {
+      if (message.userId !== 0) {
+        writer.uint32(8).int64(message.userId);
+      }
+      return writer;
+    },
 
-  decode(input: BinaryReader | Uint8Array, length?: number): FindUserWithProfileByIdRequest {
-    const reader = input instanceof BinaryReader ? input : new BinaryReader(input);
-    const end = length === undefined ? reader.len : reader.pos + length;
-    const message = createBaseFindUserWithProfileByIdRequest();
-    while (reader.pos < end) {
-      const tag = reader.uint32();
-      switch (tag >>> 3) {
-        case 1: {
-          if (tag !== 8) {
-            break;
+    decode(
+      input: BinaryReader | Uint8Array,
+      length?: number
+    ): FindUserWithProfileByIdRequest {
+      const reader =
+        input instanceof BinaryReader ? input : new BinaryReader(input);
+      const end = length === undefined ? reader.len : reader.pos + length;
+      const message = createBaseFindUserWithProfileByIdRequest();
+      while (reader.pos < end) {
+        const tag = reader.uint32();
+        switch (tag >>> 3) {
+          case 1: {
+            if (tag !== 8) {
+              break;
+            }
+
+            message.userId = longToNumber(reader.int64());
+            continue;
           }
-
-          message.userId = longToNumber(reader.int64());
-          continue;
         }
+        if ((tag & 7) === 4 || tag === 0) {
+          break;
+        }
+        reader.skip(tag & 7);
       }
-      if ((tag & 7) === 4 || tag === 0) {
-        break;
+      return message;
+    },
+
+    fromJSON(object: any): FindUserWithProfileByIdRequest {
+      return {
+        userId: isSet(object.userId) ? globalThis.Number(object.userId) : 0,
+      };
+    },
+
+    toJSON(message: FindUserWithProfileByIdRequest): unknown {
+      const obj: any = {};
+      if (message.userId !== 0) {
+        obj.userId = Math.round(message.userId);
       }
-      reader.skip(tag & 7);
-    }
-    return message;
-  },
+      return obj;
+    },
 
-  fromJSON(object: any): FindUserWithProfileByIdRequest {
-    return { userId: isSet(object.userId) ? globalThis.Number(object.userId) : 0 };
-  },
-
-  toJSON(message: FindUserWithProfileByIdRequest): unknown {
-    const obj: any = {};
-    if (message.userId !== 0) {
-      obj.userId = Math.round(message.userId);
-    }
-    return obj;
-  },
-
-  create<I extends Exact<DeepPartial<FindUserWithProfileByIdRequest>, I>>(base?: I): FindUserWithProfileByIdRequest {
-    return FindUserWithProfileByIdRequest.fromPartial(base ?? ({} as any));
-  },
-  fromPartial<I extends Exact<DeepPartial<FindUserWithProfileByIdRequest>, I>>(
-    object: I,
-  ): FindUserWithProfileByIdRequest {
-    const message = createBaseFindUserWithProfileByIdRequest();
-    message.userId = object.userId ?? 0;
-    return message;
-  },
-};
+    create<I extends Exact<DeepPartial<FindUserWithProfileByIdRequest>, I>>(
+      base?: I
+    ): FindUserWithProfileByIdRequest {
+      return FindUserWithProfileByIdRequest.fromPartial(base ?? ({} as any));
+    },
+    fromPartial<
+      I extends Exact<DeepPartial<FindUserWithProfileByIdRequest>, I>
+    >(object: I): FindUserWithProfileByIdRequest {
+      const message = createBaseFindUserWithProfileByIdRequest();
+      message.userId = object.userId ?? 0;
+      return message;
+    },
+  };
 
 function createBaseFindUserWithProfileByIdResponse(): FindUserWithProfileByIdResponse {
   return { user: undefined };
 }
 
-export const FindUserWithProfileByIdResponse: MessageFns<FindUserWithProfileByIdResponse> = {
-  encode(message: FindUserWithProfileByIdResponse, writer: BinaryWriter = new BinaryWriter()): BinaryWriter {
-    if (message.user !== undefined) {
-      Struct.encode(Struct.wrap(message.user), writer.uint32(10).fork()).join();
-    }
-    return writer;
-  },
+export const FindUserWithProfileByIdResponse: MessageFns<FindUserWithProfileByIdResponse> =
+  {
+    encode(
+      message: FindUserWithProfileByIdResponse,
+      writer: BinaryWriter = new BinaryWriter()
+    ): BinaryWriter {
+      if (message.user !== undefined) {
+        Struct.encode(
+          Struct.wrap(message.user),
+          writer.uint32(10).fork()
+        ).join();
+      }
+      return writer;
+    },
 
-  decode(input: BinaryReader | Uint8Array, length?: number): FindUserWithProfileByIdResponse {
-    const reader = input instanceof BinaryReader ? input : new BinaryReader(input);
-    const end = length === undefined ? reader.len : reader.pos + length;
-    const message = createBaseFindUserWithProfileByIdResponse();
-    while (reader.pos < end) {
-      const tag = reader.uint32();
-      switch (tag >>> 3) {
-        case 1: {
-          if (tag !== 10) {
-            break;
+    decode(
+      input: BinaryReader | Uint8Array,
+      length?: number
+    ): FindUserWithProfileByIdResponse {
+      const reader =
+        input instanceof BinaryReader ? input : new BinaryReader(input);
+      const end = length === undefined ? reader.len : reader.pos + length;
+      const message = createBaseFindUserWithProfileByIdResponse();
+      while (reader.pos < end) {
+        const tag = reader.uint32();
+        switch (tag >>> 3) {
+          case 1: {
+            if (tag !== 10) {
+              break;
+            }
+
+            message.user = Struct.unwrap(
+              Struct.decode(reader, reader.uint32())
+            );
+            continue;
           }
-
-          message.user = Struct.unwrap(Struct.decode(reader, reader.uint32()));
-          continue;
         }
+        if ((tag & 7) === 4 || tag === 0) {
+          break;
+        }
+        reader.skip(tag & 7);
       }
-      if ((tag & 7) === 4 || tag === 0) {
-        break;
+      return message;
+    },
+
+    fromJSON(object: any): FindUserWithProfileByIdResponse {
+      return { user: isObject(object.user) ? object.user : undefined };
+    },
+
+    toJSON(message: FindUserWithProfileByIdResponse): unknown {
+      const obj: any = {};
+      if (message.user !== undefined) {
+        obj.user = message.user;
       }
-      reader.skip(tag & 7);
-    }
-    return message;
-  },
+      return obj;
+    },
 
-  fromJSON(object: any): FindUserWithProfileByIdResponse {
-    return { user: isObject(object.user) ? object.user : undefined };
-  },
-
-  toJSON(message: FindUserWithProfileByIdResponse): unknown {
-    const obj: any = {};
-    if (message.user !== undefined) {
-      obj.user = message.user;
-    }
-    return obj;
-  },
-
-  create<I extends Exact<DeepPartial<FindUserWithProfileByIdResponse>, I>>(base?: I): FindUserWithProfileByIdResponse {
-    return FindUserWithProfileByIdResponse.fromPartial(base ?? ({} as any));
-  },
-  fromPartial<I extends Exact<DeepPartial<FindUserWithProfileByIdResponse>, I>>(
-    object: I,
-  ): FindUserWithProfileByIdResponse {
-    const message = createBaseFindUserWithProfileByIdResponse();
-    message.user = object.user ?? undefined;
-    return message;
-  },
-};
+    create<I extends Exact<DeepPartial<FindUserWithProfileByIdResponse>, I>>(
+      base?: I
+    ): FindUserWithProfileByIdResponse {
+      return FindUserWithProfileByIdResponse.fromPartial(base ?? ({} as any));
+    },
+    fromPartial<
+      I extends Exact<DeepPartial<FindUserWithProfileByIdResponse>, I>
+    >(object: I): FindUserWithProfileByIdResponse {
+      const message = createBaseFindUserWithProfileByIdResponse();
+      message.user = object.user ?? undefined;
+      return message;
+    },
+  };
 
 function createBaseFindByUserIdRequest(): FindByUserIdRequest {
   return { userId: 0 };
 }
 
 export const FindByUserIdRequest: MessageFns<FindByUserIdRequest> = {
-  encode(message: FindByUserIdRequest, writer: BinaryWriter = new BinaryWriter()): BinaryWriter {
+  encode(
+    message: FindByUserIdRequest,
+    writer: BinaryWriter = new BinaryWriter()
+  ): BinaryWriter {
     if (message.userId !== 0) {
       writer.uint32(8).int64(message.userId);
     }
     return writer;
   },
 
-  decode(input: BinaryReader | Uint8Array, length?: number): FindByUserIdRequest {
-    const reader = input instanceof BinaryReader ? input : new BinaryReader(input);
+  decode(
+    input: BinaryReader | Uint8Array,
+    length?: number
+  ): FindByUserIdRequest {
+    const reader =
+      input instanceof BinaryReader ? input : new BinaryReader(input);
     const end = length === undefined ? reader.len : reader.pos + length;
     const message = createBaseFindByUserIdRequest();
     while (reader.pos < end) {
@@ -192,7 +226,9 @@ export const FindByUserIdRequest: MessageFns<FindByUserIdRequest> = {
   },
 
   fromJSON(object: any): FindByUserIdRequest {
-    return { userId: isSet(object.userId) ? globalThis.Number(object.userId) : 0 };
+    return {
+      userId: isSet(object.userId) ? globalThis.Number(object.userId) : 0,
+    };
   },
 
   toJSON(message: FindByUserIdRequest): unknown {
@@ -203,10 +239,14 @@ export const FindByUserIdRequest: MessageFns<FindByUserIdRequest> = {
     return obj;
   },
 
-  create<I extends Exact<DeepPartial<FindByUserIdRequest>, I>>(base?: I): FindByUserIdRequest {
+  create<I extends Exact<DeepPartial<FindByUserIdRequest>, I>>(
+    base?: I
+  ): FindByUserIdRequest {
     return FindByUserIdRequest.fromPartial(base ?? ({} as any));
   },
-  fromPartial<I extends Exact<DeepPartial<FindByUserIdRequest>, I>>(object: I): FindByUserIdRequest {
+  fromPartial<I extends Exact<DeepPartial<FindByUserIdRequest>, I>>(
+    object: I
+  ): FindByUserIdRequest {
     const message = createBaseFindByUserIdRequest();
     message.userId = object.userId ?? 0;
     return message;
@@ -218,15 +258,25 @@ function createBaseFindByUserIdResponse(): FindByUserIdResponse {
 }
 
 export const FindByUserIdResponse: MessageFns<FindByUserIdResponse> = {
-  encode(message: FindByUserIdResponse, writer: BinaryWriter = new BinaryWriter()): BinaryWriter {
+  encode(
+    message: FindByUserIdResponse,
+    writer: BinaryWriter = new BinaryWriter()
+  ): BinaryWriter {
     if (message.userSettings !== undefined) {
-      Struct.encode(Struct.wrap(message.userSettings), writer.uint32(10).fork()).join();
+      Struct.encode(
+        Struct.wrap(message.userSettings),
+        writer.uint32(10).fork()
+      ).join();
     }
     return writer;
   },
 
-  decode(input: BinaryReader | Uint8Array, length?: number): FindByUserIdResponse {
-    const reader = input instanceof BinaryReader ? input : new BinaryReader(input);
+  decode(
+    input: BinaryReader | Uint8Array,
+    length?: number
+  ): FindByUserIdResponse {
+    const reader =
+      input instanceof BinaryReader ? input : new BinaryReader(input);
     const end = length === undefined ? reader.len : reader.pos + length;
     const message = createBaseFindByUserIdResponse();
     while (reader.pos < end) {
@@ -237,7 +287,9 @@ export const FindByUserIdResponse: MessageFns<FindByUserIdResponse> = {
             break;
           }
 
-          message.userSettings = Struct.unwrap(Struct.decode(reader, reader.uint32()));
+          message.userSettings = Struct.unwrap(
+            Struct.decode(reader, reader.uint32())
+          );
           continue;
         }
       }
@@ -250,7 +302,11 @@ export const FindByUserIdResponse: MessageFns<FindByUserIdResponse> = {
   },
 
   fromJSON(object: any): FindByUserIdResponse {
-    return { userSettings: isObject(object.userSettings) ? object.userSettings : undefined };
+    return {
+      userSettings: isObject(object.userSettings)
+        ? object.userSettings
+        : undefined,
+    };
   },
 
   toJSON(message: FindByUserIdResponse): unknown {
@@ -261,10 +317,14 @@ export const FindByUserIdResponse: MessageFns<FindByUserIdResponse> = {
     return obj;
   },
 
-  create<I extends Exact<DeepPartial<FindByUserIdResponse>, I>>(base?: I): FindByUserIdResponse {
+  create<I extends Exact<DeepPartial<FindByUserIdResponse>, I>>(
+    base?: I
+  ): FindByUserIdResponse {
     return FindByUserIdResponse.fromPartial(base ?? ({} as any));
   },
-  fromPartial<I extends Exact<DeepPartial<FindByUserIdResponse>, I>>(object: I): FindByUserIdResponse {
+  fromPartial<I extends Exact<DeepPartial<FindByUserIdResponse>, I>>(
+    object: I
+  ): FindByUserIdResponse {
     const message = createBaseFindByUserIdResponse();
     message.userSettings = object.userSettings ?? undefined;
     return message;
@@ -276,7 +336,10 @@ function createBaseCheckBlockedUserRequest(): CheckBlockedUserRequest {
 }
 
 export const CheckBlockedUserRequest: MessageFns<CheckBlockedUserRequest> = {
-  encode(message: CheckBlockedUserRequest, writer: BinaryWriter = new BinaryWriter()): BinaryWriter {
+  encode(
+    message: CheckBlockedUserRequest,
+    writer: BinaryWriter = new BinaryWriter()
+  ): BinaryWriter {
     if (message.blockerId !== 0) {
       writer.uint32(8).int64(message.blockerId);
     }
@@ -286,8 +349,12 @@ export const CheckBlockedUserRequest: MessageFns<CheckBlockedUserRequest> = {
     return writer;
   },
 
-  decode(input: BinaryReader | Uint8Array, length?: number): CheckBlockedUserRequest {
-    const reader = input instanceof BinaryReader ? input : new BinaryReader(input);
+  decode(
+    input: BinaryReader | Uint8Array,
+    length?: number
+  ): CheckBlockedUserRequest {
+    const reader =
+      input instanceof BinaryReader ? input : new BinaryReader(input);
     const end = length === undefined ? reader.len : reader.pos + length;
     const message = createBaseCheckBlockedUserRequest();
     while (reader.pos < end) {
@@ -320,8 +387,12 @@ export const CheckBlockedUserRequest: MessageFns<CheckBlockedUserRequest> = {
 
   fromJSON(object: any): CheckBlockedUserRequest {
     return {
-      blockerId: isSet(object.blockerId) ? globalThis.Number(object.blockerId) : 0,
-      blockedId: isSet(object.blockedId) ? globalThis.Number(object.blockedId) : 0,
+      blockerId: isSet(object.blockerId)
+        ? globalThis.Number(object.blockerId)
+        : 0,
+      blockedId: isSet(object.blockedId)
+        ? globalThis.Number(object.blockedId)
+        : 0,
     };
   },
 
@@ -336,10 +407,14 @@ export const CheckBlockedUserRequest: MessageFns<CheckBlockedUserRequest> = {
     return obj;
   },
 
-  create<I extends Exact<DeepPartial<CheckBlockedUserRequest>, I>>(base?: I): CheckBlockedUserRequest {
+  create<I extends Exact<DeepPartial<CheckBlockedUserRequest>, I>>(
+    base?: I
+  ): CheckBlockedUserRequest {
     return CheckBlockedUserRequest.fromPartial(base ?? ({} as any));
   },
-  fromPartial<I extends Exact<DeepPartial<CheckBlockedUserRequest>, I>>(object: I): CheckBlockedUserRequest {
+  fromPartial<I extends Exact<DeepPartial<CheckBlockedUserRequest>, I>>(
+    object: I
+  ): CheckBlockedUserRequest {
     const message = createBaseCheckBlockedUserRequest();
     message.blockerId = object.blockerId ?? 0;
     message.blockedId = object.blockedId ?? 0;
@@ -352,15 +427,25 @@ function createBaseCheckBlockedUserResponse(): CheckBlockedUserResponse {
 }
 
 export const CheckBlockedUserResponse: MessageFns<CheckBlockedUserResponse> = {
-  encode(message: CheckBlockedUserResponse, writer: BinaryWriter = new BinaryWriter()): BinaryWriter {
+  encode(
+    message: CheckBlockedUserResponse,
+    writer: BinaryWriter = new BinaryWriter()
+  ): BinaryWriter {
     if (message.blockedUser !== undefined) {
-      Struct.encode(Struct.wrap(message.blockedUser), writer.uint32(10).fork()).join();
+      Struct.encode(
+        Struct.wrap(message.blockedUser),
+        writer.uint32(10).fork()
+      ).join();
     }
     return writer;
   },
 
-  decode(input: BinaryReader | Uint8Array, length?: number): CheckBlockedUserResponse {
-    const reader = input instanceof BinaryReader ? input : new BinaryReader(input);
+  decode(
+    input: BinaryReader | Uint8Array,
+    length?: number
+  ): CheckBlockedUserResponse {
+    const reader =
+      input instanceof BinaryReader ? input : new BinaryReader(input);
     const end = length === undefined ? reader.len : reader.pos + length;
     const message = createBaseCheckBlockedUserResponse();
     while (reader.pos < end) {
@@ -371,7 +456,9 @@ export const CheckBlockedUserResponse: MessageFns<CheckBlockedUserResponse> = {
             break;
           }
 
-          message.blockedUser = Struct.unwrap(Struct.decode(reader, reader.uint32()));
+          message.blockedUser = Struct.unwrap(
+            Struct.decode(reader, reader.uint32())
+          );
           continue;
         }
       }
@@ -384,7 +471,11 @@ export const CheckBlockedUserResponse: MessageFns<CheckBlockedUserResponse> = {
   },
 
   fromJSON(object: any): CheckBlockedUserResponse {
-    return { blockedUser: isObject(object.blockedUser) ? object.blockedUser : undefined };
+    return {
+      blockedUser: isObject(object.blockedUser)
+        ? object.blockedUser
+        : undefined,
+    };
   },
 
   toJSON(message: CheckBlockedUserResponse): unknown {
@@ -395,10 +486,14 @@ export const CheckBlockedUserResponse: MessageFns<CheckBlockedUserResponse> = {
     return obj;
   },
 
-  create<I extends Exact<DeepPartial<CheckBlockedUserResponse>, I>>(base?: I): CheckBlockedUserResponse {
+  create<I extends Exact<DeepPartial<CheckBlockedUserResponse>, I>>(
+    base?: I
+  ): CheckBlockedUserResponse {
     return CheckBlockedUserResponse.fromPartial(base ?? ({} as any));
   },
-  fromPartial<I extends Exact<DeepPartial<CheckBlockedUserResponse>, I>>(object: I): CheckBlockedUserResponse {
+  fromPartial<I extends Exact<DeepPartial<CheckBlockedUserResponse>, I>>(
+    object: I
+  ): CheckBlockedUserResponse {
     const message = createBaseCheckBlockedUserResponse();
     message.blockedUser = object.blockedUser ?? undefined;
     return message;
@@ -406,7 +501,9 @@ export const CheckBlockedUserResponse: MessageFns<CheckBlockedUserResponse> = {
 };
 
 export interface UserService {
-  FindUserWithProfileById(request: FindUserWithProfileByIdRequest): Promise<FindUserWithProfileByIdResponse>;
+  FindUserWithProfileById(
+    request: FindUserWithProfileByIdRequest
+  ): Promise<FindUserWithProfileByIdResponse>;
 }
 
 export const UserServiceServiceName = "user.UserService";
@@ -418,10 +515,18 @@ export class UserServiceClientImpl implements UserService {
     this.rpc = rpc;
     this.FindUserWithProfileById = this.FindUserWithProfileById.bind(this);
   }
-  FindUserWithProfileById(request: FindUserWithProfileByIdRequest): Promise<FindUserWithProfileByIdResponse> {
+  FindUserWithProfileById(
+    request: FindUserWithProfileByIdRequest
+  ): Promise<FindUserWithProfileByIdResponse> {
     const data = FindUserWithProfileByIdRequest.encode(request).finish();
-    const promise = this.rpc.request(this.service, "FindUserWithProfileById", data);
-    return promise.then((data) => FindUserWithProfileByIdResponse.decode(new BinaryReader(data)));
+    const promise = this.rpc.request(
+      this.service,
+      "FindUserWithProfileById",
+      data
+    );
+    return promise.then((data) =>
+      FindUserWithProfileByIdResponse.decode(new BinaryReader(data))
+    );
   }
 }
 
@@ -441,12 +546,16 @@ export class UserSettingsServiceClientImpl implements UserSettingsService {
   FindByUserId(request: FindByUserIdRequest): Promise<FindByUserIdResponse> {
     const data = FindByUserIdRequest.encode(request).finish();
     const promise = this.rpc.request(this.service, "FindByUserId", data);
-    return promise.then((data) => FindByUserIdResponse.decode(new BinaryReader(data)));
+    return promise.then((data) =>
+      FindByUserIdResponse.decode(new BinaryReader(data))
+    );
   }
 }
 
 export interface BlockUserService {
-  CheckBlockedUser(request: CheckBlockedUserRequest): Promise<CheckBlockedUserResponse>;
+  CheckBlockedUser(
+    request: CheckBlockedUserRequest
+  ): Promise<CheckBlockedUserResponse>;
 }
 
 export const BlockUserServiceServiceName = "user.BlockUserService";
@@ -458,28 +567,50 @@ export class BlockUserServiceClientImpl implements BlockUserService {
     this.rpc = rpc;
     this.CheckBlockedUser = this.CheckBlockedUser.bind(this);
   }
-  CheckBlockedUser(request: CheckBlockedUserRequest): Promise<CheckBlockedUserResponse> {
+  CheckBlockedUser(
+    request: CheckBlockedUserRequest
+  ): Promise<CheckBlockedUserResponse> {
     const data = CheckBlockedUserRequest.encode(request).finish();
     const promise = this.rpc.request(this.service, "CheckBlockedUser", data);
-    return promise.then((data) => CheckBlockedUserResponse.decode(new BinaryReader(data)));
+    return promise.then((data) =>
+      CheckBlockedUserResponse.decode(new BinaryReader(data))
+    );
   }
 }
 
 interface Rpc {
-  request(service: string, method: string, data: Uint8Array): Promise<Uint8Array>;
+  request(
+    service: string,
+    method: string,
+    data: Uint8Array
+  ): Promise<Uint8Array>;
 }
 
-type Builtin = Date | Function | Uint8Array | string | number | boolean | undefined;
+type Builtin =
+  | Date
+  | Function
+  | Uint8Array
+  | string
+  | number
+  | boolean
+  | undefined;
 
-export type DeepPartial<T> = T extends Builtin ? T
-  : T extends globalThis.Array<infer U> ? globalThis.Array<DeepPartial<U>>
-  : T extends ReadonlyArray<infer U> ? ReadonlyArray<DeepPartial<U>>
-  : T extends {} ? { [K in keyof T]?: DeepPartial<T[K]> }
+export type DeepPartial<T> = T extends Builtin
+  ? T
+  : T extends globalThis.Array<infer U>
+  ? globalThis.Array<DeepPartial<U>>
+  : T extends ReadonlyArray<infer U>
+  ? ReadonlyArray<DeepPartial<U>>
+  : T extends {}
+  ? { [K in keyof T]?: DeepPartial<T[K]> }
   : Partial<T>;
 
 type KeysOfUnion<T> = T extends T ? keyof T : never;
-export type Exact<P, I extends P> = P extends Builtin ? P
-  : P & { [K in keyof P]: Exact<P[K], I[K]> } & { [K in Exclude<keyof I, KeysOfUnion<P>>]: never };
+export type Exact<P, I extends P> = P extends Builtin
+  ? P
+  : P & { [K in keyof P]: Exact<P[K], I[K]> } & {
+      [K in Exclude<keyof I, KeysOfUnion<P>>]: never;
+    };
 
 function longToNumber(int64: { toString(): string }): number {
   const num = globalThis.Number(int64.toString());
