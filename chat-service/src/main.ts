@@ -24,7 +24,7 @@ const getAppModule = async () => {
 
 async function bootstrap() {
   await beforeLaunch()
-  console.log('>>> Microservice [Conversation-Service] is launching...')
+  console.log('>>> Microservice [Chat-Service] is launching...')
 
   const AppModule = await getAppModule()
   const app = await NestFactory.create<NestExpressApplication>(AppModule)
@@ -61,9 +61,9 @@ async function bootstrap() {
   })
 
   await app.startAllMicroservices()
-  console.log(`>>> Microservice [Media-Service] is listening on: ${HOST_ADDRESS}:${GRPC_PORT}`)
+  console.log(`>>> Microservice [Chat-Service] is listening on: ${HOST_ADDRESS}:${GRPC_PORT}`)
 
   await app.listen(PORT, HOST_ADDRESS)
-  console.log(`>>> HTTP Server [Media-Service] is listening on: ${HOST_ADDRESS}:${PORT}`)
+  console.log(`>>> HTTP Server [Chat-Service] is listening on: ${HOST_ADDRESS}:${PORT}`)
 }
 bootstrap()

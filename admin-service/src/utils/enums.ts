@@ -31,7 +31,7 @@ export enum EProviderTokens {
 export enum EGrpcPackages {
   CHAT = 'chat',
   CHAT_PACKAGE = 'CHAT_PACKAGE',
-  MEDIA = 'MEDIA',
+  MEDIA = 'media',
   MEDIA_PACKAGE = 'MEDIA_PACKAGE',
   ADMIN = 'admin',
   ADMIN_PACKAGE = 'ADMIN_PACKAGE',

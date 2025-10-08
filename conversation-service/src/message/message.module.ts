@@ -1,13 +1,12 @@
+import { GrpcClientModule } from '@/configs/communication/grpc/grpc-client.module'
 import { MessageController } from '@/message/message.controller'
 import { MessageService } from '@/message/message.service'
-import { UserModule } from '@/user/user.module'
 import { Module } from '@nestjs/common'
-import { SyncDataToESModule } from '@/configs/elasticsearch/sync-data-to-ES/sync-data-to-ES.module'
 
 @Module({
-  imports: [UserModule, SyncDataToESModule],
+  imports: [GrpcClientModule],
   providers: [MessageService],
   controllers: [MessageController],
-  exports: [MessageService, SyncDataToESModule],
+  exports: [MessageService],
 })
 export class MessageModule {}

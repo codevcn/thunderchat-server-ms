@@ -26,4 +26,16 @@ export class GrpcClientConfig {
       },
     }
   }
+
+  static getUserConnectionClient(): ClientProviderOptions {
+    return {
+      name: EGrpcPackages.CHAT_PACKAGE,
+      transport: Transport.GRPC,
+      options: {
+        package: EGrpcPackages.CHAT,
+        protoPath: join(__dirname, '/../../../../protos/artifacts/', 'chat.proto'),
+        url: `localhost:${process.env.CHAT_SERVICE_PORT}`,
+      },
+    }
+  }
 }

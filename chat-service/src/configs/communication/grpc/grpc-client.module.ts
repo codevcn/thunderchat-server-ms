@@ -5,8 +5,11 @@ import { GrpcClientConfig } from './grpc-client.config'
 @Module({
   imports: [
     ClientsModule.register([
-      GrpcClientConfig.getUploadClient(),
-      GrpcClientConfig.getUserConnectionClient(),
+      GrpcClientConfig.getFriendClient(),
+      GrpcClientConfig.getConversationClient(),
+      GrpcClientConfig.getAuthClient(),
+      GrpcClientConfig.getUserClient(),
+      GrpcClientConfig.getNotificationClient(),
     ]),
   ],
   exports: [ClientsModule],

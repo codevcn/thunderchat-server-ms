@@ -27,11 +27,13 @@ export enum EGrpcPackages {
   GROUP_MEMBER = 'group_member',
   USER_CONNECTION_PACKAGE = 'USER_CONNECTION_PACKAGE',
   USER_CONNECTION = 'user_connection',
+  CHAT = 'chat',
+  CHAT_PACKAGE = 'CHAT_PACKAGE',
 }
 
 export enum EGrpcServices {
   ELASTIC_SEARCH_SERVICE = 'ElasticSearchService',
-  S3_UPLOAD_SERVICE = 'S3UploadService',
+  UPLOAD_SERVICE = 'UploadService',
   USER_CONNECTION = 'UserConnectionService',
 }
 

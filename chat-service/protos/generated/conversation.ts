@@ -12,19 +12,10 @@ import { Timestamp } from "./google/protobuf/timestamp";
 
 export const protobufPackage = "conversation";
 
-export interface GetGroupChatMemberRequest {
-  groupChatId: number;
-  userId: number;
-}
-
-export interface GetGroupChatMemberResponse {
-  member: { [key: string]: any } | undefined;
-}
-
 export interface GetNewerDirectMessagesRequest {
   messageOffset: number;
-  directChatId: number;
-  groupChatId: number;
+  directChatId?: number | undefined;
+  groupChatId?: number | undefined;
   limit: number;
 }
 
@@ -80,142 +71,43 @@ export interface UpdateLastSentMessageRequest {
   directChatId: number;
 }
 
-function createBaseGetGroupChatMemberRequest(): GetGroupChatMemberRequest {
-  return { groupChatId: 0, userId: 0 };
+export interface UpdateMessageStatusRequest {
+  msgId: number;
+  status: string;
 }
 
-export const GetGroupChatMemberRequest: MessageFns<GetGroupChatMemberRequest> = {
-  encode(message: GetGroupChatMemberRequest, writer: BinaryWriter = new BinaryWriter()): BinaryWriter {
-    if (message.groupChatId !== 0) {
-      writer.uint32(8).int32(message.groupChatId);
-    }
-    if (message.userId !== 0) {
-      writer.uint32(16).int32(message.userId);
-    }
-    return writer;
-  },
-
-  decode(input: BinaryReader | Uint8Array, length?: number): GetGroupChatMemberRequest {
-    const reader = input instanceof BinaryReader ? input : new BinaryReader(input);
-    const end = length === undefined ? reader.len : reader.pos + length;
-    const message = createBaseGetGroupChatMemberRequest();
-    while (reader.pos < end) {
-      const tag = reader.uint32();
-      switch (tag >>> 3) {
-        case 1: {
-          if (tag !== 8) {
-            break;
-          }
-
-          message.groupChatId = reader.int32();
-          continue;
-        }
-        case 2: {
-          if (tag !== 16) {
-            break;
-          }
-
-          message.userId = reader.int32();
-          continue;
-        }
-      }
-      if ((tag & 7) === 4 || tag === 0) {
-        break;
-      }
-      reader.skip(tag & 7);
-    }
-    return message;
-  },
-
-  fromJSON(object: any): GetGroupChatMemberRequest {
-    return {
-      groupChatId: isSet(object.groupChatId) ? globalThis.Number(object.groupChatId) : 0,
-      userId: isSet(object.userId) ? globalThis.Number(object.userId) : 0,
-    };
-  },
-
-  toJSON(message: GetGroupChatMemberRequest): unknown {
-    const obj: any = {};
-    if (message.groupChatId !== 0) {
-      obj.groupChatId = Math.round(message.groupChatId);
-    }
-    if (message.userId !== 0) {
-      obj.userId = Math.round(message.userId);
-    }
-    return obj;
-  },
-
-  create<I extends Exact<DeepPartial<GetGroupChatMemberRequest>, I>>(base?: I): GetGroupChatMemberRequest {
-    return GetGroupChatMemberRequest.fromPartial(base ?? ({} as any));
-  },
-  fromPartial<I extends Exact<DeepPartial<GetGroupChatMemberRequest>, I>>(object: I): GetGroupChatMemberRequest {
-    const message = createBaseGetGroupChatMemberRequest();
-    message.groupChatId = object.groupChatId ?? 0;
-    message.userId = object.userId ?? 0;
-    return message;
-  },
-};
-
-function createBaseGetGroupChatMemberResponse(): GetGroupChatMemberResponse {
-  return { member: undefined };
+export interface UpdateMessageStatusResponse {
+  message: { [key: string]: any } | undefined;
 }
 
-export const GetGroupChatMemberResponse: MessageFns<GetGroupChatMemberResponse> = {
-  encode(message: GetGroupChatMemberResponse, writer: BinaryWriter = new BinaryWriter()): BinaryWriter {
-    if (message.member !== undefined) {
-      Struct.encode(Struct.wrap(message.member), writer.uint32(10).fork()).join();
-    }
-    return writer;
-  },
+export interface FindDirectChatByIdRequest {
+  directChatId: number;
+}
 
-  decode(input: BinaryReader | Uint8Array, length?: number): GetGroupChatMemberResponse {
-    const reader = input instanceof BinaryReader ? input : new BinaryReader(input);
-    const end = length === undefined ? reader.len : reader.pos + length;
-    const message = createBaseGetGroupChatMemberResponse();
-    while (reader.pos < end) {
-      const tag = reader.uint32();
-      switch (tag >>> 3) {
-        case 1: {
-          if (tag !== 10) {
-            break;
-          }
+export interface FindDirectChatByIdResponse {
+  directChat?: { [key: string]: any } | undefined;
+}
 
-          message.member = Struct.unwrap(Struct.decode(reader, reader.uint32()));
-          continue;
-        }
-      }
-      if ((tag & 7) === 4 || tag === 0) {
-        break;
-      }
-      reader.skip(tag & 7);
-    }
-    return message;
-  },
+export interface FindMemberInGroupChatRequest {
+  groupChatId: number;
+  userId: number;
+}
 
-  fromJSON(object: any): GetGroupChatMemberResponse {
-    return { member: isObject(object.member) ? object.member : undefined };
-  },
+export interface FindMemberInGroupChatResponse {
+  groupChatMember?: { [key: string]: any } | undefined;
+}
 
-  toJSON(message: GetGroupChatMemberResponse): unknown {
-    const obj: any = {};
-    if (message.member !== undefined) {
-      obj.member = message.member;
-    }
-    return obj;
-  },
+export interface CheckGroupChatPermissionRequest {
+  groupChatId: number;
+  permission: string;
+}
 
-  create<I extends Exact<DeepPartial<GetGroupChatMemberResponse>, I>>(base?: I): GetGroupChatMemberResponse {
-    return GetGroupChatMemberResponse.fromPartial(base ?? ({} as any));
-  },
-  fromPartial<I extends Exact<DeepPartial<GetGroupChatMemberResponse>, I>>(object: I): GetGroupChatMemberResponse {
-    const message = createBaseGetGroupChatMemberResponse();
-    message.member = object.member ?? undefined;
-    return message;
-  },
-};
+export interface CheckGroupChatPermissionResponse {
+  allowed: boolean;
+}
 
 function createBaseGetNewerDirectMessagesRequest(): GetNewerDirectMessagesRequest {
-  return { messageOffset: 0, directChatId: 0, groupChatId: 0, limit: 0 };
+  return { messageOffset: 0, directChatId: undefined, groupChatId: undefined, limit: 0 };
 }
 
 export const GetNewerDirectMessagesRequest: MessageFns<GetNewerDirectMessagesRequest> = {
@@ -223,10 +115,10 @@ export const GetNewerDirectMessagesRequest: MessageFns<GetNewerDirectMessagesReq
     if (message.messageOffset !== 0) {
       writer.uint32(8).int64(message.messageOffset);
     }
-    if (message.directChatId !== 0) {
+    if (message.directChatId !== undefined) {
       writer.uint32(16).int64(message.directChatId);
     }
-    if (message.groupChatId !== 0) {
+    if (message.groupChatId !== undefined) {
       writer.uint32(24).int64(message.groupChatId);
     }
     if (message.limit !== 0) {
@@ -286,8 +178,8 @@ export const GetNewerDirectMessagesRequest: MessageFns<GetNewerDirectMessagesReq
   fromJSON(object: any): GetNewerDirectMessagesRequest {
     return {
       messageOffset: isSet(object.messageOffset) ? globalThis.Number(object.messageOffset) : 0,
-      directChatId: isSet(object.directChatId) ? globalThis.Number(object.directChatId) : 0,
-      groupChatId: isSet(object.groupChatId) ? globalThis.Number(object.groupChatId) : 0,
+      directChatId: isSet(object.directChatId) ? globalThis.Number(object.directChatId) : undefined,
+      groupChatId: isSet(object.groupChatId) ? globalThis.Number(object.groupChatId) : undefined,
       limit: isSet(object.limit) ? globalThis.Number(object.limit) : 0,
     };
   },
@@ -297,10 +189,10 @@ export const GetNewerDirectMessagesRequest: MessageFns<GetNewerDirectMessagesReq
     if (message.messageOffset !== 0) {
       obj.messageOffset = Math.round(message.messageOffset);
     }
-    if (message.directChatId !== 0) {
+    if (message.directChatId !== undefined) {
       obj.directChatId = Math.round(message.directChatId);
     }
-    if (message.groupChatId !== 0) {
+    if (message.groupChatId !== undefined) {
       obj.groupChatId = Math.round(message.groupChatId);
     }
     if (message.limit !== 0) {
@@ -317,8 +209,8 @@ export const GetNewerDirectMessagesRequest: MessageFns<GetNewerDirectMessagesReq
   ): GetNewerDirectMessagesRequest {
     const message = createBaseGetNewerDirectMessagesRequest();
     message.messageOffset = object.messageOffset ?? 0;
-    message.directChatId = object.directChatId ?? 0;
-    message.groupChatId = object.groupChatId ?? 0;
+    message.directChatId = object.directChatId ?? undefined;
+    message.groupChatId = object.groupChatId ?? undefined;
     message.limit = object.limit ?? 0;
     return message;
   },
@@ -838,10 +730,10 @@ export const CreateNewMessageRequest: MessageFns<CreateNewMessageRequest> = {
       writer.uint32(64).int32(message.replyToId);
     }
     if (message.directChatId !== undefined) {
-      writer.uint32(72).int64(message.directChatId);
+      writer.uint32(72).int32(message.directChatId);
     }
     if (message.groupChatId !== undefined) {
-      writer.uint32(80).int64(message.groupChatId);
+      writer.uint32(80).int32(message.groupChatId);
     }
     return writer;
   },
@@ -922,7 +814,7 @@ export const CreateNewMessageRequest: MessageFns<CreateNewMessageRequest> = {
             break;
           }
 
-          message.directChatId = longToNumber(reader.int64());
+          message.directChatId = reader.int32();
           continue;
         }
         case 10: {
@@ -930,7 +822,7 @@ export const CreateNewMessageRequest: MessageFns<CreateNewMessageRequest> = {
             break;
           }
 
-          message.groupChatId = longToNumber(reader.int64());
+          message.groupChatId = reader.int32();
           continue;
         }
       }
@@ -1079,7 +971,7 @@ export const UpdateLastSentMessageRequest: MessageFns<UpdateLastSentMessageReque
       writer.uint32(8).int32(message.lastSentMessageId);
     }
     if (message.directChatId !== 0) {
-      writer.uint32(16).int64(message.directChatId);
+      writer.uint32(16).int32(message.directChatId);
     }
     return writer;
   },
@@ -1104,7 +996,7 @@ export const UpdateLastSentMessageRequest: MessageFns<UpdateLastSentMessageReque
             break;
           }
 
-          message.directChatId = longToNumber(reader.int64());
+          message.directChatId = reader.int32();
           continue;
         }
       }
@@ -1145,11 +1037,539 @@ export const UpdateLastSentMessageRequest: MessageFns<UpdateLastSentMessageReque
   },
 };
 
+function createBaseUpdateMessageStatusRequest(): UpdateMessageStatusRequest {
+  return { msgId: 0, status: "" };
+}
+
+export const UpdateMessageStatusRequest: MessageFns<UpdateMessageStatusRequest> = {
+  encode(message: UpdateMessageStatusRequest, writer: BinaryWriter = new BinaryWriter()): BinaryWriter {
+    if (message.msgId !== 0) {
+      writer.uint32(8).int32(message.msgId);
+    }
+    if (message.status !== "") {
+      writer.uint32(18).string(message.status);
+    }
+    return writer;
+  },
+
+  decode(input: BinaryReader | Uint8Array, length?: number): UpdateMessageStatusRequest {
+    const reader = input instanceof BinaryReader ? input : new BinaryReader(input);
+    const end = length === undefined ? reader.len : reader.pos + length;
+    const message = createBaseUpdateMessageStatusRequest();
+    while (reader.pos < end) {
+      const tag = reader.uint32();
+      switch (tag >>> 3) {
+        case 1: {
+          if (tag !== 8) {
+            break;
+          }
+
+          message.msgId = reader.int32();
+          continue;
+        }
+        case 2: {
+          if (tag !== 18) {
+            break;
+          }
+
+          message.status = reader.string();
+          continue;
+        }
+      }
+      if ((tag & 7) === 4 || tag === 0) {
+        break;
+      }
+      reader.skip(tag & 7);
+    }
+    return message;
+  },
+
+  fromJSON(object: any): UpdateMessageStatusRequest {
+    return {
+      msgId: isSet(object.msgId) ? globalThis.Number(object.msgId) : 0,
+      status: isSet(object.status) ? globalThis.String(object.status) : "",
+    };
+  },
+
+  toJSON(message: UpdateMessageStatusRequest): unknown {
+    const obj: any = {};
+    if (message.msgId !== 0) {
+      obj.msgId = Math.round(message.msgId);
+    }
+    if (message.status !== "") {
+      obj.status = message.status;
+    }
+    return obj;
+  },
+
+  create<I extends Exact<DeepPartial<UpdateMessageStatusRequest>, I>>(base?: I): UpdateMessageStatusRequest {
+    return UpdateMessageStatusRequest.fromPartial(base ?? ({} as any));
+  },
+  fromPartial<I extends Exact<DeepPartial<UpdateMessageStatusRequest>, I>>(object: I): UpdateMessageStatusRequest {
+    const message = createBaseUpdateMessageStatusRequest();
+    message.msgId = object.msgId ?? 0;
+    message.status = object.status ?? "";
+    return message;
+  },
+};
+
+function createBaseUpdateMessageStatusResponse(): UpdateMessageStatusResponse {
+  return { message: undefined };
+}
+
+export const UpdateMessageStatusResponse: MessageFns<UpdateMessageStatusResponse> = {
+  encode(message: UpdateMessageStatusResponse, writer: BinaryWriter = new BinaryWriter()): BinaryWriter {
+    if (message.message !== undefined) {
+      Struct.encode(Struct.wrap(message.message), writer.uint32(10).fork()).join();
+    }
+    return writer;
+  },
+
+  decode(input: BinaryReader | Uint8Array, length?: number): UpdateMessageStatusResponse {
+    const reader = input instanceof BinaryReader ? input : new BinaryReader(input);
+    const end = length === undefined ? reader.len : reader.pos + length;
+    const message = createBaseUpdateMessageStatusResponse();
+    while (reader.pos < end) {
+      const tag = reader.uint32();
+      switch (tag >>> 3) {
+        case 1: {
+          if (tag !== 10) {
+            break;
+          }
+
+          message.message = Struct.unwrap(Struct.decode(reader, reader.uint32()));
+          continue;
+        }
+      }
+      if ((tag & 7) === 4 || tag === 0) {
+        break;
+      }
+      reader.skip(tag & 7);
+    }
+    return message;
+  },
+
+  fromJSON(object: any): UpdateMessageStatusResponse {
+    return { message: isObject(object.message) ? object.message : undefined };
+  },
+
+  toJSON(message: UpdateMessageStatusResponse): unknown {
+    const obj: any = {};
+    if (message.message !== undefined) {
+      obj.message = message.message;
+    }
+    return obj;
+  },
+
+  create<I extends Exact<DeepPartial<UpdateMessageStatusResponse>, I>>(base?: I): UpdateMessageStatusResponse {
+    return UpdateMessageStatusResponse.fromPartial(base ?? ({} as any));
+  },
+  fromPartial<I extends Exact<DeepPartial<UpdateMessageStatusResponse>, I>>(object: I): UpdateMessageStatusResponse {
+    const message = createBaseUpdateMessageStatusResponse();
+    message.message = object.message ?? undefined;
+    return message;
+  },
+};
+
+function createBaseFindDirectChatByIdRequest(): FindDirectChatByIdRequest {
+  return { directChatId: 0 };
+}
+
+export const FindDirectChatByIdRequest: MessageFns<FindDirectChatByIdRequest> = {
+  encode(message: FindDirectChatByIdRequest, writer: BinaryWriter = new BinaryWriter()): BinaryWriter {
+    if (message.directChatId !== 0) {
+      writer.uint32(8).int32(message.directChatId);
+    }
+    return writer;
+  },
+
+  decode(input: BinaryReader | Uint8Array, length?: number): FindDirectChatByIdRequest {
+    const reader = input instanceof BinaryReader ? input : new BinaryReader(input);
+    const end = length === undefined ? reader.len : reader.pos + length;
+    const message = createBaseFindDirectChatByIdRequest();
+    while (reader.pos < end) {
+      const tag = reader.uint32();
+      switch (tag >>> 3) {
+        case 1: {
+          if (tag !== 8) {
+            break;
+          }
+
+          message.directChatId = reader.int32();
+          continue;
+        }
+      }
+      if ((tag & 7) === 4 || tag === 0) {
+        break;
+      }
+      reader.skip(tag & 7);
+    }
+    return message;
+  },
+
+  fromJSON(object: any): FindDirectChatByIdRequest {
+    return { directChatId: isSet(object.directChatId) ? globalThis.Number(object.directChatId) : 0 };
+  },
+
+  toJSON(message: FindDirectChatByIdRequest): unknown {
+    const obj: any = {};
+    if (message.directChatId !== 0) {
+      obj.directChatId = Math.round(message.directChatId);
+    }
+    return obj;
+  },
+
+  create<I extends Exact<DeepPartial<FindDirectChatByIdRequest>, I>>(base?: I): FindDirectChatByIdRequest {
+    return FindDirectChatByIdRequest.fromPartial(base ?? ({} as any));
+  },
+  fromPartial<I extends Exact<DeepPartial<FindDirectChatByIdRequest>, I>>(object: I): FindDirectChatByIdRequest {
+    const message = createBaseFindDirectChatByIdRequest();
+    message.directChatId = object.directChatId ?? 0;
+    return message;
+  },
+};
+
+function createBaseFindDirectChatByIdResponse(): FindDirectChatByIdResponse {
+  return { directChat: undefined };
+}
+
+export const FindDirectChatByIdResponse: MessageFns<FindDirectChatByIdResponse> = {
+  encode(message: FindDirectChatByIdResponse, writer: BinaryWriter = new BinaryWriter()): BinaryWriter {
+    if (message.directChat !== undefined) {
+      Struct.encode(Struct.wrap(message.directChat), writer.uint32(10).fork()).join();
+    }
+    return writer;
+  },
+
+  decode(input: BinaryReader | Uint8Array, length?: number): FindDirectChatByIdResponse {
+    const reader = input instanceof BinaryReader ? input : new BinaryReader(input);
+    const end = length === undefined ? reader.len : reader.pos + length;
+    const message = createBaseFindDirectChatByIdResponse();
+    while (reader.pos < end) {
+      const tag = reader.uint32();
+      switch (tag >>> 3) {
+        case 1: {
+          if (tag !== 10) {
+            break;
+          }
+
+          message.directChat = Struct.unwrap(Struct.decode(reader, reader.uint32()));
+          continue;
+        }
+      }
+      if ((tag & 7) === 4 || tag === 0) {
+        break;
+      }
+      reader.skip(tag & 7);
+    }
+    return message;
+  },
+
+  fromJSON(object: any): FindDirectChatByIdResponse {
+    return { directChat: isObject(object.directChat) ? object.directChat : undefined };
+  },
+
+  toJSON(message: FindDirectChatByIdResponse): unknown {
+    const obj: any = {};
+    if (message.directChat !== undefined) {
+      obj.directChat = message.directChat;
+    }
+    return obj;
+  },
+
+  create<I extends Exact<DeepPartial<FindDirectChatByIdResponse>, I>>(base?: I): FindDirectChatByIdResponse {
+    return FindDirectChatByIdResponse.fromPartial(base ?? ({} as any));
+  },
+  fromPartial<I extends Exact<DeepPartial<FindDirectChatByIdResponse>, I>>(object: I): FindDirectChatByIdResponse {
+    const message = createBaseFindDirectChatByIdResponse();
+    message.directChat = object.directChat ?? undefined;
+    return message;
+  },
+};
+
+function createBaseFindMemberInGroupChatRequest(): FindMemberInGroupChatRequest {
+  return { groupChatId: 0, userId: 0 };
+}
+
+export const FindMemberInGroupChatRequest: MessageFns<FindMemberInGroupChatRequest> = {
+  encode(message: FindMemberInGroupChatRequest, writer: BinaryWriter = new BinaryWriter()): BinaryWriter {
+    if (message.groupChatId !== 0) {
+      writer.uint32(8).int32(message.groupChatId);
+    }
+    if (message.userId !== 0) {
+      writer.uint32(16).int32(message.userId);
+    }
+    return writer;
+  },
+
+  decode(input: BinaryReader | Uint8Array, length?: number): FindMemberInGroupChatRequest {
+    const reader = input instanceof BinaryReader ? input : new BinaryReader(input);
+    const end = length === undefined ? reader.len : reader.pos + length;
+    const message = createBaseFindMemberInGroupChatRequest();
+    while (reader.pos < end) {
+      const tag = reader.uint32();
+      switch (tag >>> 3) {
+        case 1: {
+          if (tag !== 8) {
+            break;
+          }
+
+          message.groupChatId = reader.int32();
+          continue;
+        }
+        case 2: {
+          if (tag !== 16) {
+            break;
+          }
+
+          message.userId = reader.int32();
+          continue;
+        }
+      }
+      if ((tag & 7) === 4 || tag === 0) {
+        break;
+      }
+      reader.skip(tag & 7);
+    }
+    return message;
+  },
+
+  fromJSON(object: any): FindMemberInGroupChatRequest {
+    return {
+      groupChatId: isSet(object.groupChatId) ? globalThis.Number(object.groupChatId) : 0,
+      userId: isSet(object.userId) ? globalThis.Number(object.userId) : 0,
+    };
+  },
+
+  toJSON(message: FindMemberInGroupChatRequest): unknown {
+    const obj: any = {};
+    if (message.groupChatId !== 0) {
+      obj.groupChatId = Math.round(message.groupChatId);
+    }
+    if (message.userId !== 0) {
+      obj.userId = Math.round(message.userId);
+    }
+    return obj;
+  },
+
+  create<I extends Exact<DeepPartial<FindMemberInGroupChatRequest>, I>>(base?: I): FindMemberInGroupChatRequest {
+    return FindMemberInGroupChatRequest.fromPartial(base ?? ({} as any));
+  },
+  fromPartial<I extends Exact<DeepPartial<FindMemberInGroupChatRequest>, I>>(object: I): FindMemberInGroupChatRequest {
+    const message = createBaseFindMemberInGroupChatRequest();
+    message.groupChatId = object.groupChatId ?? 0;
+    message.userId = object.userId ?? 0;
+    return message;
+  },
+};
+
+function createBaseFindMemberInGroupChatResponse(): FindMemberInGroupChatResponse {
+  return { groupChatMember: undefined };
+}
+
+export const FindMemberInGroupChatResponse: MessageFns<FindMemberInGroupChatResponse> = {
+  encode(message: FindMemberInGroupChatResponse, writer: BinaryWriter = new BinaryWriter()): BinaryWriter {
+    if (message.groupChatMember !== undefined) {
+      Struct.encode(Struct.wrap(message.groupChatMember), writer.uint32(10).fork()).join();
+    }
+    return writer;
+  },
+
+  decode(input: BinaryReader | Uint8Array, length?: number): FindMemberInGroupChatResponse {
+    const reader = input instanceof BinaryReader ? input : new BinaryReader(input);
+    const end = length === undefined ? reader.len : reader.pos + length;
+    const message = createBaseFindMemberInGroupChatResponse();
+    while (reader.pos < end) {
+      const tag = reader.uint32();
+      switch (tag >>> 3) {
+        case 1: {
+          if (tag !== 10) {
+            break;
+          }
+
+          message.groupChatMember = Struct.unwrap(Struct.decode(reader, reader.uint32()));
+          continue;
+        }
+      }
+      if ((tag & 7) === 4 || tag === 0) {
+        break;
+      }
+      reader.skip(tag & 7);
+    }
+    return message;
+  },
+
+  fromJSON(object: any): FindMemberInGroupChatResponse {
+    return { groupChatMember: isObject(object.groupChatMember) ? object.groupChatMember : undefined };
+  },
+
+  toJSON(message: FindMemberInGroupChatResponse): unknown {
+    const obj: any = {};
+    if (message.groupChatMember !== undefined) {
+      obj.groupChatMember = message.groupChatMember;
+    }
+    return obj;
+  },
+
+  create<I extends Exact<DeepPartial<FindMemberInGroupChatResponse>, I>>(base?: I): FindMemberInGroupChatResponse {
+    return FindMemberInGroupChatResponse.fromPartial(base ?? ({} as any));
+  },
+  fromPartial<I extends Exact<DeepPartial<FindMemberInGroupChatResponse>, I>>(
+    object: I,
+  ): FindMemberInGroupChatResponse {
+    const message = createBaseFindMemberInGroupChatResponse();
+    message.groupChatMember = object.groupChatMember ?? undefined;
+    return message;
+  },
+};
+
+function createBaseCheckGroupChatPermissionRequest(): CheckGroupChatPermissionRequest {
+  return { groupChatId: 0, permission: "" };
+}
+
+export const CheckGroupChatPermissionRequest: MessageFns<CheckGroupChatPermissionRequest> = {
+  encode(message: CheckGroupChatPermissionRequest, writer: BinaryWriter = new BinaryWriter()): BinaryWriter {
+    if (message.groupChatId !== 0) {
+      writer.uint32(8).int32(message.groupChatId);
+    }
+    if (message.permission !== "") {
+      writer.uint32(18).string(message.permission);
+    }
+    return writer;
+  },
+
+  decode(input: BinaryReader | Uint8Array, length?: number): CheckGroupChatPermissionRequest {
+    const reader = input instanceof BinaryReader ? input : new BinaryReader(input);
+    const end = length === undefined ? reader.len : reader.pos + length;
+    const message = createBaseCheckGroupChatPermissionRequest();
+    while (reader.pos < end) {
+      const tag = reader.uint32();
+      switch (tag >>> 3) {
+        case 1: {
+          if (tag !== 8) {
+            break;
+          }
+
+          message.groupChatId = reader.int32();
+          continue;
+        }
+        case 2: {
+          if (tag !== 18) {
+            break;
+          }
+
+          message.permission = reader.string();
+          continue;
+        }
+      }
+      if ((tag & 7) === 4 || tag === 0) {
+        break;
+      }
+      reader.skip(tag & 7);
+    }
+    return message;
+  },
+
+  fromJSON(object: any): CheckGroupChatPermissionRequest {
+    return {
+      groupChatId: isSet(object.groupChatId) ? globalThis.Number(object.groupChatId) : 0,
+      permission: isSet(object.permission) ? globalThis.String(object.permission) : "",
+    };
+  },
+
+  toJSON(message: CheckGroupChatPermissionRequest): unknown {
+    const obj: any = {};
+    if (message.groupChatId !== 0) {
+      obj.groupChatId = Math.round(message.groupChatId);
+    }
+    if (message.permission !== "") {
+      obj.permission = message.permission;
+    }
+    return obj;
+  },
+
+  create<I extends Exact<DeepPartial<CheckGroupChatPermissionRequest>, I>>(base?: I): CheckGroupChatPermissionRequest {
+    return CheckGroupChatPermissionRequest.fromPartial(base ?? ({} as any));
+  },
+  fromPartial<I extends Exact<DeepPartial<CheckGroupChatPermissionRequest>, I>>(
+    object: I,
+  ): CheckGroupChatPermissionRequest {
+    const message = createBaseCheckGroupChatPermissionRequest();
+    message.groupChatId = object.groupChatId ?? 0;
+    message.permission = object.permission ?? "";
+    return message;
+  },
+};
+
+function createBaseCheckGroupChatPermissionResponse(): CheckGroupChatPermissionResponse {
+  return { allowed: false };
+}
+
+export const CheckGroupChatPermissionResponse: MessageFns<CheckGroupChatPermissionResponse> = {
+  encode(message: CheckGroupChatPermissionResponse, writer: BinaryWriter = new BinaryWriter()): BinaryWriter {
+    if (message.allowed !== false) {
+      writer.uint32(8).bool(message.allowed);
+    }
+    return writer;
+  },
+
+  decode(input: BinaryReader | Uint8Array, length?: number): CheckGroupChatPermissionResponse {
+    const reader = input instanceof BinaryReader ? input : new BinaryReader(input);
+    const end = length === undefined ? reader.len : reader.pos + length;
+    const message = createBaseCheckGroupChatPermissionResponse();
+    while (reader.pos < end) {
+      const tag = reader.uint32();
+      switch (tag >>> 3) {
+        case 1: {
+          if (tag !== 8) {
+            break;
+          }
+
+          message.allowed = reader.bool();
+          continue;
+        }
+      }
+      if ((tag & 7) === 4 || tag === 0) {
+        break;
+      }
+      reader.skip(tag & 7);
+    }
+    return message;
+  },
+
+  fromJSON(object: any): CheckGroupChatPermissionResponse {
+    return { allowed: isSet(object.allowed) ? globalThis.Boolean(object.allowed) : false };
+  },
+
+  toJSON(message: CheckGroupChatPermissionResponse): unknown {
+    const obj: any = {};
+    if (message.allowed !== false) {
+      obj.allowed = message.allowed;
+    }
+    return obj;
+  },
+
+  create<I extends Exact<DeepPartial<CheckGroupChatPermissionResponse>, I>>(
+    base?: I,
+  ): CheckGroupChatPermissionResponse {
+    return CheckGroupChatPermissionResponse.fromPartial(base ?? ({} as any));
+  },
+  fromPartial<I extends Exact<DeepPartial<CheckGroupChatPermissionResponse>, I>>(
+    object: I,
+  ): CheckGroupChatPermissionResponse {
+    const message = createBaseCheckGroupChatPermissionResponse();
+    message.allowed = object.allowed ?? false;
+    return message;
+  },
+};
+
 export interface DirectChatService {
   FindConversationWithOtherUser(
     request: FindConversationWithOtherUserRequest,
   ): Promise<FindConversationWithOtherUserResponse>;
   CreateNewDirectChat(request: CreateNewDirectChatRequest): Promise<CreateNewDirectChatResponse>;
+  UpdateLastSentMessage(request: UpdateLastSentMessageRequest): Promise<Empty>;
+  findById(request: FindDirectChatByIdRequest): Promise<FindDirectChatByIdResponse>;
 }
 
 export const DirectChatServiceServiceName = "conversation.DirectChatService";
@@ -1161,6 +1581,8 @@ export class DirectChatServiceClientImpl implements DirectChatService {
     this.rpc = rpc;
     this.FindConversationWithOtherUser = this.FindConversationWithOtherUser.bind(this);
     this.CreateNewDirectChat = this.CreateNewDirectChat.bind(this);
+    this.UpdateLastSentMessage = this.UpdateLastSentMessage.bind(this);
+    this.findById = this.findById.bind(this);
   }
   FindConversationWithOtherUser(
     request: FindConversationWithOtherUserRequest,
@@ -1175,27 +1597,39 @@ export class DirectChatServiceClientImpl implements DirectChatService {
     const promise = this.rpc.request(this.service, "CreateNewDirectChat", data);
     return promise.then((data) => CreateNewDirectChatResponse.decode(new BinaryReader(data)));
   }
+
+  UpdateLastSentMessage(request: UpdateLastSentMessageRequest): Promise<Empty> {
+    const data = UpdateLastSentMessageRequest.encode(request).finish();
+    const promise = this.rpc.request(this.service, "UpdateLastSentMessage", data);
+    return promise.then((data) => Empty.decode(new BinaryReader(data)));
+  }
+
+  findById(request: FindDirectChatByIdRequest): Promise<FindDirectChatByIdResponse> {
+    const data = FindDirectChatByIdRequest.encode(request).finish();
+    const promise = this.rpc.request(this.service, "findById", data);
+    return promise.then((data) => FindDirectChatByIdResponse.decode(new BinaryReader(data)));
+  }
 }
 
-export interface GroupChatMemberService {
-  GetGroupChatMember(request: GetGroupChatMemberRequest): Promise<GetGroupChatMemberResponse>;
+export interface GroupMemberService {
+  FindMemberInGroupChat(request: FindMemberInGroupChatRequest): Promise<FindMemberInGroupChatResponse>;
   FindGroupChatMemberIds(request: FindGroupChatMemberIdsRequest): Promise<FindGroupChatMemberIdsResponse>;
 }
 
-export const GroupChatMemberServiceServiceName = "conversation.GroupChatMemberService";
-export class GroupChatMemberServiceClientImpl implements GroupChatMemberService {
+export const GroupMemberServiceServiceName = "conversation.GroupMemberService";
+export class GroupMemberServiceClientImpl implements GroupMemberService {
   private readonly rpc: Rpc;
   private readonly service: string;
   constructor(rpc: Rpc, opts?: { service?: string }) {
-    this.service = opts?.service || GroupChatMemberServiceServiceName;
+    this.service = opts?.service || GroupMemberServiceServiceName;
     this.rpc = rpc;
-    this.GetGroupChatMember = this.GetGroupChatMember.bind(this);
+    this.FindMemberInGroupChat = this.FindMemberInGroupChat.bind(this);
     this.FindGroupChatMemberIds = this.FindGroupChatMemberIds.bind(this);
   }
-  GetGroupChatMember(request: GetGroupChatMemberRequest): Promise<GetGroupChatMemberResponse> {
-    const data = GetGroupChatMemberRequest.encode(request).finish();
-    const promise = this.rpc.request(this.service, "GetGroupChatMember", data);
-    return promise.then((data) => GetGroupChatMemberResponse.decode(new BinaryReader(data)));
+  FindMemberInGroupChat(request: FindMemberInGroupChatRequest): Promise<FindMemberInGroupChatResponse> {
+    const data = FindMemberInGroupChatRequest.encode(request).finish();
+    const promise = this.rpc.request(this.service, "FindMemberInGroupChat", data);
+    return promise.then((data) => FindMemberInGroupChatResponse.decode(new BinaryReader(data)));
   }
 
   FindGroupChatMemberIds(request: FindGroupChatMemberIdsRequest): Promise<FindGroupChatMemberIdsResponse> {
@@ -1208,7 +1642,7 @@ export class GroupChatMemberServiceClientImpl implements GroupChatMemberService 
 export interface MessageService {
   GetNewerDirectMessages(request: GetNewerDirectMessagesRequest): Promise<GetNewerDirectMessagesResponse>;
   CreateNewMessage(request: CreateNewMessageRequest): Promise<CreateNewMessageResponse>;
-  UpdateLastSentMessage(request: UpdateLastSentMessageRequest): Promise<Empty>;
+  UpdateMessageStatus(request: UpdateMessageStatusRequest): Promise<UpdateMessageStatusResponse>;
 }
 
 export const MessageServiceServiceName = "conversation.MessageService";
@@ -1220,7 +1654,7 @@ export class MessageServiceClientImpl implements MessageService {
     this.rpc = rpc;
     this.GetNewerDirectMessages = this.GetNewerDirectMessages.bind(this);
     this.CreateNewMessage = this.CreateNewMessage.bind(this);
-    this.UpdateLastSentMessage = this.UpdateLastSentMessage.bind(this);
+    this.UpdateMessageStatus = this.UpdateMessageStatus.bind(this);
   }
   GetNewerDirectMessages(request: GetNewerDirectMessagesRequest): Promise<GetNewerDirectMessagesResponse> {
     const data = GetNewerDirectMessagesRequest.encode(request).finish();
@@ -1234,10 +1668,30 @@ export class MessageServiceClientImpl implements MessageService {
     return promise.then((data) => CreateNewMessageResponse.decode(new BinaryReader(data)));
   }
 
-  UpdateLastSentMessage(request: UpdateLastSentMessageRequest): Promise<Empty> {
-    const data = UpdateLastSentMessageRequest.encode(request).finish();
-    const promise = this.rpc.request(this.service, "UpdateLastSentMessage", data);
-    return promise.then((data) => Empty.decode(new BinaryReader(data)));
+  UpdateMessageStatus(request: UpdateMessageStatusRequest): Promise<UpdateMessageStatusResponse> {
+    const data = UpdateMessageStatusRequest.encode(request).finish();
+    const promise = this.rpc.request(this.service, "UpdateMessageStatus", data);
+    return promise.then((data) => UpdateMessageStatusResponse.decode(new BinaryReader(data)));
+  }
+}
+
+export interface GroupChatService {
+  CheckGroupChatPermission(request: CheckGroupChatPermissionRequest): Promise<CheckGroupChatPermissionResponse>;
+}
+
+export const GroupChatServiceServiceName = "conversation.GroupChatService";
+export class GroupChatServiceClientImpl implements GroupChatService {
+  private readonly rpc: Rpc;
+  private readonly service: string;
+  constructor(rpc: Rpc, opts?: { service?: string }) {
+    this.service = opts?.service || GroupChatServiceServiceName;
+    this.rpc = rpc;
+    this.CheckGroupChatPermission = this.CheckGroupChatPermission.bind(this);
+  }
+  CheckGroupChatPermission(request: CheckGroupChatPermissionRequest): Promise<CheckGroupChatPermissionResponse> {
+    const data = CheckGroupChatPermissionRequest.encode(request).finish();
+    const promise = this.rpc.request(this.service, "CheckGroupChatPermission", data);
+    return promise.then((data) => CheckGroupChatPermissionResponse.decode(new BinaryReader(data)));
   }
 }
 

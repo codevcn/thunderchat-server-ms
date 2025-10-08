@@ -7,6 +7,7 @@
 /* eslint-disable */
 import { BinaryReader, BinaryWriter } from "@bufbuild/protobuf/wire";
 import { Empty } from "./google/protobuf/empty";
+import { Struct } from "./google/protobuf/struct";
 
 export const protobufPackage = "media";
 
@@ -19,12 +20,7 @@ export interface UploadFileRequest {
 }
 
 export interface UploadFileResponse {
-  id: number;
-  url: string;
-  fileType: string;
-  fileName: string;
-  thumbnailUrl?: string | undefined;
-  fileSize: string;
+  fileInfo: { [key: string]: any } | undefined;
 }
 
 export interface UploadGroupChatAvatarRequest {
@@ -156,28 +152,13 @@ export const UploadFileRequest: MessageFns<UploadFileRequest> = {
 };
 
 function createBaseUploadFileResponse(): UploadFileResponse {
-  return { id: 0, url: "", fileType: "", fileName: "", thumbnailUrl: undefined, fileSize: "" };
+  return { fileInfo: undefined };
 }
 
 export const UploadFileResponse: MessageFns<UploadFileResponse> = {
   encode(message: UploadFileResponse, writer: BinaryWriter = new BinaryWriter()): BinaryWriter {
-    if (message.id !== 0) {
-      writer.uint32(8).int32(message.id);
-    }
-    if (message.url !== "") {
-      writer.uint32(18).string(message.url);
-    }
-    if (message.fileType !== "") {
-      writer.uint32(26).string(message.fileType);
-    }
-    if (message.fileName !== "") {
-      writer.uint32(34).string(message.fileName);
-    }
-    if (message.thumbnailUrl !== undefined) {
-      writer.uint32(42).string(message.thumbnailUrl);
-    }
-    if (message.fileSize !== "") {
-      writer.uint32(50).string(message.fileSize);
+    if (message.fileInfo !== undefined) {
+      Struct.encode(Struct.wrap(message.fileInfo), writer.uint32(10).fork()).join();
     }
     return writer;
   },
@@ -190,51 +171,11 @@ export const UploadFileResponse: MessageFns<UploadFileResponse> = {
       const tag = reader.uint32();
       switch (tag >>> 3) {
         case 1: {
-          if (tag !== 8) {
+          if (tag !== 10) {
             break;
           }
 
-          message.id = reader.int32();
-          continue;
-        }
-        case 2: {
-          if (tag !== 18) {
-            break;
-          }
-
-          message.url = reader.string();
-          continue;
-        }
-        case 3: {
-          if (tag !== 26) {
-            break;
-          }
-
-          message.fileType = reader.string();
-          continue;
-        }
-        case 4: {
-          if (tag !== 34) {
-            break;
-          }
-
-          message.fileName = reader.string();
-          continue;
-        }
-        case 5: {
-          if (tag !== 42) {
-            break;
-          }
-
-          message.thumbnailUrl = reader.string();
-          continue;
-        }
-        case 6: {
-          if (tag !== 50) {
-            break;
-          }
-
-          message.fileSize = reader.string();
+          message.fileInfo = Struct.unwrap(Struct.decode(reader, reader.uint32()));
           continue;
         }
       }
@@ -247,35 +188,13 @@ export const UploadFileResponse: MessageFns<UploadFileResponse> = {
   },
 
   fromJSON(object: any): UploadFileResponse {
-    return {
-      id: isSet(object.id) ? globalThis.Number(object.id) : 0,
-      url: isSet(object.url) ? globalThis.String(object.url) : "",
-      fileType: isSet(object.fileType) ? globalThis.String(object.fileType) : "",
-      fileName: isSet(object.fileName) ? globalThis.String(object.fileName) : "",
-      thumbnailUrl: isSet(object.thumbnailUrl) ? globalThis.String(object.thumbnailUrl) : undefined,
-      fileSize: isSet(object.fileSize) ? globalThis.String(object.fileSize) : "",
-    };
+    return { fileInfo: isObject(object.fileInfo) ? object.fileInfo : undefined };
   },
 
   toJSON(message: UploadFileResponse): unknown {
     const obj: any = {};
-    if (message.id !== 0) {
-      obj.id = Math.round(message.id);
-    }
-    if (message.url !== "") {
-      obj.url = message.url;
-    }
-    if (message.fileType !== "") {
-      obj.fileType = message.fileType;
-    }
-    if (message.fileName !== "") {
-      obj.fileName = message.fileName;
-    }
-    if (message.thumbnailUrl !== undefined) {
-      obj.thumbnailUrl = message.thumbnailUrl;
-    }
-    if (message.fileSize !== "") {
-      obj.fileSize = message.fileSize;
+    if (message.fileInfo !== undefined) {
+      obj.fileInfo = message.fileInfo;
     }
     return obj;
   },
@@ -285,12 +204,7 @@ export const UploadFileResponse: MessageFns<UploadFileResponse> = {
   },
   fromPartial<I extends Exact<DeepPartial<UploadFileResponse>, I>>(object: I): UploadFileResponse {
     const message = createBaseUploadFileResponse();
-    message.id = object.id ?? 0;
-    message.url = object.url ?? "";
-    message.fileType = object.fileType ?? "";
-    message.fileName = object.fileName ?? "";
-    message.thumbnailUrl = object.thumbnailUrl ?? undefined;
-    message.fileSize = object.fileSize ?? "";
+    message.fileInfo = object.fileInfo ?? undefined;
     return message;
   },
 };
@@ -471,19 +385,19 @@ export const DeleteGroupChatAvatarRequest: MessageFns<DeleteGroupChatAvatarReque
   },
 };
 
-export interface S3UploadService {
+export interface UploadService {
   DeleteFileByUrl(request: DeleteFileByUrlRequest): Promise<Empty>;
   UploadFile(request: UploadFileRequest): Promise<UploadFileResponse>;
   UploadGroupChatAvatar(request: UploadGroupChatAvatarRequest): Promise<UploadGroupChatAvatarResponse>;
   DeleteGroupChatAvatar(request: DeleteGroupChatAvatarRequest): Promise<Empty>;
 }
 
-export const S3UploadServiceServiceName = "media.S3UploadService";
-export class S3UploadServiceClientImpl implements S3UploadService {
+export const UploadServiceServiceName = "media.UploadService";
+export class UploadServiceClientImpl implements UploadService {
   private readonly rpc: Rpc;
   private readonly service: string;
   constructor(rpc: Rpc, opts?: { service?: string }) {
-    this.service = opts?.service || S3UploadServiceServiceName;
+    this.service = opts?.service || UploadServiceServiceName;
     this.rpc = rpc;
     this.DeleteFileByUrl = this.DeleteFileByUrl.bind(this);
     this.UploadFile = this.UploadFile.bind(this);
@@ -555,6 +469,10 @@ export type DeepPartial<T> = T extends Builtin ? T
 type KeysOfUnion<T> = T extends T ? keyof T : never;
 export type Exact<P, I extends P> = P extends Builtin ? P
   : P & { [K in keyof P]: Exact<P[K], I[K]> } & { [K in Exclude<keyof I, KeysOfUnion<P>>]: never };
+
+function isObject(value: any): boolean {
+  return typeof value === "object" && value !== null;
+}
 
 function isSet(value: any): boolean {
   return value !== null && value !== undefined;

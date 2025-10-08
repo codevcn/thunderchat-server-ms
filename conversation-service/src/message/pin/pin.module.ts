@@ -4,9 +4,10 @@ import { PinController } from './pin.controller'
 import { PrismaModule } from '../../configs/db/prisma.module'
 import { GroupChatModule } from '@/group-chat/group-chat.module'
 import { GroupMemberModule } from '@/group-member/group-member.module'
+import { GrpcClientModule } from '@/configs/communication/grpc/grpc-client.module'
 
 @Module({
-  imports: [PrismaModule, GroupChatModule, GroupMemberModule],
+  imports: [PrismaModule, GroupChatModule, GroupMemberModule, GrpcClientModule],
   providers: [PinService],
   controllers: [PinController],
   exports: [PinService],

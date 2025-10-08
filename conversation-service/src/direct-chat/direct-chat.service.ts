@@ -16,18 +16,18 @@ import type { TDirectChat } from '@/utils/entities/direct-chat.entity'
 import type { TUserWithProfile } from '@/utils/entities/user.entity'
 import { PrismaService } from '@/configs/db/prisma.service'
 import { ClientGrpc } from '@nestjs/microservices'
-import { IElasticSearchService } from '@/configs/communication/grpc/types/search-service.type'
+import { ElasticSearchService } from '@/configs/communication/grpc/services/es.service'
 
 @Injectable()
 export class DirectChatService {
-  private syncDataToESService: IElasticSearchService
+  private syncDataToESService: ElasticSearchService
 
   constructor(
     @Inject(EProviderTokens.PRISMA_CLIENT) private PrismaService: PrismaService,
     @Inject(EGrpcPackages.SEARCH_PACKAGE) private searchClient: ClientGrpc
   ) {
-    this.syncDataToESService = this.searchClient.getService<IElasticSearchService>(
-      EGrpcServices.ELASTIC_SEARCH_SERVICE
+    this.syncDataToESService = new ElasticSearchService(
+      this.searchClient.getService(EGrpcServices.ELASTIC_SEARCH_SERVICE)
     )
   }
 
@@ -146,11 +146,9 @@ export class DirectChatService {
       await tx.message.deleteMany({
         where: { directChatId },
       })
-      this.syncDataToESService.SyncDataToES({
+      this.syncDataToESService.syncDataToES({
         type: ESyncDataToESWorkerType.DELETE_MESSAGES_IN_BULK,
-        dataObject: {
-          data: messages.map(({ id }) => id),
-        },
+        data: messages.map(({ id }) => id),
       })
       await tx.directChat.delete({
         where: { id: directChatId },

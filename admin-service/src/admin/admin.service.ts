@@ -23,8 +23,8 @@ import type {
 } from './admin.type'
 import { Prisma } from '@prisma/client'
 import { ClientGrpc } from '@nestjs/microservices'
-import { UploadService } from 'protos/generated/media'
-import { UserConnectionService } from 'protos/generated/chat'
+import { UploadService } from '@/configs/communication/grpc/services/upload.service'
+import { UserConnectionService } from '@/configs/communication/grpc/services/user-connection.service'
 
 @Injectable()
 export class AdminService {
@@ -37,9 +37,11 @@ export class AdminService {
     @Inject(EGrpcPackages.MEDIA_PACKAGE) private uploadClient: ClientGrpc,
     @Inject(EGrpcPackages.CHAT_PACKAGE) private userConnectionClient: ClientGrpc
   ) {
-    this.uploadService = this.uploadClient.getService<UploadService>(EGrpcServices.UPLOAD_SERVICE)
-    this.userConnectionService = this.userConnectionClient.getService<UserConnectionService>(
-      EGrpcServices.USER_CONNECTION_SERVICE
+    this.uploadService = new UploadService(
+      this.uploadClient.getService(EGrpcServices.UPLOAD_SERVICE)
+    )
+    this.userConnectionService = new UserConnectionService(
+      this.userConnectionClient.getService(EGrpcServices.USER_CONNECTION_SERVICE)
     )
   }
 
@@ -644,7 +646,7 @@ export class AdminService {
         if (mediaUrlsToDelete.length > 0) {
           // Use Promise.allSettled to handle potential failures gracefully
           await Promise.allSettled(
-            mediaUrlsToDelete.map((url) => this.uploadService.DeleteFileByUrl({ url }))
+            mediaUrlsToDelete.map((url) => this.uploadService.deleteFileByUrl(url))
           )
         }
 
@@ -873,8 +875,7 @@ export class AdminService {
     })
 
     // Get active users (currently connected users)
-    const activeUsers = (await this.userConnectionService.GetConnectedClientsCountForAdmin({}))
-      .count
+    const activeUsers = await this.userConnectionService.getConnectedClientsCountForAdmin()
 
     // Get total direct messages (excluding PIN_NOTICE)
     const totalDirectMessages = await this.prisma.message.count({

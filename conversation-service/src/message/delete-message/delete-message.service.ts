@@ -11,24 +11,24 @@ import { EMessageTypes } from '@/message/message.enum'
 import { Prisma } from '@prisma/client'
 import type { TMessageFullInfo, TMessageWithMedia } from '@/utils/entities/message.entity'
 import { ClientGrpc } from '@nestjs/microservices'
-import { IElasticSearchService } from '@/configs/communication/grpc/types/search-service.type'
-import { IUploadService } from '@/configs/communication/grpc/types/upload-service.type'
+import { ElasticSearchService } from '@/configs/communication/grpc/services/es.service'
+import { UploadService } from '@/configs/communication/grpc/services/upload.service'
 
 @Injectable()
 export class DeleteMessageService {
-  private syncDataToESService: IElasticSearchService
-  private uploadService: IUploadService
+  private syncDataToESService: ElasticSearchService
+  private uploadService: UploadService
 
   constructor(
     @Inject(EProviderTokens.PRISMA_CLIENT) private prisma: PrismaService,
     @Inject(EGrpcPackages.SEARCH_PACKAGE) private syncDataToESClient: ClientGrpc,
     @Inject(EGrpcPackages.MEDIA_PACKAGE) private uploadClient: ClientGrpc
   ) {
-    this.syncDataToESService = this.syncDataToESClient.getService<IElasticSearchService>(
-      EGrpcServices.ELASTIC_SEARCH_SERVICE
+    this.syncDataToESService = new ElasticSearchService(
+      this.syncDataToESClient.getService(EGrpcServices.ELASTIC_SEARCH_SERVICE)
     )
-    this.uploadService = this.uploadClient.getService<IUploadService>(
-      EGrpcServices.S3_UPLOAD_SERVICE
+    this.uploadService = new UploadService(
+      this.uploadClient.getService(EGrpcServices.UPLOAD_SERVICE)
     )
   }
 
@@ -101,9 +101,9 @@ export class DeleteMessageService {
         }
       })
 
-    this.syncDataToESService.SyncDataToES({
+    this.syncDataToESService.syncDataToES({
       type: ESyncDataToESWorkerType.DELETE_MESSAGE,
-      dataObject: { data: msg },
+      data: msg,
     })
 
     return result
@@ -157,11 +157,11 @@ export class DeleteMessageService {
     if (msg.type === EMessageTypes.MEDIA && msg.Media) {
       try {
         // Xóa file chính trên S3
-        await this.uploadService.DeleteFileByUrl({ url: msg.Media.url })
+        await this.uploadService.deleteFileByUrl(msg.Media.url)
 
         // Xóa thumbnail nếu có
         if (msg.Media.thumbnailUrl) {
-          await this.uploadService.DeleteFileByUrl({ url: msg.Media.thumbnailUrl })
+          await this.uploadService.deleteFileByUrl(msg.Media.thumbnailUrl)
         }
       } catch (err) {
         throw new Error(`Failed to delete file on S3: ${err.message}`)
