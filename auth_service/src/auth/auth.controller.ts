@@ -37,44 +37,52 @@ export class AuthController implements IAuthController {
     //   private userService: UserService,
   ) {}
 
-  // @Post('login')
-  // async login(@Body() loginUserPayload: LoginUserDTO, @Res({ passthrough: true }) res: Response) {
-  //   await this.authService.loginUser(res, loginUserPayload)
-  //   return { success: true }
-  // }
+  @Post('login')
+  async login(
+    @Body() loginUserPayload: LoginUserDTO,
+    @Res({ passthrough: true }) res: Response,
+  ) {
+    await this.authService.loginUser(res, loginUserPayload);
+    return { success: true };
+  }
 
-  // @Post('admin/login')
-  // async adminLogin(
-  //   @Body() adminLoginPayload: AdminLoginDTO,
-  //   @Res({ passthrough: true }) res: Response
-  // ) {
-  //   await this.authService.loginAdmin(res, adminLoginPayload)
-  //   return { success: true }
-  // }
+  @Post('admin/login')
+  async adminLogin(
+    @Body() adminLoginPayload: AdminLoginDTO,
+    @Res({ passthrough: true }) res: Response,
+  ) {
+    await this.authService.loginAdmin(res, adminLoginPayload);
+    return { success: true };
+  }
 
-  // @Post('admin/check-email')
-  // async checkAdminEmail(@Body() checkAdminEmailPayload: CheckAdminEmailDTO) {
-  //   const result = await this.authService.checkAdminEmail(checkAdminEmailPayload.email)
-  //   return result
-  // }
+  @Post('admin/check-email')
+  async checkAdminEmail(@Body() checkAdminEmailPayload: CheckAdminEmailDTO) {
+    const result = await this.authService.checkAdminEmail(
+      checkAdminEmailPayload.email,
+    );
+    return result;
+  }
 
-  // @Post('logout')
+  @Post('logout')
   // @UseGuards(AuthGuard)
-  // async logout(
-  //   @Res({ passthrough: true }) res: Response,
-  //   @User() user: TUserWithProfile,
-  //   @Body() reqBody: LogoutPayloadDTO
-  // ) {
-  //   await this.authService.logoutUser(res, user.id, reqBody.socketId)
-  //   return { success: true }
-  // }
+  async logout(
+    @Res({ passthrough: true }) res: Response,
+    @User() user: TUserWithProfile,
+    @Body() reqBody: LogoutPayloadDTO,
+  ) {
+    await this.authService.logoutUser(res, user.id, reqBody.socketId);
+    return { success: true };
+  }
 
-  // @Post('admin/logout')
+  @Post('admin/logout')
   // @UseGuards(AuthGuard)
-  // async adminLogout(@Res({ passthrough: true }) res: Response, @User() user: TUserWithProfile) {
-  //   await this.authService.adminLogout(res, user.id)
-  //   return { success: true }
-  // }
+  async adminLogout(
+    @Res({ passthrough: true }) res: Response,
+    @User() user: TUserWithProfile,
+  ) {
+    await this.authService.adminLogout(res, user.id);
+    return { success: true };
+  }
 
   @Get('check-auth')
   // @UseGuards(AuthGuard)

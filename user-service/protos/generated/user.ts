@@ -35,6 +35,22 @@ export interface CheckBlockedUserResponse {
   blockedUser: { [key: string]: any } | undefined;
 }
 
+export interface GetUserByEmailRequest {
+  email: string;
+}
+
+export interface GetUserByEmailResponse {
+  user: { [key: string]: any } | undefined;
+}
+
+export interface FindByIdRequest {
+  id: number;
+}
+
+export interface FindByIdResponse {
+  user: { [key: string]: any } | undefined;
+}
+
 function createBaseFindUserWithProfileByIdRequest(): FindUserWithProfileByIdRequest {
   return { userId: 0 };
 }
@@ -405,8 +421,242 @@ export const CheckBlockedUserResponse: MessageFns<CheckBlockedUserResponse> = {
   },
 };
 
+function createBaseGetUserByEmailRequest(): GetUserByEmailRequest {
+  return { email: "" };
+}
+
+export const GetUserByEmailRequest: MessageFns<GetUserByEmailRequest> = {
+  encode(message: GetUserByEmailRequest, writer: BinaryWriter = new BinaryWriter()): BinaryWriter {
+    if (message.email !== "") {
+      writer.uint32(10).string(message.email);
+    }
+    return writer;
+  },
+
+  decode(input: BinaryReader | Uint8Array, length?: number): GetUserByEmailRequest {
+    const reader = input instanceof BinaryReader ? input : new BinaryReader(input);
+    const end = length === undefined ? reader.len : reader.pos + length;
+    const message = createBaseGetUserByEmailRequest();
+    while (reader.pos < end) {
+      const tag = reader.uint32();
+      switch (tag >>> 3) {
+        case 1: {
+          if (tag !== 10) {
+            break;
+          }
+
+          message.email = reader.string();
+          continue;
+        }
+      }
+      if ((tag & 7) === 4 || tag === 0) {
+        break;
+      }
+      reader.skip(tag & 7);
+    }
+    return message;
+  },
+
+  fromJSON(object: any): GetUserByEmailRequest {
+    return { email: isSet(object.email) ? globalThis.String(object.email) : "" };
+  },
+
+  toJSON(message: GetUserByEmailRequest): unknown {
+    const obj: any = {};
+    if (message.email !== "") {
+      obj.email = message.email;
+    }
+    return obj;
+  },
+
+  create<I extends Exact<DeepPartial<GetUserByEmailRequest>, I>>(base?: I): GetUserByEmailRequest {
+    return GetUserByEmailRequest.fromPartial(base ?? ({} as any));
+  },
+  fromPartial<I extends Exact<DeepPartial<GetUserByEmailRequest>, I>>(object: I): GetUserByEmailRequest {
+    const message = createBaseGetUserByEmailRequest();
+    message.email = object.email ?? "";
+    return message;
+  },
+};
+
+function createBaseGetUserByEmailResponse(): GetUserByEmailResponse {
+  return { user: undefined };
+}
+
+export const GetUserByEmailResponse: MessageFns<GetUserByEmailResponse> = {
+  encode(message: GetUserByEmailResponse, writer: BinaryWriter = new BinaryWriter()): BinaryWriter {
+    if (message.user !== undefined) {
+      Struct.encode(Struct.wrap(message.user), writer.uint32(10).fork()).join();
+    }
+    return writer;
+  },
+
+  decode(input: BinaryReader | Uint8Array, length?: number): GetUserByEmailResponse {
+    const reader = input instanceof BinaryReader ? input : new BinaryReader(input);
+    const end = length === undefined ? reader.len : reader.pos + length;
+    const message = createBaseGetUserByEmailResponse();
+    while (reader.pos < end) {
+      const tag = reader.uint32();
+      switch (tag >>> 3) {
+        case 1: {
+          if (tag !== 10) {
+            break;
+          }
+
+          message.user = Struct.unwrap(Struct.decode(reader, reader.uint32()));
+          continue;
+        }
+      }
+      if ((tag & 7) === 4 || tag === 0) {
+        break;
+      }
+      reader.skip(tag & 7);
+    }
+    return message;
+  },
+
+  fromJSON(object: any): GetUserByEmailResponse {
+    return { user: isObject(object.user) ? object.user : undefined };
+  },
+
+  toJSON(message: GetUserByEmailResponse): unknown {
+    const obj: any = {};
+    if (message.user !== undefined) {
+      obj.user = message.user;
+    }
+    return obj;
+  },
+
+  create<I extends Exact<DeepPartial<GetUserByEmailResponse>, I>>(base?: I): GetUserByEmailResponse {
+    return GetUserByEmailResponse.fromPartial(base ?? ({} as any));
+  },
+  fromPartial<I extends Exact<DeepPartial<GetUserByEmailResponse>, I>>(object: I): GetUserByEmailResponse {
+    const message = createBaseGetUserByEmailResponse();
+    message.user = object.user ?? undefined;
+    return message;
+  },
+};
+
+function createBaseFindByIdRequest(): FindByIdRequest {
+  return { id: 0 };
+}
+
+export const FindByIdRequest: MessageFns<FindByIdRequest> = {
+  encode(message: FindByIdRequest, writer: BinaryWriter = new BinaryWriter()): BinaryWriter {
+    if (message.id !== 0) {
+      writer.uint32(8).int32(message.id);
+    }
+    return writer;
+  },
+
+  decode(input: BinaryReader | Uint8Array, length?: number): FindByIdRequest {
+    const reader = input instanceof BinaryReader ? input : new BinaryReader(input);
+    const end = length === undefined ? reader.len : reader.pos + length;
+    const message = createBaseFindByIdRequest();
+    while (reader.pos < end) {
+      const tag = reader.uint32();
+      switch (tag >>> 3) {
+        case 1: {
+          if (tag !== 8) {
+            break;
+          }
+
+          message.id = reader.int32();
+          continue;
+        }
+      }
+      if ((tag & 7) === 4 || tag === 0) {
+        break;
+      }
+      reader.skip(tag & 7);
+    }
+    return message;
+  },
+
+  fromJSON(object: any): FindByIdRequest {
+    return { id: isSet(object.id) ? globalThis.Number(object.id) : 0 };
+  },
+
+  toJSON(message: FindByIdRequest): unknown {
+    const obj: any = {};
+    if (message.id !== 0) {
+      obj.id = Math.round(message.id);
+    }
+    return obj;
+  },
+
+  create<I extends Exact<DeepPartial<FindByIdRequest>, I>>(base?: I): FindByIdRequest {
+    return FindByIdRequest.fromPartial(base ?? ({} as any));
+  },
+  fromPartial<I extends Exact<DeepPartial<FindByIdRequest>, I>>(object: I): FindByIdRequest {
+    const message = createBaseFindByIdRequest();
+    message.id = object.id ?? 0;
+    return message;
+  },
+};
+
+function createBaseFindByIdResponse(): FindByIdResponse {
+  return { user: undefined };
+}
+
+export const FindByIdResponse: MessageFns<FindByIdResponse> = {
+  encode(message: FindByIdResponse, writer: BinaryWriter = new BinaryWriter()): BinaryWriter {
+    if (message.user !== undefined) {
+      Struct.encode(Struct.wrap(message.user), writer.uint32(10).fork()).join();
+    }
+    return writer;
+  },
+
+  decode(input: BinaryReader | Uint8Array, length?: number): FindByIdResponse {
+    const reader = input instanceof BinaryReader ? input : new BinaryReader(input);
+    const end = length === undefined ? reader.len : reader.pos + length;
+    const message = createBaseFindByIdResponse();
+    while (reader.pos < end) {
+      const tag = reader.uint32();
+      switch (tag >>> 3) {
+        case 1: {
+          if (tag !== 10) {
+            break;
+          }
+
+          message.user = Struct.unwrap(Struct.decode(reader, reader.uint32()));
+          continue;
+        }
+      }
+      if ((tag & 7) === 4 || tag === 0) {
+        break;
+      }
+      reader.skip(tag & 7);
+    }
+    return message;
+  },
+
+  fromJSON(object: any): FindByIdResponse {
+    return { user: isObject(object.user) ? object.user : undefined };
+  },
+
+  toJSON(message: FindByIdResponse): unknown {
+    const obj: any = {};
+    if (message.user !== undefined) {
+      obj.user = message.user;
+    }
+    return obj;
+  },
+
+  create<I extends Exact<DeepPartial<FindByIdResponse>, I>>(base?: I): FindByIdResponse {
+    return FindByIdResponse.fromPartial(base ?? ({} as any));
+  },
+  fromPartial<I extends Exact<DeepPartial<FindByIdResponse>, I>>(object: I): FindByIdResponse {
+    const message = createBaseFindByIdResponse();
+    message.user = object.user ?? undefined;
+    return message;
+  },
+};
+
 export interface UserService {
   FindUserWithProfileById(request: FindUserWithProfileByIdRequest): Promise<FindUserWithProfileByIdResponse>;
+  GetUserByEmail(request: GetUserByEmailRequest): Promise<GetUserByEmailResponse>;
+  FindById(request: FindByIdRequest): Promise<FindByIdResponse>;
 }
 
 export const UserServiceServiceName = "user.UserService";
@@ -417,11 +667,25 @@ export class UserServiceClientImpl implements UserService {
     this.service = opts?.service || UserServiceServiceName;
     this.rpc = rpc;
     this.FindUserWithProfileById = this.FindUserWithProfileById.bind(this);
+    this.GetUserByEmail = this.GetUserByEmail.bind(this);
+    this.FindById = this.FindById.bind(this);
   }
   FindUserWithProfileById(request: FindUserWithProfileByIdRequest): Promise<FindUserWithProfileByIdResponse> {
     const data = FindUserWithProfileByIdRequest.encode(request).finish();
     const promise = this.rpc.request(this.service, "FindUserWithProfileById", data);
     return promise.then((data) => FindUserWithProfileByIdResponse.decode(new BinaryReader(data)));
+  }
+
+  GetUserByEmail(request: GetUserByEmailRequest): Promise<GetUserByEmailResponse> {
+    const data = GetUserByEmailRequest.encode(request).finish();
+    const promise = this.rpc.request(this.service, "GetUserByEmail", data);
+    return promise.then((data) => GetUserByEmailResponse.decode(new BinaryReader(data)));
+  }
+
+  FindById(request: FindByIdRequest): Promise<FindByIdResponse> {
+    const data = FindByIdRequest.encode(request).finish();
+    const promise = this.rpc.request(this.service, "FindById", data);
+    return promise.then((data) => FindByIdResponse.decode(new BinaryReader(data)));
   }
 }
 

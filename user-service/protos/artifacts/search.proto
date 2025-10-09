@@ -9,6 +9,8 @@ service ElasticSearchService {
   rpc SyncDataToES(DataToSync) returns (google.protobuf.Empty);
 }
 
+
+
 message DataToSync {
   string type = 1;
   oneof data_to_sync {

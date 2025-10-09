@@ -21,7 +21,7 @@ import {
 } from '@/user/user.dto';
 import { UserService } from '@/user/user.service';
 import { ERoutes } from '@/utils/enums';
-// import { JWTService } from '@/auth/jwt/jwt.service';
+import { JWTService } from '@/configs/communication/grpc/services/jwt.service';
 import type { Response } from 'express';
 import type { IUserController } from './user.interface';
 // import { AuthGuard } from '@/auth/auth.guard';
@@ -33,7 +33,7 @@ import { TUserWithProfile } from '@/utils/entities/user.entity';
 export class UserController implements IUserController {
   constructor(
     private userService: UserService,
-    // private jwtService: JWTService,
+    private jwtService: JWTService,
     private blockUserService: BlockUserService,
   ) {}
 

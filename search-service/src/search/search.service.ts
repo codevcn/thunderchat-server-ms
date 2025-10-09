@@ -6,94 +6,130 @@ import type {
   TConversationSearchResult,
 } from './search.type';
 import { ElasticsearchService } from '@/configs/elasticsearch/elasticsearch.service';
-// import { MessageService } from '@/message/message.service'
-import { UserService } from '@/user/user.service';
+import { MessageService } from '@/configs/communication/grpc/services/message.service';
+import { UserService } from '@/configs/communication/grpc/services/user.service';
 import { replaceHTMLTagInMessageContent } from '@/utils/helpers';
-import { EChatType } from '@/utils/enums';
-// import { UserConnectionService } from '@/connection/user-connection.service'
-// import { DirectChatService } from '@/direct-chat/direct-chat.service'
-// import { GroupChatService } from '@/group-chat/group-chat.service'
+import { EChatType, EGrpcPackages, EGrpcServices } from '@/utils/enums';
+import { UserConnectionService } from '@/configs/communication/grpc/services/user-connection.service';
 import { PrismaService } from '@/configs/db/prisma.service';
 import { EProviderTokens } from '@/utils/enums';
 import { Inject } from '@nestjs/common';
 import { DevLogger } from '@/dev/dev-logger';
+import { ClientGrpc } from '@nestjs/microservices';
 
 @Injectable()
 export class SearchService {
+  private messageService: MessageService;
+  private userService: UserService;
+  private userConnectionService: UserConnectionService;
   constructor(
     private elasticSearchService: ElasticsearchService,
-    // private MessageService: MessageService,
-    private userService: UserService,
-    // private userConnectionService: UserConnectionService,
-    // private directChatService: DirectChatService,
-    // private groupChatService: GroupChatService,
-    @Inject(EProviderTokens.PRISMA_CLIENT) private prismaService: PrismaService,
-  ) {}
 
-  // async searchGlobally(
-  //   keyword: string,
-  //   userId: number,
-  //   limit: number,
-  //   selfUserId: number,
-  //   messageSearchOffset?: TMessageSearchOffset,
-  //   userSearchOffset?: TUserSearchOffset
-  // ): Promise<TGlobalSearchData> {
-  //   const [messageHits, userHits] = await Promise.all([
-  //     this.elasticSearchService.searchMessages(keyword, userId, limit, messageSearchOffset),
-  //     this.elasticSearchService.searchUsers(keyword, limit, userSearchOffset),
-  //   ])
-  //   const messageIdObjects = messageHits
-  //     .filter((message) => !!message._source)
-  //     .map((message) => ({
-  //       id: parseInt(message._id!),
-  //       highlight: message.highlight,
-  //     }))
-  //   const messageIds = messageIdObjects.map((message) => message.id)
-  //   const userIds = userHits.filter((user) => !!user._source).map((user) => parseInt(user._id!))
-  //   // find messages and users by ids in database
-  //   // const [messages, users] = await Promise.all([
-  //   //   this.MessageService.findMessagesForGlobalSearch(messageIds, limit),
-  //   //   this.userService.findUsersForGlobalSearch(userIds, selfUserId, limit),
-  //   // ])
-  //   const finalMessages = messages.map<TGlobalSearchData['messages'][number]>(
-  //     ({ id, GroupChat, content, directChatId, groupChatId, createdAt, Author, Media }) => {
-  //       let avatarUrl: string | undefined,
-  //         conversationName: string = ''
-  //       if (Author) {
-  //         const authorProfile = Author.Profile
-  //         avatarUrl = authorProfile?.avatar || undefined
-  //         conversationName = authorProfile?.fullName || ''
-  //       } else {
-  //         avatarUrl = GroupChat!.Members[0].User.Profile!.avatar || undefined
-  //         conversationName = GroupChat!.name
-  //       }
-  //       return {
-  //         id,
-  //         avatarUrl,
-  //         conversationName,
-  //         messageContent: replaceHTMLTagInMessageContent(content),
-  //         mediaContent: Media?.fileName,
-  //         highlights: messageIdObjects.find((m) => m.id === id)!.highlight?.content || [],
-  //         chatType: directChatId ? EChatType.DIRECT : EChatType.GROUP,
-  //         chatId: (directChatId || groupChatId)!,
-  //         createdAt: createdAt.toISOString(),
-  //       }
-  //     }
-  //   )
-  //   const finalUsers = users.map((user) => ({
-  //     ...user,
-  //     isOnline: this.userConnectionService.checkUserIsOnline(user.id),
-  //   }))
-  //   const nextSearchOffset: TGlobalSearchData['nextSearchOffset'] = {
-  //     messageSearchOffset: messageHits.at(-1)?.sort,
-  //     userSearchOffset: userHits.at(-1)?.sort,
-  //   }
-  //   return {
-  //     messages: finalMessages,
-  //     users: finalUsers,
-  //     nextSearchOffset,
-  //   }
-  // }
+    @Inject(EGrpcPackages.CONVERSATION_PACKAGE)
+    private readonly messageGrpcClient: ClientGrpc,
+    @Inject(EGrpcPackages.USER_PACKAGE)
+    private readonly userGrpcClient: ClientGrpc,
+    @Inject(EGrpcPackages.CHAT_PACKAGE)
+    private readonly userConnectGrpcClient: ClientGrpc,
+    @Inject(EProviderTokens.PRISMA_CLIENT) private prismaService: PrismaService,
+  ) {
+    ((this.messageService = new MessageService(
+      this.messageGrpcClient.getService(EGrpcServices.MESSAGE_SERVICE),
+    )),
+      (this.userService = new UserService(
+        this.userGrpcClient.getService(EGrpcServices.USER_SERVICE),
+      )));
+    this.userConnectionService = new UserConnectionService(
+      this.userConnectGrpcClient.getService(
+        EGrpcServices.USER_CONNECTION_SERVICE,
+      ),
+    );
+  }
+
+  async searchGlobally(
+    keyword: string,
+    userId: number,
+    limit: number,
+    selfUserId: number,
+    messageSearchOffset?: TMessageSearchOffset,
+    userSearchOffset?: TUserSearchOffset,
+  ): Promise<TGlobalSearchData> {
+    const [messageHits, userHits] = await Promise.all([
+      this.elasticSearchService.searchMessages(
+        keyword,
+        userId,
+        limit,
+        messageSearchOffset,
+      ),
+      this.elasticSearchService.searchUsers(keyword, limit, userSearchOffset),
+    ]);
+    const messageIdObjects = messageHits
+      .filter((message) => !!message._source)
+      .map((message) => ({
+        id: parseInt(message._id!),
+        highlight: message.highlight,
+      }));
+    const messageIds = messageIdObjects.map((message) => message.id);
+    const userIds = userHits
+      .filter((user) => !!user._source)
+      .map((user) => parseInt(user._id!));
+    // find messages and users by ids in database
+    const [messages, users] = await Promise.all([
+      this.messageService.findMessagesForGlobalSearch(messageIds, limit),
+      this.userService.findUsersForGlobalSearch(userIds, selfUserId, limit),
+    ]);
+    const finalMessages = messages.map<TGlobalSearchData['messages'][number]>(
+      ({
+        id,
+        GroupChat,
+        content,
+        directChatId,
+        groupChatId,
+        createdAt,
+        Author,
+        Media,
+      }) => {
+        let avatarUrl: string | undefined,
+          conversationName: string = '';
+        if (Author) {
+          const authorProfile = Author.Profile;
+          avatarUrl = authorProfile?.avatar || undefined;
+          conversationName = authorProfile?.fullName || '';
+        } else {
+          avatarUrl = GroupChat!.Members[0].User.Profile!.avatar || undefined;
+          conversationName = GroupChat!.name;
+        }
+        return {
+          id,
+          avatarUrl,
+          conversationName,
+          messageContent: replaceHTMLTagInMessageContent(content),
+          mediaContent: Media?.fileName,
+          highlights:
+            messageIdObjects.find((m) => m.id === id)!.highlight?.content || [],
+          chatType: directChatId ? EChatType.DIRECT : EChatType.GROUP,
+          chatId: (directChatId || groupChatId)!,
+          createdAt: createdAt.toISOString(),
+        };
+      },
+    );
+    const finalUsers = await Promise.all(
+      users.map(async (user) => ({
+        ...user,
+        isOnline: await this.userConnectionService.checkUserIsOnline(user.id),
+      })),
+    );
+
+    const nextSearchOffset: TGlobalSearchData['nextSearchOffset'] = {
+      messageSearchOffset: messageHits.at(-1)?.sort,
+      userSearchOffset: userHits.at(-1)?.sort,
+    };
+    return {
+      messages: finalMessages,
+      users: finalUsers,
+      nextSearchOffset,
+    };
+  }
 
   async searchConversations(
     keyword: string,

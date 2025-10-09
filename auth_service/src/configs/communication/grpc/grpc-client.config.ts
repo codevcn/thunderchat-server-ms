@@ -17,4 +17,18 @@ export class GrpcClientConfig {
       },
     };
   }
+  static getUserClient(): ClientProviderOptions {
+    return {
+      name: EGrpcPackages.USER_PACKAGE,
+      transport: Transport.GRPC,
+      options: {
+        package: EGrpcPackages.USER,
+        protoPath: join(
+          __dirname,
+          '../../../../../protos/artifacts/user.proto',
+        ),
+        url: `0.0.0.0:${process.env.USER_SERVICE_PORT}`,
+      },
+    };
+  }
 }

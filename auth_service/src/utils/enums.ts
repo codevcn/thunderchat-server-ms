@@ -29,12 +29,15 @@ export enum EGrpcPackages {
   USER_CONNECTION = 'user_connection',
   CHAT = 'chat',
   CHAT_PACKAGE = 'CHAT_PACKAGE',
+  USER_PACKAGE = 'USER_PACKAGE',
+  USER = 'user',
 }
 
 export enum EGrpcServices {
   ELASTIC_SEARCH_SERVICE = 'ElasticSearchService',
   UPLOAD_SERVICE = 'UploadService',
   USER_CONNECTION_SERVICE = 'UserConnectionService',
+  USER_SERVICE = 'UserService',
 }
 
 export enum EClientCookieNames {

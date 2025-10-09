@@ -42,6 +42,7 @@ export enum EGrpcServices {
   GROUP_MEMBER_SERVICE = 'GroupMemberService',
   USER_SETTINGS_SERVICE = 'UserSettingsService',
   BLOCK_USER_SERVICE = 'BlockUserService',
+  USER_CONNECTION_SERVICE = 'UserConnectionService',
 }
 
 export enum EClientCookieNames {

@@ -11,29 +11,47 @@ import type {
   TSearchProfilesData,
 } from './user.type';
 import { PrismaService } from '../configs/db/prisma.service';
-import { EProviderTokens, ESyncDataToESWorkerType } from '@/utils/enums';
-// import { JWTService } from '@/auth/jwt/jwt.service';
+import {
+  EGrpcPackages,
+  EGrpcServices,
+  EProviderTokens,
+  ESyncDataToESWorkerType,
+} from '@/utils/enums';
+import { JWTService } from '@/configs/communication/grpc/services/jwt.service';
 import { CredentialService } from '@/auth/credentials/credentials.service';
 import { EAuthMessages } from '@/auth/auth.message';
 import { TUser, TUserWithProfile } from '@/utils/entities/user.entity';
 import { TJWTToken, TSignatureObject } from '@/utils/types';
 import { SearchUsersDTO } from './user.dto';
 import { EUserMessages } from '@/user/user.message';
-// import { SyncDataToESService } from '@/configs/elasticsearch/sync-data-to-ES/sync-data-to-ES.service';
+import { ElasticSearchService } from '@/configs/communication/grpc/services/es.service';
 import { checkIsEmail } from '@/utils/helpers';
 import * as crypto from 'crypto';
 import * as bcrypt from 'bcryptjs';
 import nodemailer from 'nodemailer';
-import { GrpcMethod } from '@nestjs/microservices';
+import { ClientGrpc, GrpcMethod } from '@nestjs/microservices';
 
 @Injectable()
 export class UserService {
+  private jwtService: JWTService;
+  private syncDataToESService: ElasticSearchService;
   constructor(
+    @Inject(EGrpcPackages.AUTH_PACKAGE)
+    private readonly jwtGrpcClient: ClientGrpc,
     @Inject(EProviderTokens.PRISMA_CLIENT) private PrismaService: PrismaService,
-    // private jwtService: JWTService,
+
     private credentialService: CredentialService,
-    // private syncDataToESService: SyncDataToESService,
-  ) {}
+    @Inject(EGrpcPackages.SEARCH_PACKAGE)
+    private readonly esGrpcClient: ClientGrpc,
+  ) {
+    this.jwtService = new JWTService(
+      this.jwtGrpcClient.getService(EGrpcServices.JWT_SERVICE),
+    );
+
+    this.syncDataToESService = new ElasticSearchService(
+      this.esGrpcClient.getService(EGrpcServices.SEARCH_SERVICE),
+    );
+  }
 
   // In-memory store for OTP/reset-token
   private static inMemoryKeyValueStore: Map<string, string> = new Map();
@@ -315,17 +333,17 @@ export class UserService {
         Profile: true,
       },
     });
-    // this.syncDataToESService.syncDataToES({
-    //   type: ESyncDataToESWorkerType.CREATE_USER,
-    //   data: user,
-    // });
+    this.syncDataToESService.syncDataToES({
+      type: ESyncDataToESWorkerType.CREATE_USER,
+      data: user,
+    });
     return user;
   }
 
-  // async registerUser(createUserData: TCreateUserParams): Promise<TJWTToken> {
-  //   const user = await this.createUser(createUserData);
-  //   return this.jwtService.createJWT({ email: user.email, user_id: user.id });
-  // }
+  async registerUser(createUserData: TCreateUserParams): Promise<TJWTToken> {
+    const user = await this.createUser(createUserData);
+    return this.jwtService.createJWT({ email: user.email, user_id: user.id });
+  }
 
   async getUserByEmail(email: string): Promise<TUserWithProfile> {
     const user = await this.PrismaService.user.findUnique({

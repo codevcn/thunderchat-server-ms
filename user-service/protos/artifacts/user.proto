@@ -7,6 +7,9 @@ import "google/protobuf/struct.proto";
 service UserService {
   rpc FindUserWithProfileById(FindUserWithProfileByIdRequest)
       returns (FindUserWithProfileByIdResponse);
+ rpc GetUserByEmail (GetUserByEmailRequest) returns (GetUserByEmailResponse);
+ rpc FindById(FindByIdRequest) returns (FindByIdResponse);
+ rpc findUsersForGlobalSearch(findUsersForGlobalSearchRq) returns (findUsersForGlobalSearchRp);
 }
 
 service UserSettingsService {
@@ -42,3 +45,36 @@ message CheckBlockedUserRequest {
 message CheckBlockedUserResponse {
   google.protobuf.Struct blocked_user = 1;
 }
+
+
+message GetUserByEmailRequest {
+  string email = 1;
+}
+
+
+message GetUserByEmailResponse {
+   google.protobuf.Struct user = 1;
+}
+
+
+message FindByIdRequest{
+  int32 id = 1;
+}
+
+
+message FindByIdResponse{
+  google.protobuf.Struct user = 1;
+}
+ 
+
+message findUsersForGlobalSearchRq{
+repeated int32 ids = 1;
+int32 self_user_id = 2;
+int32 limit = 3;
+}
+
+message findUsersForGlobalSearchRp{
+ repeated google.protobuf.Struct users = 1;
+}
+
+
