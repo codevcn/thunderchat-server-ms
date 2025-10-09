@@ -3,16 +3,16 @@ import { ClientProviderOptions, Transport } from '@nestjs/microservices';
 import { join } from 'path';
 
 export class GrpcClientConfig {
-  static getFriendClient(): ClientProviderOptions {
+  static getChatClient(): ClientProviderOptions {
     return {
-      name: EGrpcPackages.FRIEND_PACKAGE,
+      name: EGrpcPackages.CHAT_PACKAGE,
       transport: Transport.GRPC,
       options: {
-        package: EGrpcPackages.FRIEND,
+        package: EGrpcPackages.CHAT,
         protoPath: join(
           __dirname,
           '/../../../../protos/artifacts/',
-          'friend.proto',
+          'chat.proto',
         ),
         url: `localhost:${process.env.FRIEND_SERVICE_PORT}`,
       },
@@ -35,22 +35,6 @@ export class GrpcClientConfig {
     };
   }
 
-  static getAuthClient(): ClientProviderOptions {
-    return {
-      name: EGrpcPackages.AUTH_PACKAGE,
-      transport: Transport.GRPC,
-      options: {
-        package: EGrpcPackages.AUTH,
-        protoPath: join(
-          __dirname,
-          '/../../../../protos/artifacts/',
-          'auth.proto',
-        ),
-        url: `localhost:${process.env.AUTH_SERVICE_PORT}`,
-      },
-    };
-  }
-
   static getUserClient(): ClientProviderOptions {
     return {
       name: EGrpcPackages.USER_PACKAGE,
@@ -63,22 +47,6 @@ export class GrpcClientConfig {
           'user.proto',
         ),
         url: `localhost:${process.env.USER_SERVICE_PORT}`,
-      },
-    };
-  }
-
-  static getNotificationClient(): ClientProviderOptions {
-    return {
-      name: EGrpcPackages.NOTIFICATION_PACKAGE,
-      transport: Transport.GRPC,
-      options: {
-        package: EGrpcPackages.NOTIFICATION,
-        protoPath: join(
-          __dirname,
-          '/../../../../protos/artifacts/',
-          'notification.proto',
-        ),
-        url: `localhost:${process.env.NOTIFICATION_SERVICE_PORT}`,
       },
     };
   }

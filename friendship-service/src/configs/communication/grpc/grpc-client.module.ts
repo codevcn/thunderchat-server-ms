@@ -1,6 +1,6 @@
-import { Module } from '@nestjs/common'
-import { ClientsModule } from '@nestjs/microservices'
-import { GrpcClientConfig } from './grpc-client.config'
+import { Module } from '@nestjs/common';
+import { ClientsModule } from '@nestjs/microservices';
+import { GrpcClientConfig } from './grpc-client.config';
 
 @Module({
   imports: [
@@ -10,6 +10,7 @@ import { GrpcClientConfig } from './grpc-client.config'
       GrpcClientConfig.getAuthClient(),
       GrpcClientConfig.getUserClient(),
       GrpcClientConfig.getNotificationClient(),
+      GrpcClientConfig.getChatClient(),
     ]),
   ],
   exports: [ClientsModule],

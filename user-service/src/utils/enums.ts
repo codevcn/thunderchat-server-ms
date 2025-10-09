@@ -17,6 +17,8 @@ export enum ERoutes {
 }
 
 export enum EGrpcPackages {
+  SEARCH_PACKAGE = 'SEARCH_PACKAGE',
+  SEARCH = 'search',
   CHAT = 'chat',
   CHAT_PACKAGE = 'CHAT_PACKAGE',
   AUTH = 'auth',
@@ -42,6 +44,8 @@ export enum EGrpcServices {
   GROUP_MEMBER_SERVICE = 'GroupMemberService',
   USER_SETTINGS_SERVICE = 'UserSettingsService',
   BLOCK_USER_SERVICE = 'BlockUserService',
+  JWT_SERVICE = 'JWTService',
+  SEARCH_SERVICE = 'ElasticSearchService',
 }
 
 export enum EClientCookieNames {

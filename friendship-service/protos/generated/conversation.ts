@@ -106,6 +106,15 @@ export interface CheckGroupChatPermissionResponse {
   allowed: boolean;
 }
 
+export interface FindMessagesForGlobalSearchRequest {
+  ids: number[];
+  limit: number;
+}
+
+export interface FindMessagesForGlobalSearchResponse {
+  messages: { [key: string]: any }[];
+}
+
 function createBaseGetNewerDirectMessagesRequest(): GetNewerDirectMessagesRequest {
   return { messageOffset: 0, directChatId: undefined, groupChatId: undefined, limit: 0 };
 }
@@ -1563,6 +1572,160 @@ export const CheckGroupChatPermissionResponse: MessageFns<CheckGroupChatPermissi
   },
 };
 
+function createBaseFindMessagesForGlobalSearchRequest(): FindMessagesForGlobalSearchRequest {
+  return { ids: [], limit: 0 };
+}
+
+export const FindMessagesForGlobalSearchRequest: MessageFns<FindMessagesForGlobalSearchRequest> = {
+  encode(message: FindMessagesForGlobalSearchRequest, writer: BinaryWriter = new BinaryWriter()): BinaryWriter {
+    writer.uint32(10).fork();
+    for (const v of message.ids) {
+      writer.int32(v);
+    }
+    writer.join();
+    if (message.limit !== 0) {
+      writer.uint32(16).int32(message.limit);
+    }
+    return writer;
+  },
+
+  decode(input: BinaryReader | Uint8Array, length?: number): FindMessagesForGlobalSearchRequest {
+    const reader = input instanceof BinaryReader ? input : new BinaryReader(input);
+    const end = length === undefined ? reader.len : reader.pos + length;
+    const message = createBaseFindMessagesForGlobalSearchRequest();
+    while (reader.pos < end) {
+      const tag = reader.uint32();
+      switch (tag >>> 3) {
+        case 1: {
+          if (tag === 8) {
+            message.ids.push(reader.int32());
+
+            continue;
+          }
+
+          if (tag === 10) {
+            const end2 = reader.uint32() + reader.pos;
+            while (reader.pos < end2) {
+              message.ids.push(reader.int32());
+            }
+
+            continue;
+          }
+
+          break;
+        }
+        case 2: {
+          if (tag !== 16) {
+            break;
+          }
+
+          message.limit = reader.int32();
+          continue;
+        }
+      }
+      if ((tag & 7) === 4 || tag === 0) {
+        break;
+      }
+      reader.skip(tag & 7);
+    }
+    return message;
+  },
+
+  fromJSON(object: any): FindMessagesForGlobalSearchRequest {
+    return {
+      ids: globalThis.Array.isArray(object?.ids) ? object.ids.map((e: any) => globalThis.Number(e)) : [],
+      limit: isSet(object.limit) ? globalThis.Number(object.limit) : 0,
+    };
+  },
+
+  toJSON(message: FindMessagesForGlobalSearchRequest): unknown {
+    const obj: any = {};
+    if (message.ids?.length) {
+      obj.ids = message.ids.map((e) => Math.round(e));
+    }
+    if (message.limit !== 0) {
+      obj.limit = Math.round(message.limit);
+    }
+    return obj;
+  },
+
+  create<I extends Exact<DeepPartial<FindMessagesForGlobalSearchRequest>, I>>(
+    base?: I,
+  ): FindMessagesForGlobalSearchRequest {
+    return FindMessagesForGlobalSearchRequest.fromPartial(base ?? ({} as any));
+  },
+  fromPartial<I extends Exact<DeepPartial<FindMessagesForGlobalSearchRequest>, I>>(
+    object: I,
+  ): FindMessagesForGlobalSearchRequest {
+    const message = createBaseFindMessagesForGlobalSearchRequest();
+    message.ids = object.ids?.map((e) => e) || [];
+    message.limit = object.limit ?? 0;
+    return message;
+  },
+};
+
+function createBaseFindMessagesForGlobalSearchResponse(): FindMessagesForGlobalSearchResponse {
+  return { messages: [] };
+}
+
+export const FindMessagesForGlobalSearchResponse: MessageFns<FindMessagesForGlobalSearchResponse> = {
+  encode(message: FindMessagesForGlobalSearchResponse, writer: BinaryWriter = new BinaryWriter()): BinaryWriter {
+    for (const v of message.messages) {
+      Struct.encode(Struct.wrap(v!), writer.uint32(10).fork()).join();
+    }
+    return writer;
+  },
+
+  decode(input: BinaryReader | Uint8Array, length?: number): FindMessagesForGlobalSearchResponse {
+    const reader = input instanceof BinaryReader ? input : new BinaryReader(input);
+    const end = length === undefined ? reader.len : reader.pos + length;
+    const message = createBaseFindMessagesForGlobalSearchResponse();
+    while (reader.pos < end) {
+      const tag = reader.uint32();
+      switch (tag >>> 3) {
+        case 1: {
+          if (tag !== 10) {
+            break;
+          }
+
+          message.messages.push(Struct.unwrap(Struct.decode(reader, reader.uint32())));
+          continue;
+        }
+      }
+      if ((tag & 7) === 4 || tag === 0) {
+        break;
+      }
+      reader.skip(tag & 7);
+    }
+    return message;
+  },
+
+  fromJSON(object: any): FindMessagesForGlobalSearchResponse {
+    return { messages: globalThis.Array.isArray(object?.messages) ? [...object.messages] : [] };
+  },
+
+  toJSON(message: FindMessagesForGlobalSearchResponse): unknown {
+    const obj: any = {};
+    if (message.messages?.length) {
+      obj.messages = message.messages;
+    }
+    return obj;
+  },
+
+  create<I extends Exact<DeepPartial<FindMessagesForGlobalSearchResponse>, I>>(
+    base?: I,
+  ): FindMessagesForGlobalSearchResponse {
+    return FindMessagesForGlobalSearchResponse.fromPartial(base ?? ({} as any));
+  },
+  fromPartial<I extends Exact<DeepPartial<FindMessagesForGlobalSearchResponse>, I>>(
+    object: I,
+  ): FindMessagesForGlobalSearchResponse {
+    const message = createBaseFindMessagesForGlobalSearchResponse();
+    message.messages = object.messages?.map((e) => e) || [];
+    return message;
+  },
+};
+
 export interface DirectChatService {
   FindConversationWithOtherUser(
     request: FindConversationWithOtherUserRequest,
@@ -1643,6 +1806,9 @@ export interface MessageService {
   GetNewerDirectMessages(request: GetNewerDirectMessagesRequest): Promise<GetNewerDirectMessagesResponse>;
   CreateNewMessage(request: CreateNewMessageRequest): Promise<CreateNewMessageResponse>;
   UpdateMessageStatus(request: UpdateMessageStatusRequest): Promise<UpdateMessageStatusResponse>;
+  FindMessagesForGlobalSearch(
+    request: FindMessagesForGlobalSearchRequest,
+  ): Promise<FindMessagesForGlobalSearchResponse>;
 }
 
 export const MessageServiceServiceName = "conversation.MessageService";
@@ -1655,6 +1821,7 @@ export class MessageServiceClientImpl implements MessageService {
     this.GetNewerDirectMessages = this.GetNewerDirectMessages.bind(this);
     this.CreateNewMessage = this.CreateNewMessage.bind(this);
     this.UpdateMessageStatus = this.UpdateMessageStatus.bind(this);
+    this.FindMessagesForGlobalSearch = this.FindMessagesForGlobalSearch.bind(this);
   }
   GetNewerDirectMessages(request: GetNewerDirectMessagesRequest): Promise<GetNewerDirectMessagesResponse> {
     const data = GetNewerDirectMessagesRequest.encode(request).finish();
@@ -1672,6 +1839,14 @@ export class MessageServiceClientImpl implements MessageService {
     const data = UpdateMessageStatusRequest.encode(request).finish();
     const promise = this.rpc.request(this.service, "UpdateMessageStatus", data);
     return promise.then((data) => UpdateMessageStatusResponse.decode(new BinaryReader(data)));
+  }
+
+  FindMessagesForGlobalSearch(
+    request: FindMessagesForGlobalSearchRequest,
+  ): Promise<FindMessagesForGlobalSearchResponse> {
+    const data = FindMessagesForGlobalSearchRequest.encode(request).finish();
+    const promise = this.rpc.request(this.service, "FindMessagesForGlobalSearch", data);
+    return promise.then((data) => FindMessagesForGlobalSearchResponse.decode(new BinaryReader(data)));
   }
 }
 

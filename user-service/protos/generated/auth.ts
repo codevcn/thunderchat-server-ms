@@ -5,11 +5,11 @@
 // source: auth.proto
 
 /* eslint-disable */
-import { BinaryReader, BinaryWriter } from "@bufbuild/protobuf/wire";
-import { Empty } from "./google/protobuf/empty";
-import { Struct } from "./google/protobuf/struct";
+import { BinaryReader, BinaryWriter } from '@bufbuild/protobuf/wire';
+import { Empty } from './google/protobuf/empty';
+import { Struct } from './google/protobuf/struct';
 
-export const protobufPackage = "auth";
+export const protobufPackage = 'auth';
 
 export interface ValidateSocketConnectionRequest {
   socket: { [key: string]: any } | undefined;
@@ -23,140 +23,459 @@ export interface ValidateSocketAuthResponse {
   clientSocketAuth: { [key: string]: any } | undefined;
 }
 
+export interface ValidateVoiceCallSocketAuthRequest {
+  clientSocket: { [key: string]: any } | undefined;
+}
+
+export interface ValidateVoiceCallSocketAuthResponse {
+  voiceCallSocketAuth: { [key: string]: any } | undefined;
+}
+
+export interface VerifyTokenRequest {
+  token: string;
+}
+
+export interface VerifyTokenResponse {
+  user: { [key: string]: any } | undefined;
+}
+
+export interface CreateJWTRequest {
+  email: string;
+  userId: number;
+}
+
+export interface CreateJWTResponse {
+  jwtToken: string;
+}
+
+export interface SendClientJWTRequest {
+  token: string;
+  cookieOtps: { [key: string]: any } | undefined;
+}
+
+export interface SendClientJWTResponse {
+  success: boolean;
+  message: string;
+}
+
 function createBaseValidateSocketConnectionRequest(): ValidateSocketConnectionRequest {
   return { socket: undefined };
 }
 
-export const ValidateSocketConnectionRequest: MessageFns<ValidateSocketConnectionRequest> = {
-  encode(message: ValidateSocketConnectionRequest, writer: BinaryWriter = new BinaryWriter()): BinaryWriter {
-    if (message.socket !== undefined) {
-      Struct.encode(Struct.wrap(message.socket), writer.uint32(10).fork()).join();
-    }
-    return writer;
-  },
+export const ValidateSocketConnectionRequest: MessageFns<ValidateSocketConnectionRequest> =
+  {
+    encode(
+      message: ValidateSocketConnectionRequest,
+      writer: BinaryWriter = new BinaryWriter(),
+    ): BinaryWriter {
+      if (message.socket !== undefined) {
+        Struct.encode(
+          Struct.wrap(message.socket),
+          writer.uint32(10).fork(),
+        ).join();
+      }
+      return writer;
+    },
 
-  decode(input: BinaryReader | Uint8Array, length?: number): ValidateSocketConnectionRequest {
-    const reader = input instanceof BinaryReader ? input : new BinaryReader(input);
-    const end = length === undefined ? reader.len : reader.pos + length;
-    const message = createBaseValidateSocketConnectionRequest();
-    while (reader.pos < end) {
-      const tag = reader.uint32();
-      switch (tag >>> 3) {
-        case 1: {
-          if (tag !== 10) {
-            break;
+    decode(
+      input: BinaryReader | Uint8Array,
+      length?: number,
+    ): ValidateSocketConnectionRequest {
+      const reader =
+        input instanceof BinaryReader ? input : new BinaryReader(input);
+      const end = length === undefined ? reader.len : reader.pos + length;
+      const message = createBaseValidateSocketConnectionRequest();
+      while (reader.pos < end) {
+        const tag = reader.uint32();
+        switch (tag >>> 3) {
+          case 1: {
+            if (tag !== 10) {
+              break;
+            }
+
+            message.socket = Struct.unwrap(
+              Struct.decode(reader, reader.uint32()),
+            );
+            continue;
           }
-
-          message.socket = Struct.unwrap(Struct.decode(reader, reader.uint32()));
-          continue;
         }
+        if ((tag & 7) === 4 || tag === 0) {
+          break;
+        }
+        reader.skip(tag & 7);
       }
-      if ((tag & 7) === 4 || tag === 0) {
-        break;
+      return message;
+    },
+
+    fromJSON(object: any): ValidateSocketConnectionRequest {
+      return { socket: isObject(object.socket) ? object.socket : undefined };
+    },
+
+    toJSON(message: ValidateSocketConnectionRequest): unknown {
+      const obj: any = {};
+      if (message.socket !== undefined) {
+        obj.socket = message.socket;
       }
-      reader.skip(tag & 7);
-    }
-    return message;
-  },
+      return obj;
+    },
 
-  fromJSON(object: any): ValidateSocketConnectionRequest {
-    return { socket: isObject(object.socket) ? object.socket : undefined };
-  },
-
-  toJSON(message: ValidateSocketConnectionRequest): unknown {
-    const obj: any = {};
-    if (message.socket !== undefined) {
-      obj.socket = message.socket;
-    }
-    return obj;
-  },
-
-  create<I extends Exact<DeepPartial<ValidateSocketConnectionRequest>, I>>(base?: I): ValidateSocketConnectionRequest {
-    return ValidateSocketConnectionRequest.fromPartial(base ?? ({} as any));
-  },
-  fromPartial<I extends Exact<DeepPartial<ValidateSocketConnectionRequest>, I>>(
-    object: I,
-  ): ValidateSocketConnectionRequest {
-    const message = createBaseValidateSocketConnectionRequest();
-    message.socket = object.socket ?? undefined;
-    return message;
-  },
-};
+    create<I extends Exact<DeepPartial<ValidateSocketConnectionRequest>, I>>(
+      base?: I,
+    ): ValidateSocketConnectionRequest {
+      return ValidateSocketConnectionRequest.fromPartial(base ?? ({} as any));
+    },
+    fromPartial<
+      I extends Exact<DeepPartial<ValidateSocketConnectionRequest>, I>,
+    >(object: I): ValidateSocketConnectionRequest {
+      const message = createBaseValidateSocketConnectionRequest();
+      message.socket = object.socket ?? undefined;
+      return message;
+    },
+  };
 
 function createBaseValidateSocketAuthRequest(): ValidateSocketAuthRequest {
   return { clientSocket: undefined };
 }
 
-export const ValidateSocketAuthRequest: MessageFns<ValidateSocketAuthRequest> = {
-  encode(message: ValidateSocketAuthRequest, writer: BinaryWriter = new BinaryWriter()): BinaryWriter {
-    if (message.clientSocket !== undefined) {
-      Struct.encode(Struct.wrap(message.clientSocket), writer.uint32(10).fork()).join();
-    }
-    return writer;
-  },
+export const ValidateSocketAuthRequest: MessageFns<ValidateSocketAuthRequest> =
+  {
+    encode(
+      message: ValidateSocketAuthRequest,
+      writer: BinaryWriter = new BinaryWriter(),
+    ): BinaryWriter {
+      if (message.clientSocket !== undefined) {
+        Struct.encode(
+          Struct.wrap(message.clientSocket),
+          writer.uint32(10).fork(),
+        ).join();
+      }
+      return writer;
+    },
 
-  decode(input: BinaryReader | Uint8Array, length?: number): ValidateSocketAuthRequest {
-    const reader = input instanceof BinaryReader ? input : new BinaryReader(input);
-    const end = length === undefined ? reader.len : reader.pos + length;
-    const message = createBaseValidateSocketAuthRequest();
-    while (reader.pos < end) {
-      const tag = reader.uint32();
-      switch (tag >>> 3) {
-        case 1: {
-          if (tag !== 10) {
-            break;
+    decode(
+      input: BinaryReader | Uint8Array,
+      length?: number,
+    ): ValidateSocketAuthRequest {
+      const reader =
+        input instanceof BinaryReader ? input : new BinaryReader(input);
+      const end = length === undefined ? reader.len : reader.pos + length;
+      const message = createBaseValidateSocketAuthRequest();
+      while (reader.pos < end) {
+        const tag = reader.uint32();
+        switch (tag >>> 3) {
+          case 1: {
+            if (tag !== 10) {
+              break;
+            }
+
+            message.clientSocket = Struct.unwrap(
+              Struct.decode(reader, reader.uint32()),
+            );
+            continue;
           }
-
-          message.clientSocket = Struct.unwrap(Struct.decode(reader, reader.uint32()));
-          continue;
         }
+        if ((tag & 7) === 4 || tag === 0) {
+          break;
+        }
+        reader.skip(tag & 7);
       }
-      if ((tag & 7) === 4 || tag === 0) {
-        break;
+      return message;
+    },
+
+    fromJSON(object: any): ValidateSocketAuthRequest {
+      return {
+        clientSocket: isObject(object.clientSocket)
+          ? object.clientSocket
+          : undefined,
+      };
+    },
+
+    toJSON(message: ValidateSocketAuthRequest): unknown {
+      const obj: any = {};
+      if (message.clientSocket !== undefined) {
+        obj.clientSocket = message.clientSocket;
       }
-      reader.skip(tag & 7);
-    }
-    return message;
-  },
+      return obj;
+    },
 
-  fromJSON(object: any): ValidateSocketAuthRequest {
-    return { clientSocket: isObject(object.clientSocket) ? object.clientSocket : undefined };
-  },
-
-  toJSON(message: ValidateSocketAuthRequest): unknown {
-    const obj: any = {};
-    if (message.clientSocket !== undefined) {
-      obj.clientSocket = message.clientSocket;
-    }
-    return obj;
-  },
-
-  create<I extends Exact<DeepPartial<ValidateSocketAuthRequest>, I>>(base?: I): ValidateSocketAuthRequest {
-    return ValidateSocketAuthRequest.fromPartial(base ?? ({} as any));
-  },
-  fromPartial<I extends Exact<DeepPartial<ValidateSocketAuthRequest>, I>>(object: I): ValidateSocketAuthRequest {
-    const message = createBaseValidateSocketAuthRequest();
-    message.clientSocket = object.clientSocket ?? undefined;
-    return message;
-  },
-};
+    create<I extends Exact<DeepPartial<ValidateSocketAuthRequest>, I>>(
+      base?: I,
+    ): ValidateSocketAuthRequest {
+      return ValidateSocketAuthRequest.fromPartial(base ?? ({} as any));
+    },
+    fromPartial<I extends Exact<DeepPartial<ValidateSocketAuthRequest>, I>>(
+      object: I,
+    ): ValidateSocketAuthRequest {
+      const message = createBaseValidateSocketAuthRequest();
+      message.clientSocket = object.clientSocket ?? undefined;
+      return message;
+    },
+  };
 
 function createBaseValidateSocketAuthResponse(): ValidateSocketAuthResponse {
   return { clientSocketAuth: undefined };
 }
 
-export const ValidateSocketAuthResponse: MessageFns<ValidateSocketAuthResponse> = {
-  encode(message: ValidateSocketAuthResponse, writer: BinaryWriter = new BinaryWriter()): BinaryWriter {
-    if (message.clientSocketAuth !== undefined) {
-      Struct.encode(Struct.wrap(message.clientSocketAuth), writer.uint32(10).fork()).join();
+export const ValidateSocketAuthResponse: MessageFns<ValidateSocketAuthResponse> =
+  {
+    encode(
+      message: ValidateSocketAuthResponse,
+      writer: BinaryWriter = new BinaryWriter(),
+    ): BinaryWriter {
+      if (message.clientSocketAuth !== undefined) {
+        Struct.encode(
+          Struct.wrap(message.clientSocketAuth),
+          writer.uint32(10).fork(),
+        ).join();
+      }
+      return writer;
+    },
+
+    decode(
+      input: BinaryReader | Uint8Array,
+      length?: number,
+    ): ValidateSocketAuthResponse {
+      const reader =
+        input instanceof BinaryReader ? input : new BinaryReader(input);
+      const end = length === undefined ? reader.len : reader.pos + length;
+      const message = createBaseValidateSocketAuthResponse();
+      while (reader.pos < end) {
+        const tag = reader.uint32();
+        switch (tag >>> 3) {
+          case 1: {
+            if (tag !== 10) {
+              break;
+            }
+
+            message.clientSocketAuth = Struct.unwrap(
+              Struct.decode(reader, reader.uint32()),
+            );
+            continue;
+          }
+        }
+        if ((tag & 7) === 4 || tag === 0) {
+          break;
+        }
+        reader.skip(tag & 7);
+      }
+      return message;
+    },
+
+    fromJSON(object: any): ValidateSocketAuthResponse {
+      return {
+        clientSocketAuth: isObject(object.clientSocketAuth)
+          ? object.clientSocketAuth
+          : undefined,
+      };
+    },
+
+    toJSON(message: ValidateSocketAuthResponse): unknown {
+      const obj: any = {};
+      if (message.clientSocketAuth !== undefined) {
+        obj.clientSocketAuth = message.clientSocketAuth;
+      }
+      return obj;
+    },
+
+    create<I extends Exact<DeepPartial<ValidateSocketAuthResponse>, I>>(
+      base?: I,
+    ): ValidateSocketAuthResponse {
+      return ValidateSocketAuthResponse.fromPartial(base ?? ({} as any));
+    },
+    fromPartial<I extends Exact<DeepPartial<ValidateSocketAuthResponse>, I>>(
+      object: I,
+    ): ValidateSocketAuthResponse {
+      const message = createBaseValidateSocketAuthResponse();
+      message.clientSocketAuth = object.clientSocketAuth ?? undefined;
+      return message;
+    },
+  };
+
+function createBaseValidateVoiceCallSocketAuthRequest(): ValidateVoiceCallSocketAuthRequest {
+  return { clientSocket: undefined };
+}
+
+export const ValidateVoiceCallSocketAuthRequest: MessageFns<ValidateVoiceCallSocketAuthRequest> =
+  {
+    encode(
+      message: ValidateVoiceCallSocketAuthRequest,
+      writer: BinaryWriter = new BinaryWriter(),
+    ): BinaryWriter {
+      if (message.clientSocket !== undefined) {
+        Struct.encode(
+          Struct.wrap(message.clientSocket),
+          writer.uint32(10).fork(),
+        ).join();
+      }
+      return writer;
+    },
+
+    decode(
+      input: BinaryReader | Uint8Array,
+      length?: number,
+    ): ValidateVoiceCallSocketAuthRequest {
+      const reader =
+        input instanceof BinaryReader ? input : new BinaryReader(input);
+      const end = length === undefined ? reader.len : reader.pos + length;
+      const message = createBaseValidateVoiceCallSocketAuthRequest();
+      while (reader.pos < end) {
+        const tag = reader.uint32();
+        switch (tag >>> 3) {
+          case 1: {
+            if (tag !== 10) {
+              break;
+            }
+
+            message.clientSocket = Struct.unwrap(
+              Struct.decode(reader, reader.uint32()),
+            );
+            continue;
+          }
+        }
+        if ((tag & 7) === 4 || tag === 0) {
+          break;
+        }
+        reader.skip(tag & 7);
+      }
+      return message;
+    },
+
+    fromJSON(object: any): ValidateVoiceCallSocketAuthRequest {
+      return {
+        clientSocket: isObject(object.clientSocket)
+          ? object.clientSocket
+          : undefined,
+      };
+    },
+
+    toJSON(message: ValidateVoiceCallSocketAuthRequest): unknown {
+      const obj: any = {};
+      if (message.clientSocket !== undefined) {
+        obj.clientSocket = message.clientSocket;
+      }
+      return obj;
+    },
+
+    create<I extends Exact<DeepPartial<ValidateVoiceCallSocketAuthRequest>, I>>(
+      base?: I,
+    ): ValidateVoiceCallSocketAuthRequest {
+      return ValidateVoiceCallSocketAuthRequest.fromPartial(
+        base ?? ({} as any),
+      );
+    },
+    fromPartial<
+      I extends Exact<DeepPartial<ValidateVoiceCallSocketAuthRequest>, I>,
+    >(object: I): ValidateVoiceCallSocketAuthRequest {
+      const message = createBaseValidateVoiceCallSocketAuthRequest();
+      message.clientSocket = object.clientSocket ?? undefined;
+      return message;
+    },
+  };
+
+function createBaseValidateVoiceCallSocketAuthResponse(): ValidateVoiceCallSocketAuthResponse {
+  return { voiceCallSocketAuth: undefined };
+}
+
+export const ValidateVoiceCallSocketAuthResponse: MessageFns<ValidateVoiceCallSocketAuthResponse> =
+  {
+    encode(
+      message: ValidateVoiceCallSocketAuthResponse,
+      writer: BinaryWriter = new BinaryWriter(),
+    ): BinaryWriter {
+      if (message.voiceCallSocketAuth !== undefined) {
+        Struct.encode(
+          Struct.wrap(message.voiceCallSocketAuth),
+          writer.uint32(10).fork(),
+        ).join();
+      }
+      return writer;
+    },
+
+    decode(
+      input: BinaryReader | Uint8Array,
+      length?: number,
+    ): ValidateVoiceCallSocketAuthResponse {
+      const reader =
+        input instanceof BinaryReader ? input : new BinaryReader(input);
+      const end = length === undefined ? reader.len : reader.pos + length;
+      const message = createBaseValidateVoiceCallSocketAuthResponse();
+      while (reader.pos < end) {
+        const tag = reader.uint32();
+        switch (tag >>> 3) {
+          case 1: {
+            if (tag !== 10) {
+              break;
+            }
+
+            message.voiceCallSocketAuth = Struct.unwrap(
+              Struct.decode(reader, reader.uint32()),
+            );
+            continue;
+          }
+        }
+        if ((tag & 7) === 4 || tag === 0) {
+          break;
+        }
+        reader.skip(tag & 7);
+      }
+      return message;
+    },
+
+    fromJSON(object: any): ValidateVoiceCallSocketAuthResponse {
+      return {
+        voiceCallSocketAuth: isObject(object.voiceCallSocketAuth)
+          ? object.voiceCallSocketAuth
+          : undefined,
+      };
+    },
+
+    toJSON(message: ValidateVoiceCallSocketAuthResponse): unknown {
+      const obj: any = {};
+      if (message.voiceCallSocketAuth !== undefined) {
+        obj.voiceCallSocketAuth = message.voiceCallSocketAuth;
+      }
+      return obj;
+    },
+
+    create<
+      I extends Exact<DeepPartial<ValidateVoiceCallSocketAuthResponse>, I>,
+    >(base?: I): ValidateVoiceCallSocketAuthResponse {
+      return ValidateVoiceCallSocketAuthResponse.fromPartial(
+        base ?? ({} as any),
+      );
+    },
+    fromPartial<
+      I extends Exact<DeepPartial<ValidateVoiceCallSocketAuthResponse>, I>,
+    >(object: I): ValidateVoiceCallSocketAuthResponse {
+      const message = createBaseValidateVoiceCallSocketAuthResponse();
+      message.voiceCallSocketAuth = object.voiceCallSocketAuth ?? undefined;
+      return message;
+    },
+  };
+
+function createBaseVerifyTokenRequest(): VerifyTokenRequest {
+  return { token: '' };
+}
+
+export const VerifyTokenRequest: MessageFns<VerifyTokenRequest> = {
+  encode(
+    message: VerifyTokenRequest,
+    writer: BinaryWriter = new BinaryWriter(),
+  ): BinaryWriter {
+    if (message.token !== '') {
+      writer.uint32(10).string(message.token);
     }
     return writer;
   },
 
-  decode(input: BinaryReader | Uint8Array, length?: number): ValidateSocketAuthResponse {
-    const reader = input instanceof BinaryReader ? input : new BinaryReader(input);
+  decode(
+    input: BinaryReader | Uint8Array,
+    length?: number,
+  ): VerifyTokenRequest {
+    const reader =
+      input instanceof BinaryReader ? input : new BinaryReader(input);
     const end = length === undefined ? reader.len : reader.pos + length;
-    const message = createBaseValidateSocketAuthResponse();
+    const message = createBaseVerifyTokenRequest();
     while (reader.pos < end) {
       const tag = reader.uint32();
       switch (tag >>> 3) {
@@ -165,7 +484,7 @@ export const ValidateSocketAuthResponse: MessageFns<ValidateSocketAuthResponse> 
             break;
           }
 
-          message.clientSocketAuth = Struct.unwrap(Struct.decode(reader, reader.uint32()));
+          message.token = reader.string();
           continue;
         }
       }
@@ -177,34 +496,452 @@ export const ValidateSocketAuthResponse: MessageFns<ValidateSocketAuthResponse> 
     return message;
   },
 
-  fromJSON(object: any): ValidateSocketAuthResponse {
-    return { clientSocketAuth: isObject(object.clientSocketAuth) ? object.clientSocketAuth : undefined };
+  fromJSON(object: any): VerifyTokenRequest {
+    return {
+      token: isSet(object.token) ? globalThis.String(object.token) : '',
+    };
   },
 
-  toJSON(message: ValidateSocketAuthResponse): unknown {
+  toJSON(message: VerifyTokenRequest): unknown {
     const obj: any = {};
-    if (message.clientSocketAuth !== undefined) {
-      obj.clientSocketAuth = message.clientSocketAuth;
+    if (message.token !== '') {
+      obj.token = message.token;
     }
     return obj;
   },
 
-  create<I extends Exact<DeepPartial<ValidateSocketAuthResponse>, I>>(base?: I): ValidateSocketAuthResponse {
-    return ValidateSocketAuthResponse.fromPartial(base ?? ({} as any));
+  create<I extends Exact<DeepPartial<VerifyTokenRequest>, I>>(
+    base?: I,
+  ): VerifyTokenRequest {
+    return VerifyTokenRequest.fromPartial(base ?? ({} as any));
   },
-  fromPartial<I extends Exact<DeepPartial<ValidateSocketAuthResponse>, I>>(object: I): ValidateSocketAuthResponse {
-    const message = createBaseValidateSocketAuthResponse();
-    message.clientSocketAuth = object.clientSocketAuth ?? undefined;
+  fromPartial<I extends Exact<DeepPartial<VerifyTokenRequest>, I>>(
+    object: I,
+  ): VerifyTokenRequest {
+    const message = createBaseVerifyTokenRequest();
+    message.token = object.token ?? '';
+    return message;
+  },
+};
+
+function createBaseVerifyTokenResponse(): VerifyTokenResponse {
+  return { user: undefined };
+}
+
+export const VerifyTokenResponse: MessageFns<VerifyTokenResponse> = {
+  encode(
+    message: VerifyTokenResponse,
+    writer: BinaryWriter = new BinaryWriter(),
+  ): BinaryWriter {
+    if (message.user !== undefined) {
+      Struct.encode(Struct.wrap(message.user), writer.uint32(10).fork()).join();
+    }
+    return writer;
+  },
+
+  decode(
+    input: BinaryReader | Uint8Array,
+    length?: number,
+  ): VerifyTokenResponse {
+    const reader =
+      input instanceof BinaryReader ? input : new BinaryReader(input);
+    const end = length === undefined ? reader.len : reader.pos + length;
+    const message = createBaseVerifyTokenResponse();
+    while (reader.pos < end) {
+      const tag = reader.uint32();
+      switch (tag >>> 3) {
+        case 1: {
+          if (tag !== 10) {
+            break;
+          }
+
+          message.user = Struct.unwrap(Struct.decode(reader, reader.uint32()));
+          continue;
+        }
+      }
+      if ((tag & 7) === 4 || tag === 0) {
+        break;
+      }
+      reader.skip(tag & 7);
+    }
+    return message;
+  },
+
+  fromJSON(object: any): VerifyTokenResponse {
+    return { user: isObject(object.user) ? object.user : undefined };
+  },
+
+  toJSON(message: VerifyTokenResponse): unknown {
+    const obj: any = {};
+    if (message.user !== undefined) {
+      obj.user = message.user;
+    }
+    return obj;
+  },
+
+  create<I extends Exact<DeepPartial<VerifyTokenResponse>, I>>(
+    base?: I,
+  ): VerifyTokenResponse {
+    return VerifyTokenResponse.fromPartial(base ?? ({} as any));
+  },
+  fromPartial<I extends Exact<DeepPartial<VerifyTokenResponse>, I>>(
+    object: I,
+  ): VerifyTokenResponse {
+    const message = createBaseVerifyTokenResponse();
+    message.user = object.user ?? undefined;
+    return message;
+  },
+};
+
+function createBaseCreateJWTRequest(): CreateJWTRequest {
+  return { email: '', userId: 0 };
+}
+
+export const CreateJWTRequest: MessageFns<CreateJWTRequest> = {
+  encode(
+    message: CreateJWTRequest,
+    writer: BinaryWriter = new BinaryWriter(),
+  ): BinaryWriter {
+    if (message.email !== '') {
+      writer.uint32(10).string(message.email);
+    }
+    if (message.userId !== 0) {
+      writer.uint32(16).int32(message.userId);
+    }
+    return writer;
+  },
+
+  decode(input: BinaryReader | Uint8Array, length?: number): CreateJWTRequest {
+    const reader =
+      input instanceof BinaryReader ? input : new BinaryReader(input);
+    const end = length === undefined ? reader.len : reader.pos + length;
+    const message = createBaseCreateJWTRequest();
+    while (reader.pos < end) {
+      const tag = reader.uint32();
+      switch (tag >>> 3) {
+        case 1: {
+          if (tag !== 10) {
+            break;
+          }
+
+          message.email = reader.string();
+          continue;
+        }
+        case 2: {
+          if (tag !== 16) {
+            break;
+          }
+
+          message.userId = reader.int32();
+          continue;
+        }
+      }
+      if ((tag & 7) === 4 || tag === 0) {
+        break;
+      }
+      reader.skip(tag & 7);
+    }
+    return message;
+  },
+
+  fromJSON(object: any): CreateJWTRequest {
+    return {
+      email: isSet(object.email) ? globalThis.String(object.email) : '',
+      userId: isSet(object.userId) ? globalThis.Number(object.userId) : 0,
+    };
+  },
+
+  toJSON(message: CreateJWTRequest): unknown {
+    const obj: any = {};
+    if (message.email !== '') {
+      obj.email = message.email;
+    }
+    if (message.userId !== 0) {
+      obj.userId = Math.round(message.userId);
+    }
+    return obj;
+  },
+
+  create<I extends Exact<DeepPartial<CreateJWTRequest>, I>>(
+    base?: I,
+  ): CreateJWTRequest {
+    return CreateJWTRequest.fromPartial(base ?? ({} as any));
+  },
+  fromPartial<I extends Exact<DeepPartial<CreateJWTRequest>, I>>(
+    object: I,
+  ): CreateJWTRequest {
+    const message = createBaseCreateJWTRequest();
+    message.email = object.email ?? '';
+    message.userId = object.userId ?? 0;
+    return message;
+  },
+};
+
+function createBaseCreateJWTResponse(): CreateJWTResponse {
+  return { jwtToken: '' };
+}
+
+export const CreateJWTResponse: MessageFns<CreateJWTResponse> = {
+  encode(
+    message: CreateJWTResponse,
+    writer: BinaryWriter = new BinaryWriter(),
+  ): BinaryWriter {
+    if (message.jwtToken !== '') {
+      writer.uint32(10).string(message.jwtToken);
+    }
+    return writer;
+  },
+
+  decode(input: BinaryReader | Uint8Array, length?: number): CreateJWTResponse {
+    const reader =
+      input instanceof BinaryReader ? input : new BinaryReader(input);
+    const end = length === undefined ? reader.len : reader.pos + length;
+    const message = createBaseCreateJWTResponse();
+    while (reader.pos < end) {
+      const tag = reader.uint32();
+      switch (tag >>> 3) {
+        case 1: {
+          if (tag !== 10) {
+            break;
+          }
+
+          message.jwtToken = reader.string();
+          continue;
+        }
+      }
+      if ((tag & 7) === 4 || tag === 0) {
+        break;
+      }
+      reader.skip(tag & 7);
+    }
+    return message;
+  },
+
+  fromJSON(object: any): CreateJWTResponse {
+    return {
+      jwtToken: isSet(object.jwtToken)
+        ? globalThis.String(object.jwtToken)
+        : '',
+    };
+  },
+
+  toJSON(message: CreateJWTResponse): unknown {
+    const obj: any = {};
+    if (message.jwtToken !== '') {
+      obj.jwtToken = message.jwtToken;
+    }
+    return obj;
+  },
+
+  create<I extends Exact<DeepPartial<CreateJWTResponse>, I>>(
+    base?: I,
+  ): CreateJWTResponse {
+    return CreateJWTResponse.fromPartial(base ?? ({} as any));
+  },
+  fromPartial<I extends Exact<DeepPartial<CreateJWTResponse>, I>>(
+    object: I,
+  ): CreateJWTResponse {
+    const message = createBaseCreateJWTResponse();
+    message.jwtToken = object.jwtToken ?? '';
+    return message;
+  },
+};
+
+function createBaseSendClientJWTRequest(): SendClientJWTRequest {
+  return { token: '', cookieOtps: undefined };
+}
+
+export const SendClientJWTRequest: MessageFns<SendClientJWTRequest> = {
+  encode(
+    message: SendClientJWTRequest,
+    writer: BinaryWriter = new BinaryWriter(),
+  ): BinaryWriter {
+    if (message.token !== '') {
+      writer.uint32(10).string(message.token);
+    }
+    if (message.cookieOtps !== undefined) {
+      Struct.encode(
+        Struct.wrap(message.cookieOtps),
+        writer.uint32(18).fork(),
+      ).join();
+    }
+    return writer;
+  },
+
+  decode(
+    input: BinaryReader | Uint8Array,
+    length?: number,
+  ): SendClientJWTRequest {
+    const reader =
+      input instanceof BinaryReader ? input : new BinaryReader(input);
+    const end = length === undefined ? reader.len : reader.pos + length;
+    const message = createBaseSendClientJWTRequest();
+    while (reader.pos < end) {
+      const tag = reader.uint32();
+      switch (tag >>> 3) {
+        case 1: {
+          if (tag !== 10) {
+            break;
+          }
+
+          message.token = reader.string();
+          continue;
+        }
+        case 2: {
+          if (tag !== 18) {
+            break;
+          }
+
+          message.cookieOtps = Struct.unwrap(
+            Struct.decode(reader, reader.uint32()),
+          );
+          continue;
+        }
+      }
+      if ((tag & 7) === 4 || tag === 0) {
+        break;
+      }
+      reader.skip(tag & 7);
+    }
+    return message;
+  },
+
+  fromJSON(object: any): SendClientJWTRequest {
+    return {
+      token: isSet(object.token) ? globalThis.String(object.token) : '',
+      cookieOtps: isObject(object.cookieOtps) ? object.cookieOtps : undefined,
+    };
+  },
+
+  toJSON(message: SendClientJWTRequest): unknown {
+    const obj: any = {};
+    if (message.token !== '') {
+      obj.token = message.token;
+    }
+    if (message.cookieOtps !== undefined) {
+      obj.cookieOtps = message.cookieOtps;
+    }
+    return obj;
+  },
+
+  create<I extends Exact<DeepPartial<SendClientJWTRequest>, I>>(
+    base?: I,
+  ): SendClientJWTRequest {
+    return SendClientJWTRequest.fromPartial(base ?? ({} as any));
+  },
+  fromPartial<I extends Exact<DeepPartial<SendClientJWTRequest>, I>>(
+    object: I,
+  ): SendClientJWTRequest {
+    const message = createBaseSendClientJWTRequest();
+    message.token = object.token ?? '';
+    message.cookieOtps = object.cookieOtps ?? undefined;
+    return message;
+  },
+};
+
+function createBaseSendClientJWTResponse(): SendClientJWTResponse {
+  return { success: false, message: '' };
+}
+
+export const SendClientJWTResponse: MessageFns<SendClientJWTResponse> = {
+  encode(
+    message: SendClientJWTResponse,
+    writer: BinaryWriter = new BinaryWriter(),
+  ): BinaryWriter {
+    if (message.success !== false) {
+      writer.uint32(8).bool(message.success);
+    }
+    if (message.message !== '') {
+      writer.uint32(18).string(message.message);
+    }
+    return writer;
+  },
+
+  decode(
+    input: BinaryReader | Uint8Array,
+    length?: number,
+  ): SendClientJWTResponse {
+    const reader =
+      input instanceof BinaryReader ? input : new BinaryReader(input);
+    const end = length === undefined ? reader.len : reader.pos + length;
+    const message = createBaseSendClientJWTResponse();
+    while (reader.pos < end) {
+      const tag = reader.uint32();
+      switch (tag >>> 3) {
+        case 1: {
+          if (tag !== 8) {
+            break;
+          }
+
+          message.success = reader.bool();
+          continue;
+        }
+        case 2: {
+          if (tag !== 18) {
+            break;
+          }
+
+          message.message = reader.string();
+          continue;
+        }
+      }
+      if ((tag & 7) === 4 || tag === 0) {
+        break;
+      }
+      reader.skip(tag & 7);
+    }
+    return message;
+  },
+
+  fromJSON(object: any): SendClientJWTResponse {
+    return {
+      success: isSet(object.success)
+        ? globalThis.Boolean(object.success)
+        : false,
+      message: isSet(object.message) ? globalThis.String(object.message) : '',
+    };
+  },
+
+  toJSON(message: SendClientJWTResponse): unknown {
+    const obj: any = {};
+    if (message.success !== false) {
+      obj.success = message.success;
+    }
+    if (message.message !== '') {
+      obj.message = message.message;
+    }
+    return obj;
+  },
+
+  create<I extends Exact<DeepPartial<SendClientJWTResponse>, I>>(
+    base?: I,
+  ): SendClientJWTResponse {
+    return SendClientJWTResponse.fromPartial(base ?? ({} as any));
+  },
+  fromPartial<I extends Exact<DeepPartial<SendClientJWTResponse>, I>>(
+    object: I,
+  ): SendClientJWTResponse {
+    const message = createBaseSendClientJWTResponse();
+    message.success = object.success ?? false;
+    message.message = object.message ?? '';
     return message;
   },
 };
 
 export interface AuthService {
-  ValidateSocketConnection(request: ValidateSocketConnectionRequest): Promise<Empty>;
-  ValidateSocketAuth(request: ValidateSocketAuthRequest): Promise<ValidateSocketAuthResponse>;
+  ValidateSocketConnection(
+    request: ValidateSocketConnectionRequest,
+  ): Promise<Empty>;
+  ValidateSocketAuth(
+    request: ValidateSocketAuthRequest,
+  ): Promise<ValidateSocketAuthResponse>;
+  ValidateVoiceCallSocketAuth(
+    request: ValidateVoiceCallSocketAuthRequest,
+  ): Promise<ValidateVoiceCallSocketAuthResponse>;
+  VerifyToken(request: VerifyTokenRequest): Promise<VerifyTokenResponse>;
 }
 
-export const AuthServiceServiceName = "auth.AuthService";
+export const AuthServiceServiceName = 'auth.AuthService';
 export class AuthServiceClientImpl implements AuthService {
   private readonly rpc: Rpc;
   private readonly service: string;
@@ -213,38 +950,127 @@ export class AuthServiceClientImpl implements AuthService {
     this.rpc = rpc;
     this.ValidateSocketConnection = this.ValidateSocketConnection.bind(this);
     this.ValidateSocketAuth = this.ValidateSocketAuth.bind(this);
+    this.ValidateVoiceCallSocketAuth =
+      this.ValidateVoiceCallSocketAuth.bind(this);
+    this.VerifyToken = this.VerifyToken.bind(this);
   }
-  ValidateSocketConnection(request: ValidateSocketConnectionRequest): Promise<Empty> {
+  ValidateSocketConnection(
+    request: ValidateSocketConnectionRequest,
+  ): Promise<Empty> {
     const data = ValidateSocketConnectionRequest.encode(request).finish();
-    const promise = this.rpc.request(this.service, "ValidateSocketConnection", data);
+    const promise = this.rpc.request(
+      this.service,
+      'ValidateSocketConnection',
+      data,
+    );
     return promise.then((data) => Empty.decode(new BinaryReader(data)));
   }
 
-  ValidateSocketAuth(request: ValidateSocketAuthRequest): Promise<ValidateSocketAuthResponse> {
+  ValidateSocketAuth(
+    request: ValidateSocketAuthRequest,
+  ): Promise<ValidateSocketAuthResponse> {
     const data = ValidateSocketAuthRequest.encode(request).finish();
-    const promise = this.rpc.request(this.service, "ValidateSocketAuth", data);
-    return promise.then((data) => ValidateSocketAuthResponse.decode(new BinaryReader(data)));
+    const promise = this.rpc.request(this.service, 'ValidateSocketAuth', data);
+    return promise.then((data) =>
+      ValidateSocketAuthResponse.decode(new BinaryReader(data)),
+    );
+  }
+
+  ValidateVoiceCallSocketAuth(
+    request: ValidateVoiceCallSocketAuthRequest,
+  ): Promise<ValidateVoiceCallSocketAuthResponse> {
+    const data = ValidateVoiceCallSocketAuthRequest.encode(request).finish();
+    const promise = this.rpc.request(
+      this.service,
+      'ValidateVoiceCallSocketAuth',
+      data,
+    );
+    return promise.then((data) =>
+      ValidateVoiceCallSocketAuthResponse.decode(new BinaryReader(data)),
+    );
+  }
+
+  VerifyToken(request: VerifyTokenRequest): Promise<VerifyTokenResponse> {
+    const data = VerifyTokenRequest.encode(request).finish();
+    const promise = this.rpc.request(this.service, 'VerifyToken', data);
+    return promise.then((data) =>
+      VerifyTokenResponse.decode(new BinaryReader(data)),
+    );
+  }
+}
+
+export interface JWTService {
+  CreateJWT(request: CreateJWTRequest): Promise<CreateJWTResponse>;
+  SendClientJWT(request: SendClientJWTRequest): Promise<SendClientJWTResponse>;
+}
+
+export const JWTServiceServiceName = 'auth.JWTService';
+export class JWTServiceClientImpl implements JWTService {
+  private readonly rpc: Rpc;
+  private readonly service: string;
+  constructor(rpc: Rpc, opts?: { service?: string }) {
+    this.service = opts?.service || JWTServiceServiceName;
+    this.rpc = rpc;
+    this.CreateJWT = this.CreateJWT.bind(this);
+    this.SendClientJWT = this.SendClientJWT.bind(this);
+  }
+  CreateJWT(request: CreateJWTRequest): Promise<CreateJWTResponse> {
+    const data = CreateJWTRequest.encode(request).finish();
+    const promise = this.rpc.request(this.service, 'CreateJWT', data);
+    return promise.then((data) =>
+      CreateJWTResponse.decode(new BinaryReader(data)),
+    );
+  }
+
+  SendClientJWT(request: SendClientJWTRequest): Promise<SendClientJWTResponse> {
+    const data = SendClientJWTRequest.encode(request).finish();
+    const promise = this.rpc.request(this.service, 'SendClientJWT', data);
+    return promise.then((data) =>
+      SendClientJWTResponse.decode(new BinaryReader(data)),
+    );
   }
 }
 
 interface Rpc {
-  request(service: string, method: string, data: Uint8Array): Promise<Uint8Array>;
+  request(
+    service: string,
+    method: string,
+    data: Uint8Array,
+  ): Promise<Uint8Array>;
 }
 
-type Builtin = Date | Function | Uint8Array | string | number | boolean | undefined;
+type Builtin =
+  | Date
+  | Function
+  | Uint8Array
+  | string
+  | number
+  | boolean
+  | undefined;
 
-export type DeepPartial<T> = T extends Builtin ? T
-  : T extends globalThis.Array<infer U> ? globalThis.Array<DeepPartial<U>>
-  : T extends ReadonlyArray<infer U> ? ReadonlyArray<DeepPartial<U>>
-  : T extends {} ? { [K in keyof T]?: DeepPartial<T[K]> }
-  : Partial<T>;
+export type DeepPartial<T> = T extends Builtin
+  ? T
+  : T extends globalThis.Array<infer U>
+    ? globalThis.Array<DeepPartial<U>>
+    : T extends ReadonlyArray<infer U>
+      ? ReadonlyArray<DeepPartial<U>>
+      : T extends {}
+        ? { [K in keyof T]?: DeepPartial<T[K]> }
+        : Partial<T>;
 
 type KeysOfUnion<T> = T extends T ? keyof T : never;
-export type Exact<P, I extends P> = P extends Builtin ? P
-  : P & { [K in keyof P]: Exact<P[K], I[K]> } & { [K in Exclude<keyof I, KeysOfUnion<P>>]: never };
+export type Exact<P, I extends P> = P extends Builtin
+  ? P
+  : P & { [K in keyof P]: Exact<P[K], I[K]> } & {
+      [K in Exclude<keyof I, KeysOfUnion<P>>]: never;
+    };
 
 function isObject(value: any): boolean {
-  return typeof value === "object" && value !== null;
+  return typeof value === 'object' && value !== null;
+}
+
+function isSet(value: any): boolean {
+  return value !== null && value !== undefined;
 }
 
 export interface MessageFns<T> {

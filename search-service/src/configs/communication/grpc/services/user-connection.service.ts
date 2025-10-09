@@ -1,20 +1,19 @@
-import type { TUserWithProfile } from '@/utils/entities/user.entity';
+import { TCastedFieldObject } from '@/utils/types';
+import type {
+  CheckUserIsOnlineResponse,
+  UserConnectionService as UserConnectionServiceType,
+} from '../../../../../protos/generated/chat';
 
-import type { UserConnectionService as UserConnectionServiceType } from '../../../../../protos/generated/chat';
-import { TGetFriendRequestsData } from '@/friend-request/friend-request.type';
-
-export class FriendRequestService {
+export class UserConnectionService {
   constructor(private instance: UserConnectionServiceType) {}
 
-  async sendFriendRequest(
-    sender: TUserWithProfile,
-    recipientId: number,
-    requestData: TGetFriendRequestsData,
-  ): Promise<void> {
-    await this.instance.SendFriendRequest({
-      sender,
-      recipientId,
-      requestData,
-    });
+  async checkUserIsOnline(userId: number): Promise<boolean> {
+    return (
+      (await this.instance.CheckUserIsOnline({ userId })) as TCastedFieldObject<
+        CheckUserIsOnlineResponse,
+        'isOnline',
+        boolean
+      >
+    ).isOnline;
   }
 }
