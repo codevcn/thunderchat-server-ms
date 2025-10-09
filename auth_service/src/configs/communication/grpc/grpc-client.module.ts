@@ -5,9 +5,11 @@ import { UserConnectionService } from './services/user-connection.service';
 
 @Module({
   imports: [
-    ClientsModule.register([GrpcClientConfig.getUserConnectionClient()]),
+    ClientsModule.register([
+      GrpcClientConfig.getUserConnectionClient(),
+      GrpcClientConfig.getUserClient(),
+    ]),
   ],
-  providers: [UserConnectionService],
-  exports: [ClientsModule, UserConnectionService],
+  exports: [ClientsModule],
 })
 export class GrpcClientModule {}

@@ -16,6 +16,7 @@ declare global {
       CLIENT_HOST_DEV: string;
       ELASTIC_API_KEY: string;
       DECRYPT_USER_KEY_MASTER_KEY: string;
+      ELASTICSEARCH_URL: string;
     }
   }
 }
