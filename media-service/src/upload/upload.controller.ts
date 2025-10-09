@@ -18,6 +18,11 @@ export class UploadController implements IUploadController {
 
   @Get()
   async getHello() {
-    return 'Hello from Media Service' + process.env.PORT
+    return 'Hello from Media Service: ' + process.env.PORT
+  }
+
+  @Get('/reply')
+  async getReply() {
+    return 'Reply from Media Service: ' + process.env.PORT
   }
 }
