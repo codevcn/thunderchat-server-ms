@@ -13,6 +13,13 @@ service AuthService {
   rpc ValidateVoiceCallSocketAuth(ValidateVoiceCallSocketAuthRequest)
       returns (ValidateVoiceCallSocketAuthResponse);
   rpc VerifyToken(VerifyTokenRequest) returns (VerifyTokenResponse);
+  
+}
+
+service JWTService{
+rpc CreateJWT(CreateJWTRequest) returns (CreateJWTResponse);
+rpc SendClientJWT (SendClientJWTRequest) returns (google.protobuf.Empty);
+
 }
 
 message ValidateSocketConnectionRequest {
@@ -42,3 +49,20 @@ message VerifyTokenRequest {
 message VerifyTokenResponse {
   google.protobuf.Struct user = 1;
 }
+
+message CreateJWTRequest {
+  string email = 1;
+  int32 user_id = 2;
+}
+
+message CreateJWTResponse {
+  string jwt_token =1;
+}
+
+
+
+message SendClientJWTRequest {
+  string token = 1;
+    google.protobuf.Struct cookie_otps = 2;
+}
+
