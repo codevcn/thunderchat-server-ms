@@ -111,7 +111,6 @@ export class GroupChatController implements IGroupChatsController {
   }
 
   // @Get('join-group-by-invite-link')
-  // @UseGuards(AuthGuard)
   // async joinGroupChatByInviteLink(
   //   @Query() query: JoinGroupByInviteLinkDTO,
   //   @User() user: TUserWithProfile

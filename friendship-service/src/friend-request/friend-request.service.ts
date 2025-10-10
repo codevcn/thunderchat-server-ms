@@ -1,49 +1,40 @@
-import { PrismaService } from '@/configs/db/prisma.service';
-import type { TFriendRequest } from '@/utils/entities/friend.entity';
-import { EGrpcPackages, EGrpcServices, EProviderTokens } from '@/utils/enums';
-import { BadRequestException, Inject, Injectable } from '@nestjs/common';
-import { EFriendRequestMessages } from './friend-request.message';
-import { UserService } from '@/configs/communication/grpc/services/user.service';
-import { UserConnectionService } from '@/configs/communication/grpc/services/user-connection.service';
-import { EFriendRequestStatus } from './friend-request.enum';
-import {
-  FriendRequestActionDTO,
-  GetFriendRequestsDTO,
-} from './friend-request.dto';
-import { TGetFriendRequestsData } from './friend-request.type';
-import type {
-  TDiscriminatedQueryReturn,
-  TSignatureObject,
-} from '@/utils/types';
-import { Prisma } from '@prisma/client';
+import { PrismaService } from '@/configs/db/prisma.service'
+import type { TFriendRequest } from '@/utils/entities/friend.entity'
+import { EGrpcPackages, EGrpcServices, EProviderTokens } from '@/utils/enums'
+import { BadRequestException, Inject, Injectable } from '@nestjs/common'
+import { EFriendRequestMessages } from './friend-request.message'
+import { UserService } from '@/configs/communication/grpc/services/user.service'
+import { UserConnectionService } from '@/configs/communication/grpc/services/user-connection.service'
+import { EFriendRequestStatus } from './friend-request.enum'
+import { FriendRequestActionDTO, GetFriendRequestsDTO } from './friend-request.dto'
+import { TGetFriendRequestsData } from './friend-request.type'
+import type { TDiscriminatedQueryReturn, TSignatureObject } from '@/utils/types'
+import { Prisma } from '@prisma/client'
 // import { BlockUserService } from '@/user/block-user.service'
-import { EUserMessages } from '@/user/user.message';
-import { BlockUserService } from '@/configs/communication/grpc/services/block-user.service';
-import { ClientGrpc } from '@nestjs/microservices';
+import { EUserMessages } from '@/user/user.message'
+import { BlockUserService } from '@/configs/communication/grpc/services/block-user.service'
+import { ClientGrpc } from '@nestjs/microservices'
+
 @Injectable()
 export class FriendRequestService {
-  private blockUserService: BlockUserService;
-  private userConnectionService: UserConnectionService;
-  private userService: UserService;
+  private blockUserService: BlockUserService
+  private userConnectionService: UserConnectionService
+  private userService: UserService
+
   constructor(
     @Inject(EProviderTokens.PRISMA_CLIENT) private PrismaService: PrismaService,
     // private userService: UserService,
     @Inject(EGrpcPackages.CHAT_PACKAGE) private userCnGrpcClient: ClientGrpc,
-
     @Inject(EGrpcPackages.USER_PACKAGE) private blockUserClient: ClientGrpc,
-    @Inject(EGrpcPackages.USER_PACKAGE) private userGrpcClient: ClientGrpc,
+    @Inject(EGrpcPackages.USER_PACKAGE) private userGrpcClient: ClientGrpc
   ) {
     this.blockUserService = new BlockUserService(
-      this.blockUserClient.getService(EGrpcServices.BLOCK_USER_SERVICE),
-    );
-
+      this.blockUserClient.getService(EGrpcServices.BLOCK_USER_SERVICE)
+    )
     this.userConnectionService = new UserConnectionService(
-      this.userCnGrpcClient.getService(EGrpcServices.USER_CONNECTION_SERVICE),
-    );
-
-    this.userService = new UserService(
-      this.userGrpcClient.getService(EGrpcServices.USER_SERVICE),
-    );
+      this.userCnGrpcClient.getService(EGrpcServices.USER_CONNECTION_SERVICE)
+    )
+    this.userService = new UserService(this.userGrpcClient.getService(EGrpcServices.USER_SERVICE))
   }
 
   async create<R extends TFriendRequest>(
@@ -53,7 +44,7 @@ export class FriendRequestService {
       Prisma.FriendRequestSelect,
       Prisma.FriendRequestInclude,
       Prisma.FriendRequestOmit
-    >,
+    >
   ): Promise<R> {
     return (await this.PrismaService.friendRequest.create({
       data: {
@@ -62,7 +53,7 @@ export class FriendRequestService {
         senderId,
       },
       ...(returnType ? { ...returnType } : {}),
-    })) as R;
+    })) as R
   }
 
   async update<R>(
@@ -74,7 +65,7 @@ export class FriendRequestService {
       Prisma.FriendRequestSelect,
       Prisma.FriendRequestInclude,
       Prisma.FriendRequestOmit
-    >,
+    >
   ): Promise<R> {
     return (await this.PrismaService.friendRequest.update({
       where: {
@@ -87,65 +78,49 @@ export class FriendRequestService {
         updatedAt: new Date(),
       },
       ...(returnType ? { ...returnType } : {}),
-    })) as R;
+    })) as R
   }
 
-  async findFriendRequest(
-    senderId: number,
-    recipientId: number,
-  ): Promise<TFriendRequest | null> {
-    return await this.PrismaService.friendRequest.findFirst({
-      where: { senderId, recipientId },
-    });
+  async findFriendRequest(senderId: number, recipientId: number): Promise<TFriendRequest | null> {
+    return await this.PrismaService.friendRequest.findFirst({ where: { senderId, recipientId } })
   }
 
   async findSentFriendRequest(
     senderId: number,
-    recipientId: number,
+    recipientId: number
   ): Promise<TFriendRequest | null> {
-    const relatedUsers = [senderId, recipientId];
+    const relatedUsers = [senderId, recipientId]
     return await this.PrismaService.friendRequest.findFirst({
       where: {
         senderId: { in: relatedUsers },
         recipientId: { in: relatedUsers },
       },
-    });
+    })
   }
 
-  private async checkBlockedUser(
-    senderId: number,
-    recipientId: number,
-  ): Promise<void> {
-    const blockedUser = await this.blockUserService.checkBlockedUser(
-      senderId,
-      recipientId,
-    );
+  private async checkBlockedUser(senderId: number, recipientId: number): Promise<void> {
+    const blockedUser = await this.blockUserService.checkBlockedUser(senderId, recipientId)
     if (blockedUser?.blockedUserId === senderId) {
-      throw new BadRequestException(EUserMessages.YOU_ARE_BLOCKED_BY_THIS_USER);
+      throw new BadRequestException(EUserMessages.YOU_ARE_BLOCKED_BY_THIS_USER)
     }
     if (blockedUser?.blockerUserId === senderId) {
-      throw new BadRequestException(EUserMessages.YOU_HAVE_BLOCKED_THIS_USER);
+      throw new BadRequestException(EUserMessages.YOU_HAVE_BLOCKED_THIS_USER)
     }
   }
 
-  async sendFriendRequest(
-    senderId: number,
-    recipientId: number,
-  ): Promise<TGetFriendRequestsData> {
+  async sendFriendRequest(senderId: number, recipientId: number): Promise<TGetFriendRequestsData> {
     if (senderId === recipientId) {
-      throw new BadRequestException(EFriendRequestMessages.SEND_TO_MYSELF);
+      throw new BadRequestException(EFriendRequestMessages.SEND_TO_MYSELF)
     }
-    await this.checkBlockedUser(senderId, recipientId);
-    const existing = await this.findSentFriendRequest(senderId, recipientId);
-    let friendRequest: TGetFriendRequestsData | null = null;
+    await this.checkBlockedUser(senderId, recipientId)
+    const existing = await this.findSentFriendRequest(senderId, recipientId)
+    let friendRequest: TGetFriendRequestsData | null = null
     if (existing) {
       if (
         existing.status === EFriendRequestStatus.PENDING ||
         existing.status === EFriendRequestStatus.ACCEPTED
       ) {
-        throw new BadRequestException(
-          EFriendRequestMessages.INVITATION_SENT_BEFORE,
-        );
+        throw new BadRequestException(EFriendRequestMessages.INVITATION_SENT_BEFORE)
       }
       friendRequest = await this.update(
         existing.id,
@@ -165,49 +140,37 @@ export class FriendRequestService {
               },
             },
           },
-        },
-      );
+        }
+      )
     } else {
-      friendRequest = await this.create<TGetFriendRequestsData>(
-        senderId,
-        recipientId,
-        {
-          include: {
-            Sender: {
-              include: {
-                Profile: true,
-              },
+      friendRequest = await this.create<TGetFriendRequestsData>(senderId, recipientId, {
+        include: {
+          Sender: {
+            include: {
+              Profile: true,
             },
-            Recipient: {
-              include: {
-                Profile: true,
-              },
+          },
+          Recipient: {
+            include: {
+              Profile: true,
             },
           },
         },
-      );
+      })
     }
     if (!friendRequest) {
-      throw new BadRequestException(
-        EFriendRequestMessages.FRIEND_REQUEST_NOT_FOUND,
-      );
+      throw new BadRequestException(EFriendRequestMessages.FRIEND_REQUEST_NOT_FOUND)
     }
-    const sender = await this.userService.findUserWithProfileById(senderId);
+    const sender = await this.userService.findUserWithProfileById(senderId)
     if (!sender) {
-      throw new BadRequestException(EFriendRequestMessages.SENDER_NOT_FOUND);
+      throw new BadRequestException(EFriendRequestMessages.SENDER_NOT_FOUND)
     }
-    this.userConnectionService.sendFriendRequest(
-      sender,
-      recipientId,
-      friendRequest,
-    );
-    return friendRequest;
+    this.userConnectionService.sendFriendRequest(sender, recipientId, friendRequest)
+    return friendRequest
   }
 
-  async friendRequestAction(
-    friendRequestPayload: FriendRequestActionDTO,
-  ): Promise<void> {
-    const { requestId, action, senderId } = friendRequestPayload;
+  async friendRequestAction(friendRequestPayload: FriendRequestActionDTO): Promise<void> {
+    const { requestId, action, senderId } = friendRequestPayload
     switch (action) {
       case EFriendRequestStatus.ACCEPTED:
         await this.PrismaService.$transaction(async (tx) => {
@@ -218,15 +181,15 @@ export class FriendRequestService {
             data: {
               status: EFriendRequestStatus.ACCEPTED,
             },
-          });
+          })
           await this.PrismaService.friend.create({
             data: {
               recipientId: friendRequest.recipientId,
               senderId: friendRequest.senderId,
             },
-          });
-        });
-        break;
+          })
+        })
+        break
       case EFriendRequestStatus.REJECTED:
         await this.PrismaService.friendRequest.update({
           where: {
@@ -235,24 +198,24 @@ export class FriendRequestService {
           data: {
             status: EFriendRequestStatus.REJECTED,
           },
-        });
-        break;
+        })
+        break
     }
-    this.userConnectionService.friendRequestAction(senderId, requestId, action);
+    this.userConnectionService.friendRequestAction(senderId, requestId, action)
   }
 
   async getFriendRequests(
-    getFriendRequestsPayload: GetFriendRequestsDTO,
+    getFriendRequestsPayload: GetFriendRequestsDTO
   ): Promise<TGetFriendRequestsData[]> {
-    const { lastFriendRequestId, limit, userId } = getFriendRequestsPayload;
-    let cursor: TSignatureObject = {};
+    const { lastFriendRequestId, limit, userId } = getFriendRequestsPayload
+    let cursor: TSignatureObject = {}
     if (lastFriendRequestId) {
       cursor = {
         skip: 1,
         cursor: {
           id: lastFriendRequestId,
         },
-      };
+      }
     }
     return await this.PrismaService.friendRequest.findMany({
       take: limit,
@@ -273,6 +236,6 @@ export class FriendRequestService {
           },
         },
       },
-    });
+    })
   }
 }

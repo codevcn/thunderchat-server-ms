@@ -1,53 +1,31 @@
-import { Body, Controller, Get, Post, Query, UseGuards } from '@nestjs/common';
+import { Body, Controller, Get, Post, Query } from '@nestjs/common'
 import {
   FriendRequestActionDTO,
   GetFriendRequestsDTO,
   SendFriendRequestDTO,
-} from './friend-request.dto';
-import { FriendRequestService } from './friend-request.service';
-import type { IFriendRequestController } from './friend-request.interface';
-import { ERoutes } from '@/utils/enums';
-// import { AuthGuard } from '@/auth/auth.guard';
-export class CheckBlockedUserDTO {
-  blockerId: number;
-  blockedId: number;
-}
+} from './friend-request.dto'
+import { FriendRequestService } from './friend-request.service'
+import type { IFriendRequestController } from './friend-request.interface'
+import { ERoutes } from '@/utils/enums'
+
 @Controller(ERoutes.FRIEND_REQUEST)
-// @UseGuards(AuthGuard)
 export class FriendRequestController implements IFriendRequestController {
   constructor(private friendRequestService: FriendRequestService) {}
 
-  // @Post('send-friend-request')
-  // async sendFriendRequest(@Body() sendFriendRequestPayload: SendFriendRequestDTO) {
-  //    const { recipientId, senderId } = sendFriendRequestPayload
-  //    return await this.friendRequestService.sendFriendRequest(senderId, recipientId)
-  // }
+  @Post('send-friend-request')
+  async sendFriendRequest(@Body() sendFriendRequestPayload: SendFriendRequestDTO) {
+    const { recipientId, senderId } = sendFriendRequestPayload
+    return await this.friendRequestService.sendFriendRequest(senderId, recipientId)
+  }
 
   @Post('friend-request-action')
-  async friendRequestAction(
-    @Body() friendRequestActionPayload: FriendRequestActionDTO,
-  ) {
-    await this.friendRequestService.friendRequestAction(
-      friendRequestActionPayload,
-    );
-    return { success: true };
+  async friendRequestAction(@Body() friendRequestActionPayload: FriendRequestActionDTO) {
+    await this.friendRequestService.friendRequestAction(friendRequestActionPayload)
+    return { success: true }
   }
 
   @Get('get-friend-requests')
-  async getFriendRequests(
-    @Query() getFriendRequestsPayload: GetFriendRequestsDTO,
-  ) {
-    return await this.friendRequestService.getFriendRequests(
-      getFriendRequestsPayload,
-    );
+  async getFriendRequests(@Query() getFriendRequestsPayload: GetFriendRequestsDTO) {
+    return await this.friendRequestService.getFriendRequests(getFriendRequestsPayload)
   }
-
-  // @Get()
-  // async checkBlockUser(@Query() payload: CheckBlockedUserDTO) {
-  //   const { blockerId, blockedId } = payload;
-  //   return await this.friendRequestService.checkBlockedUser({
-  //     blockerId,
-  //     blockedId,
-  //   });
-  // }
 }

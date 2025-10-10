@@ -3,7 +3,6 @@ import {
   Post,
   Body,
   Get,
-  UseGuards,
   Delete,
   Query,
 } from '@nestjs/common';
@@ -17,10 +16,8 @@ import {
 } from './push-notification.dto';
 import { ERoutes } from '@/utils/enums';
 import type { IPushNotificationSubscription } from './push-notification.interface';
-// import { AuthGuard } from '@/auth/auth.guard'
 
 @Controller(ERoutes.PUSH_NOTIFICATION)
-// @UseGuards(AuthGuard)
 export class PushNotificationController
   implements IPushNotificationSubscription
 {
