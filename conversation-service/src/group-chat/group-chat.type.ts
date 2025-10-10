@@ -3,6 +3,10 @@ import type { TUserWithProfile } from '@/utils/entities/user.entity'
 import type { TMessage } from '@/utils/entities/message.entity'
 import type { TGroupChatMemberWithUser } from '@/utils/entities/group-chat-member.entity'
 import { EGroupChatPermissions } from './group-chat.enum'
+import {
+  CheckGroupChatPermissionRequest,
+  CheckGroupChatPermissionResponse,
+} from 'protos/generated/conversation'
 
 export type TFetchGroupChatData = TGroupChat & {
   Members: TGroupChatMemberWithUser[]
@@ -35,3 +39,8 @@ export type TFetchGroupChatPermissionsRes = {
     [key in EGroupChatPermissions]: boolean
   }
 }
+
+// gRPC Types
+export type TCheckGroupChatPermissionRequest = CheckGroupChatPermissionRequest
+
+export type TCheckGroupChatPermissionResponse = CheckGroupChatPermissionResponse

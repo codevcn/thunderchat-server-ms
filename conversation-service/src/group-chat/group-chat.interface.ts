@@ -31,6 +31,10 @@ import type {
   TGroupChatWithCreator,
 } from '@/utils/entities/group-chat.entity'
 import type { Express } from 'express'
+import type {
+  TCheckGroupChatPermissionRequest,
+  TCheckGroupChatPermissionResponse,
+} from './group-chat.type'
 
 export interface IGroupChatsController {
   uploadGroupChatAvatar(file: Express.Multer.File): Promise<TUploadGroupChatAvatar>
@@ -54,4 +58,10 @@ export interface IGroupChatsController {
     query: FetchGroupChatByInviteCodeDTO
   ): Promise<TGroupChatWithCreator | null>
   deleteGroupChat(query: DeleteGroupChatDTO): Promise<TSuccess>
+}
+
+export interface IGroupChatGrpcService {
+  checkGroupChatPermission(
+    request: TCheckGroupChatPermissionRequest
+  ): Promise<TCheckGroupChatPermissionResponse>
 }

@@ -1,6 +1,7 @@
 import { EMessageMediaTypes } from '@/message/message.enum'
 import { EGlobalMessages } from './enums'
 import type { Express } from 'express'
+import { Readable } from 'stream'
 
 /**
  * Định dạng kích thước file
@@ -137,4 +138,32 @@ export async function detectFileType(file: Express.Multer.File): Promise<EMessag
   }
 
   throw new Error(EGlobalMessages.UNKNOWN_FILE_TYPE)
+}
+
+export const convertUint8ArrayToMulterFile = (
+  uint8Array: Uint8Array,
+  filename: string,
+  mimetype: string = 'application/octet-stream'
+): Express.Multer.File => {
+  // Chuyển Uint8Array thành Buffer
+  const buffer = Buffer.from(uint8Array)
+
+  // Tạo readable stream từ buffer
+  const stream = Readable.from(buffer)
+
+  // Tạo đối tượng Multer.File
+  const file: Express.Multer.File = {
+    fieldname: 'file',
+    originalname: filename,
+    encoding: '7bit',
+    mimetype: mimetype,
+    size: buffer.length,
+    buffer: buffer,
+    stream: stream,
+    destination: '',
+    filename: filename,
+    path: '',
+  }
+
+  return file
 }

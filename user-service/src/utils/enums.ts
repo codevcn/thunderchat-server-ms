@@ -31,6 +31,8 @@ export enum EGrpcPackages {
   CONVERSATION_PACKAGE = 'CONVERSATION_PACKAGE',
   FRIEND = 'friend',
   FRIEND_PACKAGE = 'FRIEND_PACKAGE',
+  MEDIA = 'media',
+  MEDIA_PACKAGE = 'MEDIA_PACKAGE',
 }
 
 export enum EGrpcServices {
@@ -46,6 +48,8 @@ export enum EGrpcServices {
   BLOCK_USER_SERVICE = 'BlockUserService',
   JWT_SERVICE = 'JWTService',
   SEARCH_SERVICE = 'ElasticSearchService',
+  UPLOAD_SERVICE = 'UploadService',
+  CREDENTIALS_SERVICE = 'CredentialsService',
 }
 
 export enum EClientCookieNames {

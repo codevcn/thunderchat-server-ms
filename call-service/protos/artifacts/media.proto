@@ -12,6 +12,10 @@ service UploadService {
       returns (UploadGroupChatAvatarResponse);
   rpc DeleteGroupChatAvatar(DeleteGroupChatAvatarRequest)
       returns (google.protobuf.Empty);
+  rpc UploadReportImage(UploadReportImageRequest)
+      returns (UploadReportImageResponse);
+  rpc UploadReportMessageMedia(UploadReportMessageMediaRequest)
+      returns (UploadReportMessageMediaResponse);
 }
 
 message DeleteFileByUrlRequest {
@@ -20,6 +24,7 @@ message DeleteFileByUrlRequest {
 
 message UploadFileRequest {
   bytes content = 1;
+  string filename = 2;
 }
 
 message UploadFileResponse {
@@ -28,6 +33,7 @@ message UploadFileResponse {
 
 message UploadGroupChatAvatarRequest {
   bytes file = 1;
+  string filename = 2;
 }
 
 message UploadGroupChatAvatarResponse {
@@ -36,4 +42,23 @@ message UploadGroupChatAvatarResponse {
 
 message DeleteGroupChatAvatarRequest {
   string avatarUrl = 1;
+}
+
+message UploadReportImageRequest {
+  bytes file = 1;
+  string filename = 2;
+}
+
+message UploadReportImageResponse {
+  string url = 1;
+}
+
+message UploadReportMessageMediaRequest {
+  string filePath = 1;
+  int32 messageId = 2;
+  string contentType = 3;
+}
+
+message UploadReportMessageMediaResponse {
+  string url = 1;
 }

@@ -1,3 +1,7 @@
-import { IUserSettings } from './user-settings.interface'
+import type { TUserSettings } from '@/utils/entities/user.entity'
 
-export type UserSettingsResponse = IUserSettings | null
+export type UserSettingsResponse = TUserSettings | null
+
+export type TFindUserSettingsByUserIdGrpcRes = {
+  userSettings: TUserSettings | null
+}

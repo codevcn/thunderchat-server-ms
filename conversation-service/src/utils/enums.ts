@@ -35,6 +35,10 @@ export enum EGrpcServices {
   ELASTIC_SEARCH_SERVICE = 'ElasticSearchService',
   UPLOAD_SERVICE = 'UploadService',
   USER_CONNECTION = 'UserConnectionService',
+  DIRECT_CHAT_SERVICE = 'DirectChatService',
+  GROUP_CHAT_SERVICE = 'GroupChatService',
+  MESSAGE_SERVICE = 'MessageService',
+  GROUP_MEMBER_SERVICE = 'GroupMemberService',
 }
 
 export enum EClientCookieNames {

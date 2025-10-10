@@ -24,7 +24,7 @@ const getAppModule = async () => {
 
 async function bootstrap() {
   await beforeLaunch()
-  console.log('>>> Microservice [Voice-Call-Service] is launching...')
+  console.log('>>> Microservice [Call-Service] is launching...')
 
   const AppModule = await getAppModule()
   const app = await NestFactory.create<NestExpressApplication>(AppModule)
@@ -61,9 +61,9 @@ async function bootstrap() {
   })
 
   await app.startAllMicroservices()
-  console.log(`>>> Microservice [Voice-Call-Service] is listening on: ${HOST_ADDRESS}:${GRPC_PORT}`)
+  console.log(`>>> Microservice [Call-Service] is listening on: ${HOST_ADDRESS}:${GRPC_PORT}`)
 
   await app.listen(PORT, HOST_ADDRESS)
-  console.log(`>>> HTTP Server [Voice-Call-Service] is listening on: ${HOST_ADDRESS}:${PORT}`)
+  console.log(`>>> HTTP Server [Call-Service] is listening on: ${HOST_ADDRESS}:${PORT}`)
 }
 bootstrap()

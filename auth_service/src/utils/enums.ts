@@ -38,6 +38,10 @@ export enum EGrpcServices {
   UPLOAD_SERVICE = 'UploadService',
   USER_CONNECTION_SERVICE = 'UserConnectionService',
   USER_SERVICE = 'UserService',
+  AUTH_SERVICE = 'AuthService',
+  JWT_SERVICE = 'JWTService',
+  CREDENTIALS_SERVICE = 'CredentialsService',
+  GROUP_MEMBER_SERVICE = 'GroupMemberService',
 }
 
 export enum EClientCookieNames {

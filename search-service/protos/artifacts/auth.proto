@@ -13,13 +13,19 @@ service AuthService {
   rpc ValidateVoiceCallSocketAuth(ValidateVoiceCallSocketAuthRequest)
       returns (ValidateVoiceCallSocketAuthResponse);
   rpc VerifyToken(VerifyTokenRequest) returns (VerifyTokenResponse);
-  
 }
 
-service JWTService{
-rpc CreateJWT(CreateJWTRequest) returns (CreateJWTResponse);
-rpc SendClientJWT (SendClientJWTRequest) returns (google.protobuf.Empty);
+service JWTService {
+  rpc CreateJWT(CreateJWTRequest) returns (CreateJWTResponse);
+  rpc GetJWTcookieOtps(google.protobuf.Empty)
+      returns (GetJWTcookieOtpsResponse);
+}
 
+service CredentialsService {
+  rpc CompareHashedPassword(CompareHashedPasswordRequest)
+      returns (CompareHashedPasswordResponse);
+  rpc GetHashedPassword(GetHashedPasswordRequest)
+      returns (GetHashedPasswordResponse);
 }
 
 message ValidateSocketConnectionRequest {
@@ -56,13 +62,31 @@ message CreateJWTRequest {
 }
 
 message CreateJWTResponse {
-  string jwt_token =1;
+  string jwt_token = 1;
 }
-
-
 
 message SendClientJWTRequest {
   string token = 1;
-    google.protobuf.Struct cookie_otps = 2;
+  google.protobuf.Struct cookie_otps = 2;
 }
 
+message CompareHashedPasswordRequest {
+  string password = 1;
+  string encrypted = 2;
+}
+
+message CompareHashedPasswordResponse {
+  bool is_valid = 1;
+}
+
+message GetHashedPasswordRequest {
+  string plain_password = 1;
+}
+
+message GetHashedPasswordResponse {
+  string hashed_password = 1;
+}
+
+message GetJWTcookieOtpsResponse {
+  google.protobuf.Struct cookie_otps = 1;
+}

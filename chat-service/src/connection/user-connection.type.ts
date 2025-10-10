@@ -4,13 +4,17 @@ import type { TGroupChat } from '@/utils/entities/group-chat.entity'
 import type { TCastedFields } from '@/utils/types'
 import type {
   CheckUserIsOnlineRequest,
+  EmitToDirectChatRequest,
   FriendRequestActionRequest,
   RemoveConnectedClientRequest,
   SendFriendRq,
+  SendNewMessageToGroupChatRequest,
 } from 'protos/generated/chat'
 import type { TUserWithProfile } from '@/utils/entities/user.entity'
 import type { TGetFriendRequestsData } from '@/friend-request/friend-request.type'
 import type { EFriendRequestStatus } from '@/friend-request/friend-request.enum'
+import type { EMessagingEmitSocketEvents } from '@/utils/events/socket.event'
+import type { TMessageFullInfo } from '@/utils/entities/message.entity'
 
 export type TServerMiddleware = (socket: Socket, next: NextFunction) => void
 
@@ -30,4 +34,16 @@ export type TCheckUserIsOnlineRequest = CheckUserIsOnlineRequest
 export type TFriendRequestActionPayload = TCastedFields<
   FriendRequestActionRequest,
   { action: EFriendRequestStatus }
+>
+
+export type TGetConnectedClientsCountForAdminResponse = { count: number }
+
+export type TEmitToDirectChatPayload = TCastedFields<
+  EmitToDirectChatRequest,
+  { payload: any; event: EMessagingEmitSocketEvents }
+>
+
+export type TSendNewMessageToGroupChatPayload = TCastedFields<
+  SendNewMessageToGroupChatRequest,
+  { newMessage: TMessageFullInfo }
 >

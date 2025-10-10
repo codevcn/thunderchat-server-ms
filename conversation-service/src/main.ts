@@ -61,9 +61,11 @@ async function bootstrap() {
   })
 
   await app.startAllMicroservices()
-  console.log(`>>> Microservice [Media-Service] is listening on: ${HOST_ADDRESS}:${GRPC_PORT}`)
+  console.log(
+    `>>> Microservice [Conversation-Service] is listening on: ${HOST_ADDRESS}:${GRPC_PORT}`
+  )
 
   await app.listen(PORT, HOST_ADDRESS)
-  console.log(`>>> HTTP Server [Media-Service] is listening on: ${HOST_ADDRESS}:${PORT}`)
+  console.log(`>>> HTTP Server [Conversation-Service] is listening on: ${HOST_ADDRESS}:${PORT}`)
 }
 bootstrap()

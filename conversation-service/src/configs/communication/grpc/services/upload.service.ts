@@ -13,6 +13,7 @@ export class UploadService {
     return (
       (await this.instance.UploadFile({
         content: file.buffer,
+        filename: file.originalname,
       })) as TCastedFieldObject<UploadFileResponse, 'fileInfo', TUploadResult>
     ).fileInfo
   }
@@ -20,6 +21,7 @@ export class UploadService {
   async uploadGroupChatAvatar(file: Express.Multer.File): Promise<{ url: string }> {
     return await this.instance.UploadGroupChatAvatar({
       file: file.buffer,
+      filename: file.originalname,
     })
   }
 

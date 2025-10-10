@@ -1,7 +1,19 @@
-import type { TMessage, TMessageFullInfo } from '@/utils/entities/message.entity'
+import type {
+  TMessage,
+  TMessageForGlobalSearch,
+  TMessageFullInfo,
+} from '@/utils/entities/message.entity'
 import type { EMessageStatus } from '@/utils/enums'
 import type { EMessageTypes } from '@/message/message.enum'
-import { FindMessagesForGlobalSearchRequest } from 'protos/generated/conversation'
+import {
+  CreateNewMessageRequest,
+  CreateNewMessageResponse,
+  FindMessagesForGlobalSearchRequest,
+  FindMessagesForGlobalSearchResponse,
+  UpdateMessageStatusRequest,
+  UpdateMessageStatusResponse,
+} from 'protos/generated/conversation'
+import { TCastedFields } from '@/utils/types'
 
 export type TNewGroupMessage = {
   id: number
@@ -34,3 +46,42 @@ export type TSendMessageDto = {
 export type TGetDirectMessagesMessage = TMessageFullInfo
 
 export type TFindMessagesForGlobalSearchPayload = FindMessagesForGlobalSearchRequest
+
+// gRPC Types
+export type TGetNewerDirectMessagesRequest = {
+  messageOffset: number
+  directChatId?: number
+  groupChatId?: number
+  limit: number
+}
+
+export type TGetNewerDirectMessagesResponse = {
+  messages: any[]
+}
+
+export type TCreateNewMessageRequest = TCastedFields<
+  CreateNewMessageRequest,
+  { type: EMessageTypes }
+>
+
+export type TCreateNewMessageResponse = TCastedFields<
+  CreateNewMessageResponse,
+  { newMessage: TGetDirectMessagesMessage }
+>
+
+export type TUpdateMessageStatusRequest = TCastedFields<
+  UpdateMessageStatusRequest,
+  { status: EMessageStatus }
+>
+
+export type TUpdateMessageStatusResponse = TCastedFields<
+  UpdateMessageStatusResponse,
+  { message: TMessage }
+>
+
+export type TFindMessagesForGlobalSearchRequest = FindMessagesForGlobalSearchRequest
+
+export type TFindMessagesForGlobalSearchResponse = TCastedFields<
+  FindMessagesForGlobalSearchResponse,
+  { messages: TMessageForGlobalSearch[] }
+>

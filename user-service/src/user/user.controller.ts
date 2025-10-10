@@ -1,12 +1,4 @@
-import {
-  Body,
-  Controller,
-  Get,
-  Post,
-  Query,
-  Res,
-  UseGuards,
-} from '@nestjs/common';
+import { Body, Controller, Get, Inject, Post, Query, Res } from '@nestjs/common'
 import {
   ChangePasswordDTO,
   BlockUserDTO,
@@ -18,122 +10,98 @@ import {
   ForgotPasswordDTO,
   VerifyOtpDTO,
   ResetPasswordDTO,
-} from '@/user/user.dto';
-import { UserService } from '@/user/user.service';
-import { ERoutes } from '@/utils/enums';
-import { JWTService } from '@/configs/communication/grpc/services/jwt.service';
-import type { Response } from 'express';
-import type { IUserController } from './user.interface';
-// import { AuthGuard } from '@/auth/auth.guard';
-import { User } from './user.decorator';
-import { BlockUserService } from '@/user/block-user.service';
-import { TUserWithProfile } from '@/utils/entities/user.entity';
+} from '@/user/user.dto'
+import { UserService } from '@/user/user.service'
+import { EClientCookieNames, EGrpcPackages, EGrpcServices, ERoutes } from '@/utils/enums'
+import { JWTService } from '@/configs/communication/grpc/services/jwt.service'
+import type { Response } from 'express'
+import type { IUserController } from './user.interface'
+import { User } from './user.decorator'
+import { BlockUserService } from '@/user/block-user.service'
+import type { TUserWithProfile } from '@/utils/entities/user.entity'
+import { ClientGrpc } from '@nestjs/microservices'
 
 @Controller(ERoutes.USER)
 export class UserController implements IUserController {
+  private jwtService: JWTService
+
   constructor(
     private userService: UserService,
-    private jwtService: JWTService,
     private blockUserService: BlockUserService,
-  ) {}
+    @Inject(EGrpcPackages.AUTH_PACKAGE) private readonly authClient: ClientGrpc
+  ) {
+    this.jwtService = new JWTService(this.authClient.getService(EGrpcServices.JWT_SERVICE))
+  }
 
-  // @Post('register')
-  // async register(
-  //   @Body() createUserPayload: CreateUserDTO,
-  //   @Res({ passthrough: true }) res: Response,
-  // ) {
-  //   const { jwt_token } =
-  //     await this.userService.registerUser(createUserPayload);
+  @Post('register')
+  async register(
+    @Body() createUserPayload: CreateUserDTO,
+    @Res({ passthrough: true }) res: Response
+  ) {
+    const { jwt_token } = await this.userService.registerUser(createUserPayload)
 
-  //   await this.jwtService.sendClientJWT({
-  //     response: res,
-  //     token: jwt_token,
-  //   });
+    res.cookie(
+      EClientCookieNames.JWT_TOKEN_AUTH,
+      jwt_token,
+      await this.jwtService.getJWTcookieOtps()
+    )
 
-  //   return { success: true };
-  // }
+    return { success: true }
+  }
 
   @Get('get-user')
   async getUser(@Query() getUserByEmailPayload: GetUserByEmailDTO) {
-    return await this.userService.getUserByEmail(getUserByEmailPayload.email);
+    return await this.userService.getUserByEmail(getUserByEmailPayload.email)
   }
 
   @Get('search-users')
-  // @UseGuards(AuthGuard)
   async searchUsers(@Query() searchUsersPayload: SearchUsersDTO) {
-    return await this.userService.searchUsers(searchUsersPayload);
+    return await this.userService.searchUsers(searchUsersPayload)
   }
 
   @Post('change-password')
-  // @UseGuards(AuthGuard)
-  async changePassword(
-    @User() user: TUserWithProfile,
-    @Body() dto: ChangePasswordDTO,
-  ) {
-    await this.userService.changePassword(
-      user.id,
-      dto.oldPassword,
-      dto.newPassword,
-    );
-    return { success: true };
+  async changePassword(@User() user: TUserWithProfile, @Body() dto: ChangePasswordDTO) {
+    await this.userService.changePassword(user.id, dto.oldPassword, dto.newPassword)
+    return { success: true }
   }
 
   @Post('block-user')
-  // @UseGuards(AuthGuard)
   async blockUser(@User() user: TUserWithProfile, @Body() dto: BlockUserDTO) {
-    await this.blockUserService.blockUser(user.id, dto.blockedUserId);
-    return { success: true };
+    await this.blockUserService.blockUser(user.id, dto.blockedUserId)
+    return { success: true }
   }
 
   @Get('check-blocked-user')
-  // @UseGuards(AuthGuard)
-  async checkBlockedUser(
-    @User() user: TUserWithProfile,
-    @Query() dto: CheckBlockedUserDTO,
-  ) {
-    return await this.blockUserService.checkBlockedUser(
-      user.id,
-      dto.otherUserId,
-    );
+  async checkBlockedUser(@User() user: TUserWithProfile, @Query() dto: CheckBlockedUserDTO) {
+    return await this.blockUserService.checkBlockedUser(user.id, dto.otherUserId)
   }
 
   @Post('unblock-user')
-  // @UseGuards(AuthGuard)
-  async unblockUser(
-    @User() user: TUserWithProfile,
-    @Body() dto: UnblockUserDTO,
-  ) {
-    await this.blockUserService.unblockUser(user.id, dto.blockedUserId);
-    return { success: true };
+  async unblockUser(@User() user: TUserWithProfile, @Body() dto: UnblockUserDTO) {
+    await this.blockUserService.unblockUser(user.id, dto.blockedUserId)
+    return { success: true }
   }
 
   @Get('get-blocked-users-list')
-  // @UseGuards(AuthGuard)
   async getBlockedUsersList(@User() user: TUserWithProfile) {
-    return await this.blockUserService.getBlockedUsersList(user.id);
+    return await this.blockUserService.getBlockedUsersList(user.id)
   }
 
   @Post('password/forgot')
   async forgotPassword(@Body() dto: ForgotPasswordDTO) {
-    await this.userService.requestPasswordReset(dto.email);
-    return { success: true };
+    await this.userService.requestPasswordReset(dto.email)
+    return { success: true }
   }
 
   @Post('password/verify-otp')
   async verifyOtp(@Body() dto: VerifyOtpDTO) {
-    const { resetToken } = await this.userService.verifyPasswordResetOtp(
-      dto.email,
-      dto.otp,
-    );
-    return { resetToken };
+    const { resetToken } = await this.userService.verifyPasswordResetOtp(dto.email, dto.otp)
+    return { resetToken }
   }
 
   @Post('password/reset')
   async resetPassword(@Body() dto: ResetPasswordDTO) {
-    await this.userService.resetPasswordWithToken(
-      dto.resetToken,
-      dto.newPassword,
-    );
-    return { success: true };
+    await this.userService.resetPasswordWithToken(dto.resetToken, dto.newPassword)
+    return { success: true }
   }
 }

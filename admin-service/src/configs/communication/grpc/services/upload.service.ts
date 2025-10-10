@@ -13,6 +13,7 @@ export class UploadService {
     return (
       (await this.instance.UploadFile({
         content: file.buffer,
+        filename: file.originalname,
       })) as TCastedFieldObject<UploadFileResponse, 'fileInfo', TUploadResult>
     ).fileInfo
   }

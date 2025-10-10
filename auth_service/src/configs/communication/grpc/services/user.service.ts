@@ -1,14 +1,10 @@
-import type { TUser, TUserWithProfile } from '@/utils/entities/user.entity';
-
+import type { TUser, TUserWithProfile } from '@/utils/entities/user.entity'
 import type {
   FindByIdResponse,
   GetUserByEmailResponse,
   UserService as UserServiceType,
-} from '../../../../../protos/generated/user';
-import { TGetFriendRequestsData } from '@/friend-request/friend-request.type';
-import { TUserId } from '@/user/user.type';
-import { TSocketId } from '@/connection/user-connection.type';
-import { TCastedFieldObject } from '@/utils/types';
+} from 'protos/generated/user'
+import type { TCastedFieldObject } from '@/utils/types'
 
 export class UserService {
   constructor(private instance: UserServiceType) {}
@@ -17,12 +13,8 @@ export class UserService {
     return (
       (await this.instance.GetUserByEmail({
         email,
-      })) as TCastedFieldObject<
-        GetUserByEmailResponse,
-        'user',
-        TUserWithProfile
-      >
-    ).user;
+      })) as TCastedFieldObject<GetUserByEmailResponse, 'user', TUserWithProfile>
+    ).user
   }
 
   async FindById(id: number): Promise<TUser | null> {
@@ -30,6 +22,14 @@ export class UserService {
       (await this.instance.FindById({
         id,
       })) as TCastedFieldObject<FindByIdResponse, 'user', TUser>
-    ).user;
+    ).user
+  }
+
+  async findUserWithProfileById(userId: number): Promise<TUserWithProfile | null> {
+    return (
+      (await this.instance.FindUserWithProfileById({
+        userId,
+      })) as TCastedFieldObject<FindByIdResponse, 'user', TUserWithProfile>
+    ).user
   }
 }

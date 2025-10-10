@@ -1,58 +1,55 @@
+import type { TBlockedUserFullInfo, TUserWithProfile } from '@/utils/entities/user.entity'
 import type {
-  TBlockedUserFullInfo,
-  TUserWithProfile,
-} from '@/utils/entities/user.entity';
-import type { TSearchUsersData } from './user.type';
-import type { TSuccess } from '@/utils/types';
+  TCheckBlockedUserGrpcRes,
+  TFindByIdGrpcRes,
+  TFindUserWithProfileByIdGrpcRes,
+  TFindUsersForGlobalSearchGrpcRes,
+  TGetUserByEmailGrpcRes,
+  TSearchUsersData,
+} from './user.type'
+import type { TSuccess } from '@/utils/types'
 import type {
   BlockUserDTO,
   ChangePasswordDTO,
   CheckBlockedUserDTO,
-  CreateUserDTO,
   GetUserByEmailDTO,
   SearchUsersDTO,
   UnblockUserDTO,
-} from './user.dto';
-import type { Response } from 'express';
+} from './user.dto'
+import type { Response } from 'express'
+import {
+  CheckBlockedUserRequest,
+  FindByIdRequest,
+  FindUserWithProfileByIdRequest,
+  GetUserByEmailRequest,
+  findUsersForGlobalSearchRq,
+} from 'protos/generated/user'
 
 export interface IUserController {
   //register: (createUserPayload: CreateUserDTO, res: Response) => Promise<TSuccess>
-  getUser: (
-    getUserByEmailPayload: GetUserByEmailDTO,
-  ) => Promise<TUserWithProfile>;
-  searchUsers: (
-    searchUsersPayload: SearchUsersDTO,
-  ) => Promise<TSearchUsersData[]>;
+  getUser: (getUserByEmailPayload: GetUserByEmailDTO) => Promise<TUserWithProfile>
+  searchUsers: (searchUsersPayload: SearchUsersDTO) => Promise<TSearchUsersData[]>
   changePassword: (
     user: TUserWithProfile,
-    changePasswordPayload: ChangePasswordDTO,
-  ) => Promise<TSuccess>;
-  blockUser: (
-    user: TUserWithProfile,
-    blockUserPayload: BlockUserDTO,
-  ) => Promise<TSuccess>;
+    changePasswordPayload: ChangePasswordDTO
+  ) => Promise<TSuccess>
+  blockUser: (user: TUserWithProfile, blockUserPayload: BlockUserDTO) => Promise<TSuccess>
   checkBlockedUser: (
     user: TUserWithProfile,
-    checkBlockedUserPayload: CheckBlockedUserDTO,
-  ) => Promise<TBlockedUserFullInfo | null>;
-  unblockUser: (
-    user: TUserWithProfile,
-    unblockUserPayload: UnblockUserDTO,
-  ) => Promise<TSuccess>;
-  getBlockedUsersList: (
-    user: TUserWithProfile,
-  ) => Promise<TBlockedUserFullInfo[]>;
+    checkBlockedUserPayload: CheckBlockedUserDTO
+  ) => Promise<TBlockedUserFullInfo | null>
+  unblockUser: (user: TUserWithProfile, unblockUserPayload: UnblockUserDTO) => Promise<TSuccess>
+  getBlockedUsersList: (user: TUserWithProfile) => Promise<TBlockedUserFullInfo[]>
 }
 
 export interface IUserGrpcController {
-  FindUserWithProfileById: (data: {
-    userId: number;
-  }) => Promise<{ user: TUserWithProfile | null }>;
-}
-
-export interface IBlockUserGrpcController {
-  CheckBlockedUser: (data: {
-    blockerId: number;
-    blockedId: number;
-  }) => Promise<{ blockUser: TBlockedUserFullInfo | null }>;
+  FindUserWithProfileById: (
+    data: FindUserWithProfileByIdRequest
+  ) => Promise<TFindUserWithProfileByIdGrpcRes>
+  GetUserByEmail: (data: GetUserByEmailRequest) => Promise<TGetUserByEmailGrpcRes>
+  FindById: (data: FindByIdRequest) => Promise<TFindByIdGrpcRes>
+  findUsersForGlobalSearch: (
+    data: findUsersForGlobalSearchRq
+  ) => Promise<TFindUsersForGlobalSearchGrpcRes>
+  CheckBlockedUser: (data: CheckBlockedUserRequest) => Promise<TCheckBlockedUserGrpcRes>
 }

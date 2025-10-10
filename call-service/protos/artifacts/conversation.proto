@@ -56,7 +56,7 @@ message FindConversationWithOtherUserRequest {
 }
 
 message FindConversationWithOtherUserResponse {
-  google.protobuf.Struct direct_chat = 1;
+  optional google.protobuf.Struct direct_chat = 1;
 }
 
 message CreateNewDirectChatRequest {

@@ -1,36 +1,47 @@
-import { EGrpcPackages } from '@/utils/enums';
-import { ClientProviderOptions, Transport } from '@nestjs/microservices';
-import { join } from 'path';
+import { EGrpcPackages } from '@/utils/enums'
+import { ClientsProviderAsyncOptions, Transport } from '@nestjs/microservices'
+import { join } from 'path'
 
 export class GrpcClientConfig {
-  static getAuthClient(): ClientProviderOptions {
+  static getAuthClient(): ClientsProviderAsyncOptions {
     return {
       name: EGrpcPackages.AUTH_PACKAGE,
-      transport: Transport.GRPC,
-      options: {
-        package: EGrpcPackages.AUTH,
-        protoPath: join(
-          __dirname,
-          '../../../../protos/artifacts/',
-          'auth.proto',
-        ),
-        url: `localhost:${process.env.USER_SERVICE_PORT}`,
-      },
-    };
+      useFactory: () => ({
+        transport: Transport.GRPC,
+        options: {
+          package: EGrpcPackages.AUTH,
+          protoPath: join(__dirname, '../../../../protos/artifacts/', 'auth.proto'),
+          url: `localhost:${process.env.AUTH_SERVICE_PORT}`,
+        },
+      }),
+    }
   }
-  static getSearchClient(): ClientProviderOptions {
+
+  static getSearchClient(): ClientsProviderAsyncOptions {
     return {
       name: EGrpcPackages.SEARCH_PACKAGE,
-      transport: Transport.GRPC,
-      options: {
-        package: EGrpcPackages.SEARCH,
-        protoPath: join(
-          __dirname,
-          '../../../../protos/artifacts/',
-          'search.proto',
-        ),
-        url: `localhost:${process.env.USER_SERVICE_PORT}`,
-      },
-    };
+      useFactory: () => ({
+        transport: Transport.GRPC,
+        options: {
+          package: EGrpcPackages.SEARCH,
+          protoPath: join(__dirname, '../../../../protos/artifacts/', 'search.proto'),
+          url: `localhost:${process.env.SEARCH_SERVICE_PORT}`,
+        },
+      }),
+    }
+  }
+
+  static getMediaClient(): ClientsProviderAsyncOptions {
+    return {
+      name: EGrpcPackages.MEDIA_PACKAGE,
+      useFactory: () => ({
+        transport: Transport.GRPC,
+        options: {
+          package: EGrpcPackages.MEDIA,
+          protoPath: join(__dirname, '../../../../protos/artifacts/', 'media.proto'),
+          url: `localhost:${process.env.MEDIA_SERVICE_PORT}`,
+        },
+      }),
+    }
   }
 }
