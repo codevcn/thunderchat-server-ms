@@ -1,38 +1,18 @@
-import { EGrpcPackages } from '@/utils/enums';
-import { ClientProviderOptions, Transport } from '@nestjs/microservices';
-import { join } from 'path';
+import { EGrpcPackages } from '@/utils/enums'
+import { ClientProviderOptions, Transport } from '@nestjs/microservices'
+import { join } from 'path'
 
 export class GrpcClientConfig {
-  static getFriendClient(): ClientProviderOptions {
-    return {
-      name: EGrpcPackages.FRIEND_PACKAGE,
-      transport: Transport.GRPC,
-      options: {
-        package: EGrpcPackages.FRIEND,
-        protoPath: join(
-          __dirname,
-          '/../../../../protos/artifacts/',
-          'friend.proto',
-        ),
-        url: `localhost:${process.env.FRIEND_SERVICE_PORT}`,
-      },
-    };
-  }
-
   static getConversationClient(): ClientProviderOptions {
     return {
       name: EGrpcPackages.CONVERSATION_PACKAGE,
       transport: Transport.GRPC,
       options: {
         package: EGrpcPackages.CONVERSATION,
-        protoPath: join(
-          __dirname,
-          '/../../../../protos/artifacts/',
-          'conversation.proto',
-        ),
+        protoPath: join(__dirname, '/../../../../protos/artifacts/', 'conversation.proto'),
         url: `localhost:${process.env.CONVERSATION_SERVICE_PORT}`,
       },
-    };
+    }
   }
 
   static getAuthClient(): ClientProviderOptions {
@@ -41,14 +21,10 @@ export class GrpcClientConfig {
       transport: Transport.GRPC,
       options: {
         package: EGrpcPackages.AUTH,
-        protoPath: join(
-          __dirname,
-          '/../../../../protos/artifacts/',
-          'auth.proto',
-        ),
+        protoPath: join(__dirname, '/../../../../protos/artifacts/', 'auth.proto'),
         url: `localhost:${process.env.AUTH_SERVICE_PORT}`,
       },
-    };
+    }
   }
 
   static getUserClient(): ClientProviderOptions {
@@ -57,14 +33,10 @@ export class GrpcClientConfig {
       transport: Transport.GRPC,
       options: {
         package: EGrpcPackages.USER,
-        protoPath: join(
-          __dirname,
-          '/../../../../protos/artifacts/',
-          'user.proto',
-        ),
+        protoPath: join(__dirname, '/../../../../protos/artifacts/', 'user.proto'),
         url: `localhost:${process.env.USER_SERVICE_PORT}`,
       },
-    };
+    }
   }
 
   static getNotificationClient(): ClientProviderOptions {
@@ -73,14 +45,10 @@ export class GrpcClientConfig {
       transport: Transport.GRPC,
       options: {
         package: EGrpcPackages.NOTIFICATION,
-        protoPath: join(
-          __dirname,
-          '/../../../../protos/artifacts/',
-          'notification.proto',
-        ),
+        protoPath: join(__dirname, '/../../../../protos/artifacts/', 'notification.proto'),
         url: `localhost:${process.env.NOTIFICATION_SERVICE_PORT}`,
       },
-    };
+    }
   }
   static getChatClient(): ClientProviderOptions {
     return {
@@ -88,13 +56,9 @@ export class GrpcClientConfig {
       transport: Transport.GRPC,
       options: {
         package: EGrpcPackages.CHAT,
-        protoPath: join(
-          __dirname,
-          '/../../../../protos/artifacts/',
-          'chat.proto',
-        ),
+        protoPath: join(__dirname, '/../../../../protos/artifacts/', 'chat.proto'),
         url: `localhost:${process.env.CHAT_SERVICE_PORT}`,
       },
-    };
+    }
   }
 }
