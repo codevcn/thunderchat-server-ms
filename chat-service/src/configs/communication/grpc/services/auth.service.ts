@@ -8,7 +8,9 @@ export class AuthService {
 
   async validateSocketConnection(socket: Socket): Promise<void> {
     await firstValueFrom(
-      this.instance.ValidateSocketConnection({ socketJson: JSON.stringify(socket) })
+      this.instance.ValidateSocketConnection({
+        handshakeHeadersJson: JSON.stringify(socket.handshake.headers),
+      })
     )
   }
 
@@ -17,7 +19,7 @@ export class AuthService {
       (
         await firstValueFrom(
           this.instance.ValidateSocketAuth({
-            clientSocketJson: JSON.stringify(socket),
+            handshakeAuthJson: JSON.stringify(socket.handshake.auth),
           })
         )
       ).clientSocketAuthJson

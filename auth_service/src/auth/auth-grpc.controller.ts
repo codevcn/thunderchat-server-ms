@@ -23,10 +23,9 @@ import type {
   TValidateVoiceCallSocketAuthPayload,
   TVerifyTokenRes,
 } from './auth.type'
-import { TUserWithProfile } from '@/utils/entities/user.entity'
+import type { TUserWithProfile } from '@/utils/entities/user.entity'
 import { EAuthMessages } from './auth.message'
 import { UserService } from '@/configs/communication/grpc/services/user.service'
-import { Socket } from 'socket.io'
 
 @Controller()
 export class AuthGrpcController implements IAuthGrpcController {
@@ -43,14 +42,14 @@ export class AuthGrpcController implements IAuthGrpcController {
 
   @GrpcMethod(EGrpcServices.AUTH_SERVICE, 'ValidateSocketConnection')
   async ValidateSocketConnection(data: TValidateSocketConnectionPayload) {
-    await this.authService.validateSocketConnection(JSON.parse(data.socketJson) as Socket)
+    await this.authService.validateSocketConnection(JSON.parse(data.handshakeHeadersJson))
   }
 
   @GrpcMethod(EGrpcServices.AUTH_SERVICE, 'ValidateSocketAuth')
   async ValidateSocketAuth(data: TValidateSocketAuthPayload) {
     return {
       clientSocketAuthJson: JSON.stringify(
-        await this.authService.validateSocketAuth(JSON.parse(data.clientSocketJson) as Socket)
+        await this.authService.validateSocketAuth(JSON.parse(data.handshakeAuthJson))
       ),
     }
   }
@@ -59,9 +58,7 @@ export class AuthGrpcController implements IAuthGrpcController {
   async ValidateVoiceCallSocketAuth(data: TValidateVoiceCallSocketAuthPayload) {
     return {
       voiceCallSocketAuthJson: JSON.stringify(
-        await this.authService.validateVoiceCallSocketAuth(
-          JSON.parse(data.clientSocketJson) as Socket
-        )
+        await this.authService.validateVoiceCallSocketAuth(JSON.parse(data.handshakeAuthJson))
       ),
     }
   }
@@ -71,30 +68,24 @@ export class AuthGrpcController implements IAuthGrpcController {
     let payload: TJWTPayload
     let user: TUserWithProfile | null | undefined
     try {
-      try {
-        payload = await this.jwtService.verifyToken(data.token)
-      } catch (error) {
-        throw new UnauthorizedException(EAuthMessages.AUTHENTICATION_FAILED)
-      }
-      console.log('>>> payload:', payload)
-      try {
-        user = await this.userService.findUserWithProfileById(payload.user_id)
-      } catch (error) {
-        throw new UnauthorizedException(EAuthMessages.AUTHENTICATION_FAILED)
-      }
-      if (!user) {
-        throw new UnauthorizedException(EAuthMessages.USER_NOT_FOUND)
-      }
-      if (!user.Profile) {
-        throw new InternalServerErrorException(EAuthMessages.USER_HAS_NO_PROFILE)
-      }
-      const banResult = await this.authService.checkUserBanStatus(user.id)
-      if (banResult.isBanned) {
-        throw new UnauthorizedException(banResult.message || EAuthMessages.USER_BANNED)
-      }
+      payload = await this.jwtService.verifyToken(data.token)
     } catch (error) {
-      console.log('>>> error verify token:', { error, user })
-      throw error
+      throw new UnauthorizedException(EAuthMessages.AUTHENTICATION_FAILED)
+    }
+    try {
+      user = await this.userService.findUserWithProfileById(payload.user_id)
+    } catch (error) {
+      throw new UnauthorizedException(EAuthMessages.AUTHENTICATION_FAILED)
+    }
+    if (!user) {
+      throw new UnauthorizedException(EAuthMessages.USER_NOT_FOUND)
+    }
+    if (!user.Profile) {
+      throw new InternalServerErrorException(EAuthMessages.USER_HAS_NO_PROFILE)
+    }
+    const banResult = await this.authService.checkUserBanStatus(user.id)
+    if (banResult.isBanned) {
+      throw new UnauthorizedException(banResult.message || EAuthMessages.USER_BANNED)
     }
     return {
       userJson: JSON.stringify(user),

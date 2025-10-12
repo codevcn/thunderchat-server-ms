@@ -11,11 +11,11 @@ import type { Empty } from "./google/protobuf/empty";
 export const protobufPackage = "auth";
 
 export interface ValidateSocketConnectionRequest {
-  socketJson: string;
+  handshakeHeadersJson: string;
 }
 
 export interface ValidateSocketAuthRequest {
-  clientSocketJson: string;
+  handshakeAuthJson: string;
 }
 
 export interface ValidateSocketAuthResponse {
@@ -23,7 +23,7 @@ export interface ValidateSocketAuthResponse {
 }
 
 export interface ValidateVoiceCallSocketAuthRequest {
-  clientSocketJson: string;
+  handshakeAuthJson: string;
 }
 
 export interface ValidateVoiceCallSocketAuthResponse {

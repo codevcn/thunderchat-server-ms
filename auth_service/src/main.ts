@@ -7,7 +7,7 @@ import { ValidationPipe } from '@nestjs/common'
 import { BaseHttpExceptionFilter } from './utils/exception-filters/base-http-exception.filter'
 import cookieParser from 'cookie-parser'
 import { copyProtos } from './bootstrap/copy-protos-folder'
-import { EGrpcPackages, ERequestXHeaders } from './utils/enums'
+import { EGrpcPackages } from './utils/enums'
 
 const beforeLaunch = async () => {
   await clearLogFiles()
@@ -44,7 +44,6 @@ async function bootstrap() {
     origin: [CLIENT_HOST],
     credentials: true,
     preflightContinue: false,
-    allowedHeaders: [ERequestXHeaders.X_USER_DATA],
   })
 
   // global exception filter

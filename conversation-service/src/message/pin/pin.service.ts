@@ -51,7 +51,7 @@ export class PinService {
     private groupMemberService: GroupMemberService,
     @Inject(EGrpcPackages.SEARCH_PACKAGE)
     private readonly elasticSearchClient: ClientGrpc,
-    @Inject(EGrpcPackages.USER_CONNECTION_PACKAGE)
+    @Inject(EGrpcPackages.CHAT_PACKAGE)
     private readonly userConnectionGrpcClient: ClientGrpc
   ) {
     this.syncDataToESService = new ElasticSearchService(

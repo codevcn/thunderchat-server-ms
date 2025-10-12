@@ -7,7 +7,6 @@ import { Inject, Injectable } from '@nestjs/common'
 import {
   EGrpcPackages,
   EGrpcServices,
-  EInternalEvents,
   EProviderTokens,
   ESyncDataToESWorkerType,
 } from '@/utils/enums'

@@ -170,6 +170,8 @@ export class MessagingGateway
       try {
         await this.authService.validateSocketConnection(socket)
       } catch (error) {
+        console.log('>>> error at 173:', error)
+        DevLogger.logForWebsocket('error at validate socket connection 173:', error)
         next(error)
         return
       }

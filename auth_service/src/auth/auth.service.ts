@@ -22,6 +22,7 @@ import { UserConnectionService } from '@/configs/communication/grpc/services/use
 import type { TSocketId } from '@/connection/user-connection.type'
 import { ClientGrpc } from '@nestjs/microservices'
 import { UserService } from '@/configs/communication/grpc/services/user.service'
+import { Handshake } from 'socket.io/dist/socket-types'
 
 @Injectable()
 export class AuthService {
@@ -224,8 +225,8 @@ export class AuthService {
     this.userConnectionService.removeConnectedClient(userId)
   }
 
-  async validateSocketConnection(socket: Socket): Promise<void> {
-    const clientCookie = socket.handshake.headers.cookie
+  async validateSocketConnection(handshakeHeaders: Handshake['headers']): Promise<void> {
+    const clientCookie = handshakeHeaders.cookie
     if (!clientCookie) {
       throw new SystemException(EAuthMessages.INVALID_CREDENTIALS)
     }
@@ -238,8 +239,8 @@ export class AuthService {
     }
   }
 
-  async validateSocketAuth(clientSocket: TClientSocket): Promise<ClientSocketAuthDTO> {
-    const socketAuth = plainToInstance(ClientSocketAuthDTO, clientSocket.handshake.auth)
+  async validateSocketAuth(handshakeAuth: Handshake['auth']): Promise<ClientSocketAuthDTO> {
+    const socketAuth = plainToInstance(ClientSocketAuthDTO, handshakeAuth)
     const errors = await validate(socketAuth)
     if (errors && errors.length > 0) {
       throw new BaseWsException(EValidationMessages.INVALID_INPUT)
@@ -248,9 +249,9 @@ export class AuthService {
   }
 
   async validateVoiceCallSocketAuth(
-    clientSocket: TVoiceCallClientSocket
+    handshakeAuth: Handshake['auth']
   ): Promise<VoiceCallSocketAuthDTO> {
-    const socketAuth = plainToInstance(VoiceCallSocketAuthDTO, clientSocket.handshake.auth)
+    const socketAuth = plainToInstance(VoiceCallSocketAuthDTO, handshakeAuth)
     const errors = await validate(socketAuth)
     if (errors && errors.length > 0) {
       throw new BaseWsException(EValidationMessages.INVALID_INPUT)

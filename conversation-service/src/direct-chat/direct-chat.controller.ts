@@ -31,6 +31,7 @@ export class DirectChatController implements IDirectChatsController {
   // fetch all direct chats of user
   @Get('fetch-direct-chats')
   async fetchAllDirectChats(@Query() query: FetchDirectChatsDTO, @User() user: TUserWithProfile) {
+    console.log('>>> user at direct chat:', user)
     const directChats = await this.directChatService.findDirectChatsByUser(
       user.id,
       query.lastId,

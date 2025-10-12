@@ -28,11 +28,11 @@ service CredentialsService {
 }
 
 message ValidateSocketConnectionRequest {
-  string socket_json = 1;
+  string handshake_headers_json = 1;
 }
 
 message ValidateSocketAuthRequest {
-  string client_socket_json = 1;
+  string handshake_auth_json = 1;
 }
 
 message ValidateSocketAuthResponse {
@@ -40,7 +40,7 @@ message ValidateSocketAuthResponse {
 }
 
 message ValidateVoiceCallSocketAuthRequest {
-  string client_socket_json = 1;
+  string handshake_auth_json = 1;
 }
 
 message ValidateVoiceCallSocketAuthResponse {

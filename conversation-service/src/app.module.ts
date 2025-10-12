@@ -16,6 +16,7 @@ import { DirectChatsModule } from './direct-chat/direct-chat.module'
 import { GroupChatModule } from './group-chat/group-chat.module'
 import { GroupMemberModule } from './group-member/group-member.module'
 import { MessageModule } from './message/message.module'
+import { PinConversationModule } from './pin-conversation/pin-conversation.module'
 
 @Module({
   imports: [
@@ -23,6 +24,7 @@ import { MessageModule } from './message/message.module'
     DirectChatsModule,
     GroupChatModule,
     GroupMemberModule,
+    PinConversationModule,
     MessageModule,
   ],
 })
