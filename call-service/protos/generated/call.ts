@@ -5,6 +5,7 @@
 // source: call.proto
 
 /* eslint-disable */
+import { Observable } from "rxjs";
 
 export const protobufPackage = "call";
 
@@ -17,5 +18,5 @@ export interface TempResponse {
 }
 
 export interface CallService {
-  Temp(request: TempRequest): Promise<TempResponse>;
+  Temp(request: TempRequest): Observable<TempResponse>;
 }

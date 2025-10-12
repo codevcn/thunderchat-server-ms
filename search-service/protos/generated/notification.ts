@@ -5,18 +5,19 @@
 // source: notification.proto
 
 /* eslint-disable */
+import { Observable } from "rxjs";
 
 export const protobufPackage = "notification";
 
 export interface SendNotificationToUserRequest {
   userId: number;
-  payload: { [key: string]: any } | undefined;
+  payloadJson: string;
 }
 
 export interface SendNotificationToUserResponse {
-  result: { [key: string]: any } | undefined;
+  resultJson: string;
 }
 
 export interface NotificationService {
-  SendNotificationToUser(request: SendNotificationToUserRequest): Promise<SendNotificationToUserResponse>;
+  SendNotificationToUser(request: SendNotificationToUserRequest): Observable<SendNotificationToUserResponse>;
 }

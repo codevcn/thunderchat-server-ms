@@ -1,4 +1,5 @@
 import type { TBlockedUserFullInfo, TUser, TUserWithProfile } from '@/utils/entities/user.entity'
+import type { FindUserWithProfileByIdResponse, GetUserByEmailResponse } from 'protos/generated/user'
 
 export type TUserId = TUser['id']
 
@@ -29,9 +30,9 @@ export type TSearchUsersData = {
   } | null
 }
 
-export type TFindUserWithProfileByIdGrpcRes = { user: TUserWithProfile | null }
+export type TFindUserWithProfileByIdGrpcRes = FindUserWithProfileByIdResponse
 
-export type TGetUserByEmailGrpcRes = { user: TUserWithProfile }
+export type TGetUserByEmailGrpcRes = GetUserByEmailResponse
 
 export type TFindByIdGrpcRes = { user: TUser | null }
 

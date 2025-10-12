@@ -1,7 +1,6 @@
 import type { NextFunction } from 'express'
 import type { Socket } from 'socket.io'
 import type { TGroupChat } from '@/utils/entities/group-chat.entity'
-import type { TCastedFields } from '@/utils/types'
 import type {
   CheckUserIsOnlineRequest,
   EmitToDirectChatRequest,
@@ -10,11 +9,6 @@ import type {
   SendFriendRq,
   SendNewMessageToGroupChatRequest,
 } from 'protos/generated/chat'
-import type { TUserWithProfile } from '@/utils/entities/user.entity'
-import type { TGetFriendRequestsData } from '@/friend-request/friend-request.type'
-import type { EFriendRequestStatus } from '@/friend-request/friend-request.enum'
-import type { EMessagingEmitSocketEvents } from '@/utils/events/socket.event'
-import type { TMessageFullInfo } from '@/utils/entities/message.entity'
 
 export type TServerMiddleware = (socket: Socket, next: NextFunction) => void
 
@@ -22,28 +16,16 @@ export type TCreateGroupChatRoomNameHandler = (groupChatId: TGroupChat['id']) =>
 
 export type TSocketId = Socket['id']
 
-export type TSendFriendRequestPayload = TCastedFields<
-  SendFriendRq,
-  { sender: TUserWithProfile; requestData: TGetFriendRequestsData }
->
+export type TSendFriendRequestPayload = SendFriendRq
 
 export type TRemoveConnectedClientRequest = RemoveConnectedClientRequest
 
 export type TCheckUserIsOnlineRequest = CheckUserIsOnlineRequest
 
-export type TFriendRequestActionPayload = TCastedFields<
-  FriendRequestActionRequest,
-  { action: EFriendRequestStatus }
->
+export type TFriendRequestActionPayload = FriendRequestActionRequest
 
 export type TGetConnectedClientsCountForAdminResponse = { count: number }
 
-export type TEmitToDirectChatPayload = TCastedFields<
-  EmitToDirectChatRequest,
-  { payload: any; event: EMessagingEmitSocketEvents }
->
+export type TEmitToDirectChatPayload = EmitToDirectChatRequest
 
-export type TSendNewMessageToGroupChatPayload = TCastedFields<
-  SendNewMessageToGroupChatRequest,
-  { newMessage: TMessageFullInfo }
->
+export type TSendNewMessageToGroupChatPayload = SendNewMessageToGroupChatRequest

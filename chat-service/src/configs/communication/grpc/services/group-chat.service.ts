@@ -1,9 +1,6 @@
 import type { EGroupChatPermissions } from '@/group-chat/group-chat.enum'
-import type { TCastedFieldObject } from '@/utils/types'
-import type {
-  CheckGroupChatPermissionResponse,
-  GroupChatService as GroupChatServiceType,
-} from 'protos/generated/conversation'
+import type { GroupChatService as GroupChatServiceType } from 'protos/generated/conversation'
+import { firstValueFrom } from 'rxjs'
 
 export class GroupChatService {
   constructor(private instance: GroupChatServiceType) {}
@@ -13,10 +10,12 @@ export class GroupChatService {
     permission: EGroupChatPermissions
   ): Promise<boolean> {
     return (
-      (await this.instance.CheckGroupChatPermission({
-        groupChatId,
-        permission,
-      })) as TCastedFieldObject<CheckGroupChatPermissionResponse, 'allowed', boolean>
+      await firstValueFrom(
+        this.instance.CheckGroupChatPermission({
+          groupChatId,
+          permission,
+        })
+      )
     ).allowed
   }
 }

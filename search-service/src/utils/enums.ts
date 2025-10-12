@@ -29,6 +29,8 @@ export enum EGrpcPackages {
   CONVERSATION_PACKAGE = 'CONVERSATION_PACKAGE',
   FRIEND = 'friend',
   FRIEND_PACKAGE = 'FRIEND_PACKAGE',
+  SEARCH = 'search',
+  SEARCH_PACKAGE = 'SEARCH_PACKAGE',
 }
 
 export enum EGrpcServices {
@@ -128,4 +130,8 @@ export enum EInternalEvents {
 export enum EUserOnlineStatus {
   ONLINE = 'ONLINE',
   OFFLINE = 'OFFLINE',
+}
+
+export enum ERequestXHeaders {
+  X_USER_DATA = 'x-user-data',
 }

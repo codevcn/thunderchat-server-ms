@@ -3,13 +3,13 @@ import type { EClientCookieNames } from './enums'
 import type { TUser, TUserWithProfile } from './entities/user.entity'
 import type { HttpStatus } from '@nestjs/common'
 
-export type TCastedFields<T, CastMap extends Partial<Record<keyof T, any>>> = {
-  [K in keyof T]: K extends keyof CastMap ? CastMap[K] : T[K]
-}
+// export type TCastedFields<T, CastMap extends Partial<Record<keyof T, any>>> = {
+//   [K in keyof T]: K extends keyof CastMap ? CastMap[K] : T[K]
+// }
 
-export type TCastedFieldObject<T, K extends keyof T, NewType> = Omit<T, K> & {
-  [P in K]: NewType
-}
+// export type TCastedFieldObject<T, K extends keyof T, NewType> = Omit<T, K> & {
+//   [P in K]: NewType
+// }
 
 export type TRequestWithUser = Request & { user: TUser }
 

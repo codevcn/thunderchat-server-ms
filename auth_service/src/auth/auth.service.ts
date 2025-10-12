@@ -31,8 +31,8 @@ export class AuthService {
   constructor(
     private credentialService: CredentialService,
     private jwtService: JWTService,
-    @Inject(EGrpcPackages.USER_PACKAGE) private readonly userGrpcClient: ClientGrpc,
-    @Inject(EGrpcPackages.CHAT_PACKAGE) private readonly userConnectionGrpcClient: ClientGrpc,
+    @Inject(EGrpcPackages.USER_PACKAGE) private userGrpcClient: ClientGrpc,
+    @Inject(EGrpcPackages.CHAT_PACKAGE) private userConnectionGrpcClient: ClientGrpc,
     @Inject(EProviderTokens.PRISMA_CLIENT) private prisma: PrismaService
   ) {
     this.userConnectionService = new UserConnectionService(

@@ -5,28 +5,29 @@
 // source: auth.proto
 
 /* eslint-disable */
+import { Observable } from "rxjs";
 import type { Empty } from "./google/protobuf/empty";
 
 export const protobufPackage = "auth";
 
 export interface ValidateSocketConnectionRequest {
-  socket: { [key: string]: any } | undefined;
+  socketJson: string;
 }
 
 export interface ValidateSocketAuthRequest {
-  clientSocket: { [key: string]: any } | undefined;
+  clientSocketJson: string;
 }
 
 export interface ValidateSocketAuthResponse {
-  clientSocketAuth: { [key: string]: any } | undefined;
+  clientSocketAuthJson: string;
 }
 
 export interface ValidateVoiceCallSocketAuthRequest {
-  clientSocket: { [key: string]: any } | undefined;
+  clientSocketJson: string;
 }
 
 export interface ValidateVoiceCallSocketAuthResponse {
-  voiceCallSocketAuth: { [key: string]: any } | undefined;
+  voiceCallSocketAuthJson: string;
 }
 
 export interface VerifyTokenRequest {
@@ -34,7 +35,7 @@ export interface VerifyTokenRequest {
 }
 
 export interface VerifyTokenResponse {
-  user: { [key: string]: any } | undefined;
+  userJson: string;
 }
 
 export interface CreateJWTRequest {
@@ -48,7 +49,7 @@ export interface CreateJWTResponse {
 
 export interface SendClientJWTRequest {
   token: string;
-  cookieOtps: { [key: string]: any } | undefined;
+  cookieOtpsJson: string;
 }
 
 export interface CompareHashedPasswordRequest {
@@ -69,24 +70,24 @@ export interface GetHashedPasswordResponse {
 }
 
 export interface GetJWTcookieOtpsResponse {
-  cookieOtps: { [key: string]: any } | undefined;
+  cookieOtpsJson: string;
 }
 
 export interface AuthService {
-  ValidateSocketConnection(request: ValidateSocketConnectionRequest): Promise<Empty>;
-  ValidateSocketAuth(request: ValidateSocketAuthRequest): Promise<ValidateSocketAuthResponse>;
+  ValidateSocketConnection(request: ValidateSocketConnectionRequest): Observable<Empty>;
+  ValidateSocketAuth(request: ValidateSocketAuthRequest): Observable<ValidateSocketAuthResponse>;
   ValidateVoiceCallSocketAuth(
     request: ValidateVoiceCallSocketAuthRequest,
-  ): Promise<ValidateVoiceCallSocketAuthResponse>;
-  VerifyToken(request: VerifyTokenRequest): Promise<VerifyTokenResponse>;
+  ): Observable<ValidateVoiceCallSocketAuthResponse>;
+  VerifyToken(request: VerifyTokenRequest): Observable<VerifyTokenResponse>;
 }
 
 export interface JWTService {
-  CreateJWT(request: CreateJWTRequest): Promise<CreateJWTResponse>;
-  GetJWTcookieOtps(request: Empty): Promise<GetJWTcookieOtpsResponse>;
+  CreateJWT(request: CreateJWTRequest): Observable<CreateJWTResponse>;
+  GetJWTcookieOtps(request: Empty): Observable<GetJWTcookieOtpsResponse>;
 }
 
 export interface CredentialsService {
-  CompareHashedPassword(request: CompareHashedPasswordRequest): Promise<CompareHashedPasswordResponse>;
-  GetHashedPassword(request: GetHashedPasswordRequest): Promise<GetHashedPasswordResponse>;
+  CompareHashedPassword(request: CompareHashedPasswordRequest): Observable<CompareHashedPasswordResponse>;
+  GetHashedPassword(request: GetHashedPasswordRequest): Observable<GetHashedPasswordResponse>;
 }

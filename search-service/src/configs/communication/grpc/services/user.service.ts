@@ -1,9 +1,6 @@
-import { TUserWithProfile } from '@/utils/entities/user.entity';
-import type {
-  findUsersForGlobalSearchRp,
-  UserService as userServiceType,
-} from '../../../../../protos/generated/user';
-import { TCastedFieldObject } from '@/utils/types';
+import type { TUserWithProfile } from '@/utils/entities/user.entity'
+import type { UserService as userServiceType } from '../../../../../protos/generated/user'
+import { firstValueFrom } from 'rxjs'
 
 export class UserService {
   constructor(private instance: userServiceType) {}
@@ -11,18 +8,17 @@ export class UserService {
   async findUsersForGlobalSearch(
     ids: number[],
     selfUserId: number,
-    limit: number,
+    limit: number
   ): Promise<TUserWithProfile[]> {
-    return (
-      (await this.instance.findUsersForGlobalSearch({
-        ids,
-        selfUserId,
-        limit,
-      })) as TCastedFieldObject<
-        findUsersForGlobalSearchRp,
-        'users',
-        TUserWithProfile[]
-      >
-    ).users;
+    const usersJson = (
+      await firstValueFrom(
+        this.instance.findUsersForGlobalSearch({
+          ids,
+          selfUserId,
+          limit,
+        })
+      )
+    ).usersJson
+    return usersJson.map((user) => JSON.parse(user) as TUserWithProfile)
   }
 }

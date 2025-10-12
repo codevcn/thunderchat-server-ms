@@ -1,8 +1,13 @@
-import { Controller, InternalServerErrorException, UnauthorizedException } from '@nestjs/common'
+import {
+  Controller,
+  Inject,
+  InternalServerErrorException,
+  UnauthorizedException,
+} from '@nestjs/common'
 import { AuthService } from '@/auth/auth.service'
-import { GrpcMethod } from '@nestjs/microservices'
+import { ClientGrpc, GrpcMethod } from '@nestjs/microservices'
 import type { IAuthGrpcController } from './auth.interface'
-import { EGrpcServices } from '@/utils/enums'
+import { EGrpcPackages, EGrpcServices } from '@/utils/enums'
 import { JWTService } from './jwt/jwt.service'
 import {
   CompareHashedPasswordRequest,
@@ -21,6 +26,7 @@ import type {
 import { TUserWithProfile } from '@/utils/entities/user.entity'
 import { EAuthMessages } from './auth.message'
 import { UserService } from '@/configs/communication/grpc/services/user.service'
+import { Socket } from 'socket.io'
 
 @Controller()
 export class AuthGrpcController implements IAuthGrpcController {
@@ -29,25 +35,34 @@ export class AuthGrpcController implements IAuthGrpcController {
   constructor(
     private readonly authService: AuthService,
     private readonly jwtService: JWTService,
-    private readonly credentialsService: CredentialService
-  ) {}
+    private readonly credentialsService: CredentialService,
+    @Inject(EGrpcPackages.USER_PACKAGE) private userClient: ClientGrpc
+  ) {
+    this.userService = new UserService(this.userClient.getService(EGrpcServices.USER_SERVICE))
+  }
 
   @GrpcMethod(EGrpcServices.AUTH_SERVICE, 'ValidateSocketConnection')
   async ValidateSocketConnection(data: TValidateSocketConnectionPayload) {
-    await this.authService.validateSocketConnection(data.socket)
+    await this.authService.validateSocketConnection(JSON.parse(data.socketJson) as Socket)
   }
 
   @GrpcMethod(EGrpcServices.AUTH_SERVICE, 'ValidateSocketAuth')
   async ValidateSocketAuth(data: TValidateSocketAuthPayload) {
     return {
-      clientSocketAuth: await this.authService.validateSocketAuth(data.clientSocket),
+      clientSocketAuthJson: JSON.stringify(
+        await this.authService.validateSocketAuth(JSON.parse(data.clientSocketJson) as Socket)
+      ),
     }
   }
 
   @GrpcMethod(EGrpcServices.AUTH_SERVICE, 'ValidateVoiceCallSocketAuth')
   async ValidateVoiceCallSocketAuth(data: TValidateVoiceCallSocketAuthPayload) {
     return {
-      voiceCallSocketAuth: await this.authService.validateVoiceCallSocketAuth(data.clientSocket),
+      voiceCallSocketAuthJson: JSON.stringify(
+        await this.authService.validateVoiceCallSocketAuth(
+          JSON.parse(data.clientSocketJson) as Socket
+        )
+      ),
     }
   }
 
@@ -56,27 +71,33 @@ export class AuthGrpcController implements IAuthGrpcController {
     let payload: TJWTPayload
     let user: TUserWithProfile | null | undefined
     try {
-      payload = await this.jwtService.verifyToken(data.token)
+      try {
+        payload = await this.jwtService.verifyToken(data.token)
+      } catch (error) {
+        throw new UnauthorizedException(EAuthMessages.AUTHENTICATION_FAILED)
+      }
+      console.log('>>> payload:', payload)
+      try {
+        user = await this.userService.findUserWithProfileById(payload.user_id)
+      } catch (error) {
+        throw new UnauthorizedException(EAuthMessages.AUTHENTICATION_FAILED)
+      }
+      if (!user) {
+        throw new UnauthorizedException(EAuthMessages.USER_NOT_FOUND)
+      }
+      if (!user.Profile) {
+        throw new InternalServerErrorException(EAuthMessages.USER_HAS_NO_PROFILE)
+      }
+      const banResult = await this.authService.checkUserBanStatus(user.id)
+      if (banResult.isBanned) {
+        throw new UnauthorizedException(banResult.message || EAuthMessages.USER_BANNED)
+      }
     } catch (error) {
-      throw new UnauthorizedException(EAuthMessages.AUTHENTICATION_FAILED)
-    }
-    try {
-      user = await this.userService.findUserWithProfileById(payload.user_id)
-    } catch (error) {
-      throw new UnauthorizedException(EAuthMessages.AUTHENTICATION_FAILED)
-    }
-    if (!user) {
-      throw new UnauthorizedException(EAuthMessages.USER_NOT_FOUND)
-    }
-    if (!user.Profile) {
-      throw new InternalServerErrorException(EAuthMessages.USER_HAS_NO_PROFILE)
-    }
-    const banResult = await this.authService.checkUserBanStatus(user.id)
-    if (banResult.isBanned) {
-      throw new UnauthorizedException(banResult.message || EAuthMessages.USER_BANNED)
+      console.log('>>> error verify token:', { error, user })
+      throw error
     }
     return {
-      user,
+      userJson: JSON.stringify(user),
     }
   }
 
@@ -94,7 +115,7 @@ export class AuthGrpcController implements IAuthGrpcController {
   @GrpcMethod(EGrpcServices.CREDENTIALS_SERVICE, 'GetJWTcookieOtps')
   async GetJWTcookieOtps() {
     return {
-      cookieOtps: this.jwtService.getJWTcookieOtps(),
+      cookieOtpsJson: JSON.stringify(this.jwtService.getJWTcookieOtps()),
     }
   }
 

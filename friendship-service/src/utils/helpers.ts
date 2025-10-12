@@ -1,25 +1,22 @@
-import crypto from 'crypto';
-import path from 'path';
-import { Worker } from 'worker_threads';
-import type { TRetryRequestOptions } from './types';
-
-import { Express } from 'express';
-import { EMessageMediaTypes } from '@/message/message.enum';
-import { EGlobalMessages } from './enums';
+import crypto from 'crypto'
+import path from 'path'
+import { Worker } from 'worker_threads'
+import type { TRetryRequestOptions } from './types'
+import type { Request } from 'express'
+import { EMessageMediaTypes } from '@/message/message.enum'
+import { EGlobalMessages } from './enums'
 
 /**
  * Decode Multer's originalname (latin1) to UTF-8 so Unicode filenames display correctly
  */
 export function decodeMulterFileName(originalName: string): string {
-  if (!originalName) return originalName;
+  if (!originalName) return originalName
   try {
     // Multer historically decodes headers using latin1, causing UTF-8 names to look garbled
     // Convert back to proper UTF-8 and normalize to NFC for consistent storage/display
-    return Buffer.from(originalName, 'latin1')
-      .toString('utf8')
-      .normalize('NFC');
+    return Buffer.from(originalName, 'latin1').toString('utf8').normalize('NFC')
   } catch {
-    return originalName;
+    return originalName
   }
 }
 
@@ -29,24 +26,17 @@ export function decodeMulterFileName(originalName: string): string {
  * @param {number} length - Độ dài của mã băm
  * @returns {string} Tên file đã mã hóa, bao gồm UUID và mã băm
  */
-export function encodeFilename(
-  originalFilename: string,
-  length: number,
-): string {
+export function encodeFilename(originalFilename: string, length: number): string {
   // Lấy phần mở rộng của file
-  const ext = path.extname(encodeURIComponent(originalFilename));
+  const ext = path.extname(encodeURIComponent(originalFilename))
 
   // Tạo hash SHA-256 từ tên file gốc
-  const hash = crypto
-    .createHash('sha256')
-    .update(originalFilename)
-    .digest('hex')
-    .slice(0, length);
+  const hash = crypto.createHash('sha256').update(originalFilename).digest('hex').slice(0, length)
 
   // Kết hợp UUID và hash để tạo tên file duy nhất
-  const uniqueId = crypto.randomBytes(16).toString('hex');
+  const uniqueId = crypto.randomBytes(16).toString('hex')
 
-  return `${uniqueId}-${hash}${ext}`;
+  return `${uniqueId}-${hash}${ext}`
 }
 
 /**
@@ -56,7 +46,7 @@ export function encodeFilename(
  * @returns Đối tượng đã được ép kiểu
  */
 export function typeToRawObject<T>(rawObject: T): T {
-  return rawObject;
+  return rawObject
 }
 
 /**
@@ -65,7 +55,7 @@ export function typeToRawObject<T>(rawObject: T): T {
  * @returns {Worker} Một worker mới
  */
 export function createWorker(workerPath: string): Worker {
-  return new Worker(workerPath);
+  return new Worker(workerPath)
 }
 
 /**
@@ -76,25 +66,25 @@ export function createWorker(workerPath: string): Worker {
  */
 export async function retryAsyncRequest<R>(
   requestExecutor: () => Promise<R>,
-  options?: TRetryRequestOptions,
+  options?: TRetryRequestOptions
 ): Promise<R> {
-  const { maxRetries = 3, onPreRetry } = options || {};
-  let retriesCount = 0;
+  const { maxRetries = 3, onPreRetry } = options || {}
+  let retriesCount = 0
   async function retryHandler(): Promise<R> {
     try {
-      return await requestExecutor();
+      return await requestExecutor()
     } catch (error) {
-      console.log('>>> error on retry Async Request:', error);
+      console.log('>>> error on retry Async Request:', error)
       if (retriesCount < maxRetries) {
-        if (onPreRetry) onPreRetry(error, retriesCount);
-        retriesCount++;
-        return await retryHandler();
+        if (onPreRetry) onPreRetry(error, retriesCount)
+        retriesCount++
+        return await retryHandler()
       } else {
-        throw error;
+        throw error
       }
     }
   }
-  return await retryHandler();
+  return await retryHandler()
 }
 
 /**
@@ -104,9 +94,8 @@ export async function retryAsyncRequest<R>(
  */
 export function replaceHTMLTagInMessageContent(input: string): string {
   // Regex kiểm tra thẻ HTML mở hoặc đóng
-  const htmlTagRegex =
-    /<([a-z][\w-]*)(\s[^>]*)?>.*?<\/\1>|<([a-z][\w-]*)(\s[^>]*)?\/?>/g;
-  return input.replace(htmlTagRegex, '(Media)');
+  const htmlTagRegex = /<([a-z][\w-]*)(\s[^>]*)?>.*?<\/\1>|<([a-z][\w-]*)(\s[^>]*)?\/?>/g
+  return input.replace(htmlTagRegex, '(Media)')
 }
 
 /**
@@ -114,10 +103,8 @@ export function replaceHTMLTagInMessageContent(input: string): string {
  * @param {Express.Multer.File} file - File để xác định loại
  * @returns {Promise<EMessageMediaTypes>} Loại file
  */
-export async function detectFileType(
-  file: Express.Multer.File,
-): Promise<EMessageMediaTypes> {
-  const mime = file.mimetype;
+export async function detectFileType(file: Express.Multer.File): Promise<EMessageMediaTypes> {
+  const mime = file.mimetype
 
   // Special handling for WebM files
   if (
@@ -125,7 +112,7 @@ export async function detectFileType(
     file.originalname.toLowerCase().endsWith('.webm') &&
     file.originalname.toLowerCase().includes('voice-')
   ) {
-    return EMessageMediaTypes.AUDIO;
+    return EMessageMediaTypes.AUDIO
   }
 
   // Special handling for audio files with .webm extension
@@ -134,24 +121,21 @@ export async function detectFileType(
     file.originalname.toLowerCase().endsWith('.webm') &&
     mime === 'audio/webm'
   ) {
-    return EMessageMediaTypes.AUDIO;
+    return EMessageMediaTypes.AUDIO
   }
 
-  if (mime.startsWith('image/')) return EMessageMediaTypes.IMAGE;
-  if (mime.startsWith('video/')) return EMessageMediaTypes.VIDEO;
+  if (mime.startsWith('image/')) return EMessageMediaTypes.IMAGE
+  if (mime.startsWith('video/')) return EMessageMediaTypes.VIDEO
 
   // Kiểm tra document (pdf, word, excel, zip, rar...)
   if (
     mime === 'application/pdf' ||
     mime === 'application/msword' ||
-    mime ===
-      'application/vnd.openxmlformats-officedocument.wordprocessingml.document' ||
+    mime === 'application/vnd.openxmlformats-officedocument.wordprocessingml.document' ||
     mime === 'application/vnd.ms-excel' ||
-    mime ===
-      'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' ||
+    mime === 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' ||
     mime === 'application/vnd.ms-powerpoint' ||
-    mime ===
-      'application/vnd.openxmlformats-officedocument.presentationml.presentation' ||
+    mime === 'application/vnd.openxmlformats-officedocument.presentationml.presentation' ||
     mime === 'text/plain' ||
     mime === 'text/csv' ||
     mime === 'application/rtf' ||
@@ -167,7 +151,7 @@ export async function detectFileType(
     mime === 'application/json' ||
     mime === 'text/markdown'
   ) {
-    return EMessageMediaTypes.DOCUMENT;
+    return EMessageMediaTypes.DOCUMENT
   }
 
   // Kiểm tra archive files
@@ -178,7 +162,7 @@ export async function detectFileType(
     mime === 'application/x-bzip2' ||
     mime === 'application/x-bzip'
   ) {
-    return EMessageMediaTypes.DOCUMENT;
+    return EMessageMediaTypes.DOCUMENT
   }
 
   // Kiểm tra audio files
@@ -192,7 +176,7 @@ export async function detectFileType(
     mime === 'audio/flac' ||
     mime === 'audio/mp4'
   ) {
-    return EMessageMediaTypes.AUDIO;
+    return EMessageMediaTypes.AUDIO
   }
 
   // Kiểm tra các MIME types khác có thể bị thiếu
@@ -203,21 +187,18 @@ export async function detectFileType(
   ) {
     // Fallback: cố gắng đoán từ extension
     if (file.originalname) {
-      const ext = file.originalname.toLowerCase().split('.').pop();
+      const ext = file.originalname.toLowerCase().split('.').pop()
       if (ext && ['zip', 'rar', '7z', 'tar', 'gz', 'bz2', 'bz'].includes(ext)) {
-        return EMessageMediaTypes.DOCUMENT;
+        return EMessageMediaTypes.DOCUMENT
       }
-      if (
-        ext &&
-        ['mp3', 'wav', 'ogg', 'aac', 'flac', 'm4a', 'webm'].includes(ext)
-      ) {
-        return EMessageMediaTypes.AUDIO;
+      if (ext && ['mp3', 'wav', 'ogg', 'aac', 'flac', 'm4a', 'webm'].includes(ext)) {
+        return EMessageMediaTypes.AUDIO
       }
     }
-    return EMessageMediaTypes.DOCUMENT; // Default fallback
+    return EMessageMediaTypes.DOCUMENT // Default fallback
   }
 
-  throw new Error(EGlobalMessages.UNKNOWN_FILE_TYPE);
+  throw new Error(EGlobalMessages.UNKNOWN_FILE_TYPE)
 }
 
 /**
@@ -227,27 +208,32 @@ export async function detectFileType(
  * @returns {string} Kích thước file đã được định dạng
  */
 export function formatBytes(bytes: number, decimals = 2): string {
-  if (bytes === 0) return '0 Bytes';
+  if (bytes === 0) return '0 Bytes'
 
-  const k = 1024;
-  const dm = decimals < 0 ? 0 : decimals;
+  const k = 1024
+  const dm = decimals < 0 ? 0 : decimals
 
-  const sizes = ['Bytes', 'KB', 'MB', 'GB', 'TB', 'PB', 'EB'];
+  const sizes = ['Bytes', 'KB', 'MB', 'GB', 'TB', 'PB', 'EB']
 
-  const i = Math.floor(Math.log(bytes) / Math.log(k));
-  const value = parseFloat((bytes / Math.pow(k, i)).toFixed(dm));
+  const i = Math.floor(Math.log(bytes) / Math.log(k))
+  const value = parseFloat((bytes / Math.pow(k, i)).toFixed(dm))
 
-  return `${value} ${sizes[i]}`;
+  return `${value} ${sizes[i]}`
 }
 
 export function createDirectChatRoomName(directChatId: number): string {
-  return `direct_chat_room-${directChatId}`;
+  return `direct_chat_room-${directChatId}`
 }
 
 export function createGroupChatRoomName(groupChatId: number): string {
-  return `group_chat_room-${groupChatId}`;
+  return `group_chat_room-${groupChatId}`
 }
 
 export const isEmptyJSON = (json: object): boolean => {
-  return Object.keys(json).length === 0;
-};
+  return Object.keys(json).length === 0
+}
+
+export const extractStringXHeader = (request: Request, headerName: string): string | null => {
+  const headerValue = request.headers[headerName]
+  return headerValue ? Buffer.from(headerValue as string, 'base64').toString('utf-8') : null
+}

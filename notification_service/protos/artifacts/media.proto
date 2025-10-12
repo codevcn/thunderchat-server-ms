@@ -3,7 +3,6 @@ syntax = "proto3";
 package media;
 
 import "google/protobuf/empty.proto";
-import "google/protobuf/struct.proto";
 
 service UploadService {
   rpc DeleteFileByUrl(DeleteFileByUrlRequest) returns (google.protobuf.Empty);
@@ -28,7 +27,7 @@ message UploadFileRequest {
 }
 
 message UploadFileResponse {
-  google.protobuf.Struct file_info = 1;
+  string file_info_json = 1;
 }
 
 message UploadGroupChatAvatarRequest {

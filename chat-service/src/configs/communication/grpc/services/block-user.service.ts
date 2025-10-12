@@ -1,9 +1,6 @@
 import type { TBlockedUserFullInfo } from '@/utils/entities/user.entity'
-import { TCastedFieldObject } from '@/utils/types'
-import type {
-  BlockUserService as BlockUserServiceType,
-  CheckBlockedUserResponse,
-} from 'protos/generated/user'
+import type { BlockUserService as BlockUserServiceType } from 'protos/generated/user'
+import { firstValueFrom } from 'rxjs'
 
 export class BlockUserService {
   constructor(private instance: BlockUserServiceType) {}
@@ -12,14 +9,12 @@ export class BlockUserService {
     blockerId: number,
     blockedId: number
   ): Promise<TBlockedUserFullInfo | null> {
-    return (
-      (
-        (await this.instance.CheckBlockedUser({ blockerId, blockedId })) as TCastedFieldObject<
-          CheckBlockedUserResponse,
-          'blockedUser',
-          TBlockedUserFullInfo | undefined
-        >
-      ).blockedUser || null
-    )
+    const blockedUserJson = (
+      await firstValueFrom(this.instance.CheckBlockedUser({ blockerId, blockedId }))
+    ).blockedUserJson
+    if (!blockedUserJson) {
+      return null
+    }
+    return JSON.parse(blockedUserJson) as TBlockedUserFullInfo | null
   }
 }

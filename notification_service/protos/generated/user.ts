@@ -5,15 +5,24 @@
 // source: user.proto
 
 /* eslint-disable */
+import { Observable } from "rxjs";
 
 export const protobufPackage = "user";
+
+export interface TestRequest {
+  messageVcnReq: string;
+}
+
+export interface TestResponse {
+  messageVcnRes: string;
+}
 
 export interface FindUserWithProfileByIdRequest {
   userId: number;
 }
 
 export interface FindUserWithProfileByIdResponse {
-  user?: { [key: string]: any } | undefined;
+  userJson: string;
 }
 
 export interface FindByUserIdRequest {
@@ -21,7 +30,7 @@ export interface FindByUserIdRequest {
 }
 
 export interface FindByUserIdResponse {
-  userSettings?: { [key: string]: any } | undefined;
+  userSettingsJson: string;
 }
 
 export interface CheckBlockedUserRequest {
@@ -30,7 +39,7 @@ export interface CheckBlockedUserRequest {
 }
 
 export interface CheckBlockedUserResponse {
-  blockedUser?: { [key: string]: any } | undefined;
+  blockedUserJson?: string | undefined;
 }
 
 export interface GetUserByEmailRequest {
@@ -38,7 +47,7 @@ export interface GetUserByEmailRequest {
 }
 
 export interface GetUserByEmailResponse {
-  user: { [key: string]: any } | undefined;
+  userJson: string;
 }
 
 export interface FindByIdRequest {
@@ -46,7 +55,7 @@ export interface FindByIdRequest {
 }
 
 export interface FindByIdResponse {
-  user?: { [key: string]: any } | undefined;
+  userJson: string;
 }
 
 export interface findUsersForGlobalSearchRq {
@@ -56,20 +65,21 @@ export interface findUsersForGlobalSearchRq {
 }
 
 export interface findUsersForGlobalSearchRp {
-  users: { [key: string]: any }[];
+  usersJson: string[];
 }
 
 export interface UserService {
-  FindUserWithProfileById(request: FindUserWithProfileByIdRequest): Promise<FindUserWithProfileByIdResponse>;
-  GetUserByEmail(request: GetUserByEmailRequest): Promise<GetUserByEmailResponse>;
-  FindById(request: FindByIdRequest): Promise<FindByIdResponse>;
-  findUsersForGlobalSearch(request: findUsersForGlobalSearchRq): Promise<findUsersForGlobalSearchRp>;
+  FindUserWithProfileById(request: FindUserWithProfileByIdRequest): Observable<FindUserWithProfileByIdResponse>;
+  GetUserByEmail(request: GetUserByEmailRequest): Observable<GetUserByEmailResponse>;
+  FindById(request: FindByIdRequest): Observable<FindByIdResponse>;
+  findUsersForGlobalSearch(request: findUsersForGlobalSearchRq): Observable<findUsersForGlobalSearchRp>;
+  Test(request: TestRequest): Observable<TestResponse>;
 }
 
 export interface UserSettingsService {
-  FindByUserId(request: FindByUserIdRequest): Promise<FindByUserIdResponse>;
+  FindByUserId(request: FindByUserIdRequest): Observable<FindByUserIdResponse>;
 }
 
 export interface BlockUserService {
-  CheckBlockedUser(request: CheckBlockedUserRequest): Promise<CheckBlockedUserResponse>;
+  CheckBlockedUser(request: CheckBlockedUserRequest): Observable<CheckBlockedUserResponse>;
 }

@@ -1,39 +1,43 @@
 import type { TUploadResult } from '@/upload/upload.type'
-import type { TCastedFieldObject } from '@/utils/types'
-import type { UploadService as UploadServiceType, UploadFileResponse } from 'protos/generated/media'
+import type { UploadService as UploadServiceType } from 'protos/generated/media'
+import { firstValueFrom } from 'rxjs'
 
 export class UploadService {
   constructor(private instance: UploadServiceType) {}
-
   async deleteFileByUrl(fileUrl: string): Promise<void> {
-    await this.instance.DeleteFileByUrl({ url: fileUrl })
+    await firstValueFrom(this.instance.DeleteFileByUrl({ url: fileUrl }))
   }
 
   async uploadFile(file: Express.Multer.File): Promise<TUploadResult> {
-    return (
-      (await this.instance.UploadFile({
+    const result = await firstValueFrom(
+      this.instance.UploadFile({
         content: file.buffer,
         filename: file.originalname,
-      })) as TCastedFieldObject<UploadFileResponse, 'fileInfo', TUploadResult>
-    ).fileInfo
+      })
+    )
+    return JSON.parse(result.fileInfoJson) as TUploadResult
   }
 
   async uploadGroupChatAvatar(file: Express.Multer.File): Promise<{ url: string }> {
-    return await this.instance.UploadGroupChatAvatar({
-      file: file.buffer,
-      filename: file.originalname,
-    })
+    return await firstValueFrom(
+      this.instance.UploadGroupChatAvatar({
+        file: file.buffer,
+        filename: file.originalname,
+      })
+    )
   }
 
   async deleteGroupChatAvatar(avatarUrl: string): Promise<void> {
-    await this.instance.DeleteGroupChatAvatar({ avatarUrl })
+    await firstValueFrom(this.instance.DeleteGroupChatAvatar({ avatarUrl }))
   }
 
   async uploadReportImage(file: Express.Multer.File): Promise<{ url: string }> {
-    return await this.instance.UploadReportImage({
-      file: file.buffer,
-      filename: file.originalname,
-    })
+    return await firstValueFrom(
+      this.instance.UploadReportImage({
+        file: file.buffer,
+        filename: file.originalname,
+      })
+    )
   }
 
   async uploadReportMessageMedia(
@@ -41,10 +45,12 @@ export class UploadService {
     messageId: number,
     contentType: string
   ): Promise<{ url: string }> {
-    return await this.instance.UploadReportMessageMedia({
-      filePath,
-      messageId,
-      contentType,
-    })
+    return await firstValueFrom(
+      this.instance.UploadReportMessageMedia({
+        filePath,
+        messageId,
+        contentType,
+      })
+    )
   }
 }

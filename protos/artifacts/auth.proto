@@ -2,7 +2,6 @@ syntax = "proto3";
 
 package auth;
 
-import "google/protobuf/struct.proto";
 import "google/protobuf/empty.proto";
 
 service AuthService {
@@ -29,23 +28,23 @@ service CredentialsService {
 }
 
 message ValidateSocketConnectionRequest {
-  google.protobuf.Struct socket = 1;
+  string socket_json = 1;
 }
 
 message ValidateSocketAuthRequest {
-  google.protobuf.Struct client_socket = 1;
+  string client_socket_json = 1;
 }
 
 message ValidateSocketAuthResponse {
-  google.protobuf.Struct client_socket_auth = 1;
+  string client_socket_auth_json = 1;
 }
 
 message ValidateVoiceCallSocketAuthRequest {
-  google.protobuf.Struct client_socket = 1;
+  string client_socket_json = 1;
 }
 
 message ValidateVoiceCallSocketAuthResponse {
-  google.protobuf.Struct voice_call_socket_auth = 1;
+  string voice_call_socket_auth_json = 1;
 }
 
 message VerifyTokenRequest {
@@ -53,7 +52,7 @@ message VerifyTokenRequest {
 }
 
 message VerifyTokenResponse {
-  google.protobuf.Struct user = 1;
+  string user_json = 1;
 }
 
 message CreateJWTRequest {
@@ -67,7 +66,7 @@ message CreateJWTResponse {
 
 message SendClientJWTRequest {
   string token = 1;
-  google.protobuf.Struct cookie_otps = 2;
+  string cookie_otps_json = 2;
 }
 
 message CompareHashedPasswordRequest {
@@ -88,5 +87,5 @@ message GetHashedPasswordResponse {
 }
 
 message GetJWTcookieOtpsResponse {
-  google.protobuf.Struct cookie_otps = 1;
+  string cookie_otps_json = 1;
 }

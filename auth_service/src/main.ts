@@ -7,8 +7,7 @@ import { ValidationPipe } from '@nestjs/common'
 import { BaseHttpExceptionFilter } from './utils/exception-filters/base-http-exception.filter'
 import cookieParser from 'cookie-parser'
 import { copyProtos } from './bootstrap/copy-protos-folder'
-
-const apiPrefix: string = 'api'
+import { EGrpcPackages, ERequestXHeaders } from './utils/enums'
 
 const beforeLaunch = async () => {
   await clearLogFiles()
@@ -22,6 +21,7 @@ const getAppModule = async () => {
   const { AppModule } = await import('./app.module')
   return AppModule
 }
+
 async function bootstrap() {
   await beforeLaunch()
   console.log('>>> Microservice [Auth-Service] is launching...')
@@ -33,6 +33,7 @@ async function bootstrap() {
     NODE_ENV === 'production' ? process.env.CLIENT_HOST : process.env.CLIENT_HOST_DEV
 
   // set api prefix
+  const apiPrefix: string = 'api'
   app.setGlobalPrefix(apiPrefix)
 
   // for getting cookie in request
@@ -40,8 +41,10 @@ async function bootstrap() {
 
   // cors
   app.enableCors({
-    origin: [CLIENT_HOST, 'http://localhost:3000'],
+    origin: [CLIENT_HOST],
     credentials: true,
+    preflightContinue: false,
+    allowedHeaders: [ERequestXHeaders.X_USER_DATA],
   })
 
   // global exception filter
@@ -54,8 +57,8 @@ async function bootstrap() {
   app.connectMicroservice<MicroserviceOptions>({
     transport: Transport.GRPC,
     options: {
-      package: 'auth',
-      protoPath: join(__dirname, '../../protos/artifacts/auth.proto'),
+      package: EGrpcPackages.AUTH,
+      protoPath: join(__dirname, '/../../protos/artifacts/auth.proto'),
       url: `${HOST_ADDRESS}:${GRPC_PORT}`,
     },
   })
@@ -66,6 +69,6 @@ async function bootstrap() {
   console.log(`>>> Microservice [Auth-Service] is listening on: ${HOST_ADDRESS}:${GRPC_PORT}`)
 
   await app.listen(PORT, '0.0.0.0')
-  console.log('>>> Microservice [Auth-Service] is listening on port:', PORT)
+  console.log(`>>> HTTP Server [Auth-Service] is listening on: ${HOST_ADDRESS}:${PORT}`)
 }
 bootstrap()

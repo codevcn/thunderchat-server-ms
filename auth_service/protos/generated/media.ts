@@ -5,6 +5,7 @@
 // source: media.proto
 
 /* eslint-disable */
+import { Observable } from "rxjs";
 import type { Empty } from "./google/protobuf/empty";
 
 export const protobufPackage = "media";
@@ -19,7 +20,7 @@ export interface UploadFileRequest {
 }
 
 export interface UploadFileResponse {
-  fileInfo: { [key: string]: any } | undefined;
+  fileInfoJson: string;
 }
 
 export interface UploadGroupChatAvatarRequest {
@@ -55,10 +56,10 @@ export interface UploadReportMessageMediaResponse {
 }
 
 export interface UploadService {
-  DeleteFileByUrl(request: DeleteFileByUrlRequest): Promise<Empty>;
-  UploadFile(request: UploadFileRequest): Promise<UploadFileResponse>;
-  UploadGroupChatAvatar(request: UploadGroupChatAvatarRequest): Promise<UploadGroupChatAvatarResponse>;
-  DeleteGroupChatAvatar(request: DeleteGroupChatAvatarRequest): Promise<Empty>;
-  UploadReportImage(request: UploadReportImageRequest): Promise<UploadReportImageResponse>;
-  UploadReportMessageMedia(request: UploadReportMessageMediaRequest): Promise<UploadReportMessageMediaResponse>;
+  DeleteFileByUrl(request: DeleteFileByUrlRequest): Observable<Empty>;
+  UploadFile(request: UploadFileRequest): Observable<UploadFileResponse>;
+  UploadGroupChatAvatar(request: UploadGroupChatAvatarRequest): Observable<UploadGroupChatAvatarResponse>;
+  DeleteGroupChatAvatar(request: DeleteGroupChatAvatarRequest): Observable<Empty>;
+  UploadReportImage(request: UploadReportImageRequest): Observable<UploadReportImageResponse>;
+  UploadReportMessageMedia(request: UploadReportMessageMediaRequest): Observable<UploadReportMessageMediaResponse>;
 }

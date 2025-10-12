@@ -1,7 +1,6 @@
 import type { TDirectChat } from '@/utils/entities/direct-chat.entity'
 import type { TMessage } from '@/utils/entities/message.entity'
 import type { TUserWithProfile } from '@/utils/entities/user.entity'
-import { TCastedFields } from '@/utils/types'
 import {
   CreateNewDirectChatRequest,
   CreateNewDirectChatResponse,
@@ -40,23 +39,14 @@ export type TDeleteDirectChatData = {
 // gRPC Types
 export type TFindConversationWithOtherUserRequest = FindConversationWithOtherUserRequest
 
-export type TFindConversationWithOtherUserResponse = TCastedFields<
-  FindConversationWithOtherUserResponse,
-  { directChat: TDirectChat | null }
->
+export type TFindConversationWithOtherUserResponse = FindConversationWithOtherUserResponse
 
 export type TCreateNewDirectChatRequest = CreateNewDirectChatRequest
 
-export type TCreateNewDirectChatResponse = TCastedFields<
-  CreateNewDirectChatResponse,
-  { newDirectChat: TDirectChat }
->
+export type TCreateNewDirectChatResponse = CreateNewDirectChatResponse
 
 export type TUpdateLastSentMessageRequest = UpdateLastSentMessageRequest
 
 export type TFindDirectChatByIdRequest = FindDirectChatByIdRequest
 
-export type TFindDirectChatByIdResponse = TCastedFields<
-  FindDirectChatByIdResponse,
-  { directChat: TDirectChat | null }
->
+export type TFindDirectChatByIdResponse = FindDirectChatByIdResponse

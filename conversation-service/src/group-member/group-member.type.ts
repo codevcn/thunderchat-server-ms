@@ -1,9 +1,5 @@
+import type { TGroupChatMemberWithUser } from '@/utils/entities/group-chat-member.entity'
 import type {
-  TGroupChatMemberWithUser,
-  TGroupChatMemberWithUserAndGroupChat,
-} from '@/utils/entities/group-chat-member.entity'
-import { TCastedFields } from '@/utils/types'
-import {
   FindGroupChatMemberIdsRequest,
   FindGroupChatMemberIdsResponse,
   FindMemberInGroupChatRequest,
@@ -17,10 +13,7 @@ export type TAddMembersToGroupChatRes = {
 // gRPC Types
 export type TFindMemberInGroupChatRequest = FindMemberInGroupChatRequest
 
-export type TFindMemberInGroupChatResponse = TCastedFields<
-  FindMemberInGroupChatResponse,
-  { groupChatMember: TGroupChatMemberWithUserAndGroupChat | null }
->
+export type TFindMemberInGroupChatResponse = FindMemberInGroupChatResponse
 
 export type TFindGroupChatMemberIdsRequest = FindGroupChatMemberIdsRequest
 

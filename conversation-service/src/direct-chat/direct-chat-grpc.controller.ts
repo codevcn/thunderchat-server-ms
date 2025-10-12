@@ -22,7 +22,7 @@ export class DirectChatGrpcController implements IDirectChatGrpcService {
     )
 
     return {
-      directChat: directChat,
+      directChatJson: JSON.stringify(directChat),
     }
   }
 
@@ -34,7 +34,7 @@ export class DirectChatGrpcController implements IDirectChatGrpcService {
     )
 
     return {
-      newDirectChat: newDirectChat,
+      newDirectChatJson: JSON.stringify(newDirectChat),
     }
   }
 
@@ -50,7 +50,7 @@ export class DirectChatGrpcController implements IDirectChatGrpcService {
     const directChat = await this.directChatService.findById(request.directChatId)
 
     return {
-      directChat: directChat || undefined,
+      directChatJson: directChat ? JSON.stringify(directChat) : undefined,
     }
   }
 }

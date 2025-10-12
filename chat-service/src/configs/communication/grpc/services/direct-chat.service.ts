@@ -1,11 +1,6 @@
 import type { TDirectChat } from '@/utils/entities/direct-chat.entity'
-import type { TCastedFieldObject } from '@/utils/types'
-import type {
-  CreateNewDirectChatResponse,
-  DirectChatService as DirectChatServiceType,
-  FindConversationWithOtherUserResponse,
-  FindDirectChatByIdResponse,
-} from 'protos/generated/conversation'
+import type { DirectChatService as DirectChatServiceType } from 'protos/generated/conversation'
+import { firstValueFrom } from 'rxjs'
 
 export class DirectChatService {
   constructor(private instance: DirectChatServiceType) {}
@@ -14,45 +9,42 @@ export class DirectChatService {
     userId: number,
     otherUserId: number
   ): Promise<TDirectChat | null> {
-    return (
-      (
-        (await this.instance.FindConversationWithOtherUser({
+    const directChatJson = (
+      await firstValueFrom(
+        this.instance.FindConversationWithOtherUser({
           userId,
           otherUserId,
-        })) as TCastedFieldObject<
-          FindConversationWithOtherUserResponse,
-          'directChat',
-          TDirectChat | undefined
-        >
-      ).directChat || null
-    )
+        })
+      )
+    ).directChatJson
+    return directChatJson ? (JSON.parse(directChatJson) as TDirectChat) : null
   }
 
   async createNewDirectChat(creatorId: number, recipientId: number): Promise<TDirectChat> {
-    return (
-      (await this.instance.CreateNewDirectChat({
-        creatorId,
-        recipientId,
-      })) as TCastedFieldObject<CreateNewDirectChatResponse, 'newDirectChat', TDirectChat>
-    ).newDirectChat
+    return JSON.parse(
+      (
+        await firstValueFrom(
+          this.instance.CreateNewDirectChat({
+            creatorId,
+            recipientId,
+          })
+        )
+      ).newDirectChatJson
+    ) as TDirectChat
   }
 
   async updateLastSentMessage(directChatId: number, lastSentMessageId: number): Promise<void> {
-    await this.instance.UpdateLastSentMessage({
-      directChatId,
-      lastSentMessageId,
-    })
+    await firstValueFrom(
+      this.instance.UpdateLastSentMessage({
+        directChatId,
+        lastSentMessageId,
+      })
+    )
   }
 
   async findById(directChatId: number): Promise<TDirectChat | null> {
-    return (
-      (
-        (await this.instance.findById({ directChatId })) as TCastedFieldObject<
-          FindDirectChatByIdResponse,
-          'directChat',
-          TDirectChat | undefined
-        >
-      ).directChat || null
-    )
+    const directChatJson = (await firstValueFrom(this.instance.findById({ directChatId })))
+      .directChatJson
+    return directChatJson ? (JSON.parse(directChatJson) as TDirectChat) : null
   }
 }

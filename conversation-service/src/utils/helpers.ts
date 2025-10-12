@@ -2,8 +2,7 @@ import crypto from 'crypto'
 import path from 'path'
 import { Worker } from 'worker_threads'
 import type { TRetryRequestOptions } from './types'
-import { Express } from 'express'
-import { EGlobalMessages } from './enums'
+import { Request } from 'express'
 import { readFileSync } from 'fs'
 
 /**
@@ -133,4 +132,9 @@ export const isEmptyJSON = (json: object): boolean => {
 export const loadJSONFileSync = <ResultType = any>(filePath: string): ResultType | null => {
   const data = readFileSync(filePath, 'utf-8')
   return data ? JSON.parse(data) : null
+}
+
+export const extractStringXHeader = (request: Request, headerName: string): string | null => {
+  const headerValue = request.headers[headerName]
+  return headerValue ? Buffer.from(headerValue as string, 'base64').toString('utf-8') : null
 }

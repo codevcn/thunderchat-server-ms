@@ -1,6 +1,7 @@
 import type { TMessageWithAuthor } from '@/utils/entities/message.entity'
 import type { TPushSubscriptionEndpoint } from '@/utils/entities/push-notification-subscription.entity'
 import type { EChatType } from '@/utils/enums'
+import { SendNotificationToUserResponse } from 'protos/generated/notification'
 import type { Urgency } from 'web-push'
 
 export type TWebPushUrgency = Urgency
@@ -35,3 +36,5 @@ export type TWebPushSendNotificationResult = {
 export type TGetPublicVapidKeyResult = {
   publicKey: string
 }
+
+export type TSendNotificationToUserResponse = SendNotificationToUserResponse

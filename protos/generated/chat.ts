@@ -5,6 +5,7 @@
 // source: chat.proto
 
 /* eslint-disable */
+import { Observable } from "rxjs";
 import type { Any } from "./google/protobuf/any";
 import type { Empty } from "./google/protobuf/empty";
 
@@ -22,13 +23,13 @@ export interface EmitToDirectChatRequest {
 
 export interface SendNewMessageToGroupChatRequest {
   groupChatId: number;
-  newMessage: { [key: string]: any } | undefined;
+  newMessageJson: string;
 }
 
 export interface SendFriendRq {
-  sender: { [key: string]: any } | undefined;
+  senderJson: string;
   recipientId: number;
-  requestData: { [key: string]: any } | undefined;
+  requestDataJson: string;
 }
 
 export interface RemoveConnectedClientRequest {
@@ -51,11 +52,11 @@ export interface FriendRequestActionRequest {
 }
 
 export interface UserConnectionService {
-  GetConnectedClientsCountForAdmin(request: Empty): Promise<ConnectedClientsCountResponse>;
-  EmitToDirectChat(request: EmitToDirectChatRequest): Promise<Empty>;
-  SendNewMessageToGroupChat(request: SendNewMessageToGroupChatRequest): Promise<Empty>;
-  SendFriendRequest(request: SendFriendRq): Promise<Empty>;
-  RemoveConnectedClient(request: RemoveConnectedClientRequest): Promise<Empty>;
-  CheckUserIsOnline(request: CheckUserIsOnlineRequest): Promise<CheckUserIsOnlineResponse>;
-  FriendRequestAction(request: FriendRequestActionRequest): Promise<Empty>;
+  GetConnectedClientsCountForAdmin(request: Empty): Observable<ConnectedClientsCountResponse>;
+  EmitToDirectChat(request: EmitToDirectChatRequest): Observable<Empty>;
+  SendNewMessageToGroupChat(request: SendNewMessageToGroupChatRequest): Observable<Empty>;
+  SendFriendRequest(request: SendFriendRq): Observable<Empty>;
+  RemoveConnectedClient(request: RemoveConnectedClientRequest): Observable<Empty>;
+  CheckUserIsOnline(request: CheckUserIsOnlineRequest): Observable<CheckUserIsOnlineResponse>;
+  FriendRequestAction(request: FriendRequestActionRequest): Observable<Empty>;
 }

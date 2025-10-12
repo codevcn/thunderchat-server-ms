@@ -1,33 +1,22 @@
 import type { TGroupChatMemberWithUserAndGroupChat } from '@/utils/entities/group-chat-member.entity'
-import type { TCastedFieldObject } from '@/utils/types'
-import type {
-  FindGroupChatMemberIdsResponse,
-  FindMemberInGroupChatResponse,
-  GroupMemberService as GroupMemberServiceType,
-} from 'protos/generated/conversation'
+import type { GroupMemberService as GroupMemberServiceType } from 'protos/generated/conversation'
+import { firstValueFrom } from 'rxjs'
 
 export class GroupMemberService {
   constructor(private instance: GroupMemberServiceType) {}
 
-  async findMemberInGroupChat(groupChatId: number, userId: number): Promise<any | null> {
-    return (
-      (
-        (await this.instance.FindMemberInGroupChat({ groupChatId, userId })) as TCastedFieldObject<
-          FindMemberInGroupChatResponse,
-          'groupChatMember',
-          TGroupChatMemberWithUserAndGroupChat | undefined
-        >
-      ).groupChatMember || null
-    )
+  async findMemberInGroupChat(
+    groupChatId: number,
+    userId: number
+  ): Promise<TGroupChatMemberWithUserAndGroupChat | null> {
+    const groupChatMemberJson = (
+      await firstValueFrom(this.instance.FindMemberInGroupChat({ groupChatId, userId }))
+    ).groupChatMemberJson
+    if (!groupChatMemberJson) return null
+    return JSON.parse(groupChatMemberJson) as TGroupChatMemberWithUserAndGroupChat | null
   }
 
   async findGroupChatMemberIds(groupChatId: number): Promise<number[]> {
-    return (
-      (await this.instance.FindGroupChatMemberIds({ groupChatId })) as TCastedFieldObject<
-        FindGroupChatMemberIdsResponse,
-        'memberIds',
-        number[]
-      >
-    ).memberIds
+    return (await firstValueFrom(this.instance.FindGroupChatMemberIds({ groupChatId }))).memberIds
   }
 }

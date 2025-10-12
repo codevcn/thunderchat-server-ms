@@ -5,6 +5,7 @@
 // source: conversation.proto
 
 /* eslint-disable */
+import { Observable } from "rxjs";
 import type { Empty } from "./google/protobuf/empty";
 
 export const protobufPackage = "conversation";
@@ -17,7 +18,7 @@ export interface GetNewerDirectMessagesRequest {
 }
 
 export interface GetNewerDirectMessagesResponse {
-  messages: { [key: string]: any }[];
+  messagesJson: string[];
 }
 
 export interface FindConversationWithOtherUserRequest {
@@ -26,7 +27,7 @@ export interface FindConversationWithOtherUserRequest {
 }
 
 export interface FindConversationWithOtherUserResponse {
-  directChat?: { [key: string]: any } | undefined;
+  directChatJson?: string | undefined;
 }
 
 export interface CreateNewDirectChatRequest {
@@ -35,7 +36,7 @@ export interface CreateNewDirectChatRequest {
 }
 
 export interface CreateNewDirectChatResponse {
-  newDirectChat: { [key: string]: any } | undefined;
+  newDirectChatJson: string;
 }
 
 export interface FindGroupChatMemberIdsRequest {
@@ -60,7 +61,7 @@ export interface CreateNewMessageRequest {
 }
 
 export interface CreateNewMessageResponse {
-  newMessage: { [key: string]: any } | undefined;
+  newMessageJson: string;
 }
 
 export interface UpdateLastSentMessageRequest {
@@ -74,7 +75,7 @@ export interface UpdateMessageStatusRequest {
 }
 
 export interface UpdateMessageStatusResponse {
-  message: { [key: string]: any } | undefined;
+  messageJson: string;
 }
 
 export interface FindDirectChatByIdRequest {
@@ -82,7 +83,7 @@ export interface FindDirectChatByIdRequest {
 }
 
 export interface FindDirectChatByIdResponse {
-  directChat?: { [key: string]: any } | undefined;
+  directChatJson?: string | undefined;
 }
 
 export interface FindMemberInGroupChatRequest {
@@ -91,7 +92,7 @@ export interface FindMemberInGroupChatRequest {
 }
 
 export interface FindMemberInGroupChatResponse {
-  groupChatMember?: { [key: string]: any } | undefined;
+  groupChatMemberJson?: string | undefined;
 }
 
 export interface CheckGroupChatPermissionRequest {
@@ -109,32 +110,32 @@ export interface FindMessagesForGlobalSearchRequest {
 }
 
 export interface FindMessagesForGlobalSearchResponse {
-  messages: { [key: string]: any }[];
+  messagesJson: string[];
 }
 
 export interface DirectChatService {
   FindConversationWithOtherUser(
     request: FindConversationWithOtherUserRequest,
-  ): Promise<FindConversationWithOtherUserResponse>;
-  CreateNewDirectChat(request: CreateNewDirectChatRequest): Promise<CreateNewDirectChatResponse>;
-  UpdateLastSentMessage(request: UpdateLastSentMessageRequest): Promise<Empty>;
-  findById(request: FindDirectChatByIdRequest): Promise<FindDirectChatByIdResponse>;
+  ): Observable<FindConversationWithOtherUserResponse>;
+  CreateNewDirectChat(request: CreateNewDirectChatRequest): Observable<CreateNewDirectChatResponse>;
+  UpdateLastSentMessage(request: UpdateLastSentMessageRequest): Observable<Empty>;
+  findById(request: FindDirectChatByIdRequest): Observable<FindDirectChatByIdResponse>;
 }
 
 export interface GroupMemberService {
-  FindMemberInGroupChat(request: FindMemberInGroupChatRequest): Promise<FindMemberInGroupChatResponse>;
-  FindGroupChatMemberIds(request: FindGroupChatMemberIdsRequest): Promise<FindGroupChatMemberIdsResponse>;
+  FindMemberInGroupChat(request: FindMemberInGroupChatRequest): Observable<FindMemberInGroupChatResponse>;
+  FindGroupChatMemberIds(request: FindGroupChatMemberIdsRequest): Observable<FindGroupChatMemberIdsResponse>;
 }
 
 export interface MessageService {
-  GetNewerDirectMessages(request: GetNewerDirectMessagesRequest): Promise<GetNewerDirectMessagesResponse>;
-  CreateNewMessage(request: CreateNewMessageRequest): Promise<CreateNewMessageResponse>;
-  UpdateMessageStatus(request: UpdateMessageStatusRequest): Promise<UpdateMessageStatusResponse>;
+  GetNewerDirectMessages(request: GetNewerDirectMessagesRequest): Observable<GetNewerDirectMessagesResponse>;
+  CreateNewMessage(request: CreateNewMessageRequest): Observable<CreateNewMessageResponse>;
+  UpdateMessageStatus(request: UpdateMessageStatusRequest): Observable<UpdateMessageStatusResponse>;
   FindMessagesForGlobalSearch(
     request: FindMessagesForGlobalSearchRequest,
-  ): Promise<FindMessagesForGlobalSearchResponse>;
+  ): Observable<FindMessagesForGlobalSearchResponse>;
 }
 
 export interface GroupChatService {
-  CheckGroupChatPermission(request: CheckGroupChatPermissionRequest): Promise<CheckGroupChatPermissionResponse>;
+  CheckGroupChatPermission(request: CheckGroupChatPermissionRequest): Observable<CheckGroupChatPermissionResponse>;
 }

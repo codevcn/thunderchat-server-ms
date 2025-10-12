@@ -5,10 +5,11 @@ import { InviteCodeService } from './invite-code.service'
 import { JoinRequestsService } from './join-requests.service'
 import { GroupMemberService } from '@/group-member/group-member.service'
 import { GrpcClientModule } from '@/configs/communication/grpc/grpc-client.module'
+import { GroupChatGrpcController } from './group-chat-grpc.controller'
 
 @Module({
   imports: [GrpcClientModule],
-  controllers: [GroupChatController],
+  controllers: [GroupChatController, GroupChatGrpcController],
   providers: [GroupChatService, GroupMemberService, InviteCodeService, JoinRequestsService],
   exports: [GroupChatService, GroupMemberService, InviteCodeService, JoinRequestsService],
 })

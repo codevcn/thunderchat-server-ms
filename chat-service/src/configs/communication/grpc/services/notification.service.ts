@@ -3,11 +3,8 @@ import type {
   TWebPushSendNotificationResult,
 } from '@/configs/push-notification/push-notification.type'
 import type { TUserId } from '@/user/user.type'
-import { TCastedFieldObject } from '@/utils/types'
-import type {
-  NotificationService as NotificationServiceType,
-  SendNotificationToUserResponse,
-} from 'protos/generated/notification'
+import type { NotificationService as NotificationServiceType } from 'protos/generated/notification'
+import { firstValueFrom } from 'rxjs'
 
 export class PushNotificationService {
   constructor(private instance: NotificationServiceType) {}
@@ -16,15 +13,15 @@ export class PushNotificationService {
     payload: TPushNotificationData,
     userId: TUserId
   ): Promise<TWebPushSendNotificationResult> {
-    return (
-      (await this.instance.SendNotificationToUser({
-        userId,
-        payload,
-      })) as TCastedFieldObject<
-        SendNotificationToUserResponse,
-        'result',
-        TWebPushSendNotificationResult
-      >
-    ).result
+    return JSON.parse(
+      (
+        await firstValueFrom(
+          this.instance.SendNotificationToUser({
+            userId,
+            payloadJson: JSON.stringify(payload),
+          })
+        )
+      ).resultJson
+    ) as TWebPushSendNotificationResult
   }
 }

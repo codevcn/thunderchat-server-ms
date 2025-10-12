@@ -1,14 +1,20 @@
 import type { TUserWithProfile } from '@/utils/entities/user.entity'
-import type { TRequestWithUserProfile } from '@/utils/types'
-import { createParamDecorator, ExecutionContext } from '@nestjs/common'
+import { ERequestXHeaders } from '@/utils/enums'
+import { BadRequestException, createParamDecorator, ExecutionContext } from '@nestjs/common'
+import type { Request } from 'express'
+import { EUserMessages } from './user.message'
+import { extractStringXHeader } from '@/utils/helpers'
 
 export const User = createParamDecorator((data: string | undefined, ctx: ExecutionContext) => {
-  const request = ctx.switchToHttp().getRequest<TRequestWithUserProfile>()
-  const user = request.user satisfies TUserWithProfile
-
-  if (data) {
-    return user[data as keyof TUserWithProfile]
+  const request = ctx.switchToHttp().getRequest<Request>()
+  console.log('>>> req headers:', request.headers)
+  const userString = extractStringXHeader(request, ERequestXHeaders.X_USER_DATA)
+  if (!userString) {
+    throw new BadRequestException(EUserMessages.USER_DATA_REQUIRED)
   }
-
+  const user = JSON.parse(userString) as TUserWithProfile
+  if (data) {
+    return user[data]
+  }
   return user
 })

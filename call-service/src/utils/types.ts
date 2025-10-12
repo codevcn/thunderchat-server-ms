@@ -1,11 +1,11 @@
 import type { Request } from 'express'
 import type { HttpStatus } from '@nestjs/common'
 import type { EClientCookieNames } from './enums'
-import type { TUser, TUserWithProfile } from './entities/user.entity'
+import type { TUserWithProfile } from './entities/user.entity'
 
-export type TCastedFieldObject<T, K extends keyof T, NewType> = Omit<T, K> & { [P in K]: NewType }
+// export type TCastedFieldObject<T, K extends keyof T, NewType> = Omit<T, K> & { [P in K]: NewType }
 
-export type TRequestWithUser = Request & { user: TUser }
+// export type TRequestWithUser = Request & { user: TUser }
 
 export type TRequestWithUserProfile = Request & { user: TUserWithProfile }
 

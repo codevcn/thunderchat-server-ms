@@ -1,32 +1,21 @@
-import { Controller } from '@nestjs/common';
-import { GrpcMethod } from '@nestjs/microservices';
-import { PushNotificationService } from './push-notification.service';
-import {
-  TPushNotificationData,
-  TWebPushSendNotificationResult,
-} from './push-notification.type';
-import { TUserId } from '@/user/user.type';
-import { IPushNotificationGrpcController } from './push-notification.interface';
+import { Controller } from '@nestjs/common'
+import { GrpcMethod } from '@nestjs/microservices'
+import { PushNotificationService } from './push-notification.service'
+import type { TPushNotificationData } from './push-notification.type'
+import type { IPushNotificationGrpcController } from './push-notification.interface'
+import { EGrpcPackages } from '@/utils/enums'
+import { SendNotificationToUserRequest } from 'protos/generated/notification'
 
 @Controller()
-export class PushNotificationGrpcController
-  implements IPushNotificationGrpcController
-{
-  constructor(
-    private readonly pushNotificationService: PushNotificationService,
-  ) {}
+export class PushNotificationGrpcController implements IPushNotificationGrpcController {
+  constructor(private readonly pushNotificationService: PushNotificationService) {}
 
-  @GrpcMethod('NotificationService', 'SendNotificationToUser')
-  async SendNotificationToUser(data: {
-    payload: TPushNotificationData;
-    userId: TUserId;
-  }): Promise<TWebPushSendNotificationResult> {
-    const notificationResult =
-      await this.pushNotificationService.sendNotificationToUser(
-        data.payload,
-        data.userId,
-      );
-
-    return notificationResult;
+  @GrpcMethod(EGrpcPackages.NOTIFICATION_PACKAGE, 'SendNotificationToUser')
+  async SendNotificationToUser(data: SendNotificationToUserRequest) {
+    const notificationResult = await this.pushNotificationService.sendNotificationToUser(
+      JSON.parse(data.payloadJson) as TPushNotificationData,
+      data.userId
+    )
+    return { resultJson: JSON.stringify(notificationResult) }
   }
 }

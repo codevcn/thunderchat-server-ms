@@ -1,26 +1,22 @@
-import { TMessageForGlobalSearch } from '@/utils/entities/message.entity';
-import type {
-  FindMessagesForGlobalSearchResponse,
-  MessageService as MessageServiceType,
-} from '../../../../../protos/generated/conversation';
-import { TCastedFieldObject } from '@/utils/types';
+import type { TMessageForGlobalSearch } from '@/utils/entities/message.entity'
+import type { MessageService as MessageServiceType } from 'protos/generated/conversation'
+import { firstValueFrom } from 'rxjs'
 
 export class MessageService {
   constructor(private instance: MessageServiceType) {}
 
   async findMessagesForGlobalSearch(
     ids: number[],
-    limit: number,
+    limit: number
   ): Promise<TMessageForGlobalSearch[]> {
-    return (
-      (await this.instance.FindMessagesForGlobalSearch({
-        ids,
-        limit,
-      })) as TCastedFieldObject<
-        FindMessagesForGlobalSearchResponse,
-        'messages',
-        TMessageForGlobalSearch[]
-      >
-    ).messages;
+    const messagesJson = (
+      await firstValueFrom(
+        this.instance.FindMessagesForGlobalSearch({
+          ids,
+          limit,
+        })
+      )
+    ).messagesJson
+    return messagesJson.map((messageJson) => JSON.parse(messageJson) as TMessageForGlobalSearch)
   }
 }

@@ -5,6 +5,7 @@
 // source: friend.proto
 
 /* eslint-disable */
+import { Observable } from "rxjs";
 
 export const protobufPackage = "friend";
 
@@ -18,5 +19,5 @@ export interface IsFriendResponse {
 }
 
 export interface FriendService {
-  IsFriend(request: IsFriendRequest): Promise<IsFriendResponse>;
+  IsFriend(request: IsFriendRequest): Observable<IsFriendResponse>;
 }

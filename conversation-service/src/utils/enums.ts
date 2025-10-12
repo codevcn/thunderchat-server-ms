@@ -125,3 +125,7 @@ export enum EUserOnlineStatus {
   ONLINE = 'ONLINE',
   OFFLINE = 'OFFLINE',
 }
+
+export enum ERequestXHeaders {
+  X_USER_DATA = 'x-user-data',
+}

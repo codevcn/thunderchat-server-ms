@@ -2,13 +2,8 @@ import { EMessageStatus, EMessageTypes } from '@/message/message.enum'
 import type { TMessageOffset } from '@/message/message.type'
 import type { TMessageFullInfo } from '@/utils/entities/message.entity'
 import type { TMessage } from '@/utils/entities/message.entity copy'
-import type { TCastedFieldObject } from '@/utils/types'
-import type {
-  CreateNewMessageResponse,
-  GetNewerDirectMessagesResponse,
-  MessageService as MessageServiceType,
-  UpdateMessageStatusResponse,
-} from 'protos/generated/conversation'
+import type { MessageService as MessageServiceType } from 'protos/generated/conversation'
+import { firstValueFrom } from 'rxjs'
 
 export class MessageService {
   constructor(private instance: MessageServiceType) {}
@@ -19,14 +14,17 @@ export class MessageService {
     groupChatId: number | undefined,
     limit: number
   ): Promise<TMessageFullInfo[]> {
-    return (
-      (await this.instance.GetNewerDirectMessages({
-        messageOffset,
-        directChatId,
-        groupChatId,
-        limit,
-      })) as TCastedFieldObject<GetNewerDirectMessagesResponse, 'messages', TMessageFullInfo[]>
-    ).messages
+    const messagesJson = (
+      await firstValueFrom(
+        this.instance.GetNewerDirectMessages({
+          messageOffset,
+          directChatId,
+          groupChatId,
+          limit,
+        })
+      )
+    ).messagesJson
+    return messagesJson.map((msg) => JSON.parse(msg) as TMessageFullInfo)
   }
 
   async createNewMessage(
@@ -41,28 +39,36 @@ export class MessageService {
     directChatId?: number,
     groupChatId?: number
   ): Promise<TMessageFullInfo> {
-    return (
-      (await this.instance.CreateNewMessage({
-        encryptedContent,
-        authorId,
-        timestamp,
-        type,
-        recipientId,
-        stickerId,
-        mediaId,
-        replyToId,
-        directChatId,
-        groupChatId,
-      })) as TCastedFieldObject<CreateNewMessageResponse, 'newMessage', TMessageFullInfo>
-    ).newMessage
+    return JSON.parse(
+      (
+        await firstValueFrom(
+          this.instance.CreateNewMessage({
+            encryptedContent,
+            authorId,
+            timestamp,
+            type,
+            recipientId,
+            stickerId,
+            mediaId,
+            replyToId,
+            directChatId,
+            groupChatId,
+          })
+        )
+      ).newMessageJson
+    ) as TMessageFullInfo
   }
 
   async updateMessageStatus(msgId: number, status: EMessageStatus): Promise<TMessage> {
-    return (
-      (await this.instance.UpdateMessageStatus({
-        msgId,
-        status,
-      })) as TCastedFieldObject<UpdateMessageStatusResponse, 'message', TMessage>
-    ).message
+    return JSON.parse(
+      (
+        await firstValueFrom(
+          this.instance.UpdateMessageStatus({
+            msgId,
+            status,
+          })
+        )
+      ).messageJson
+    ) as TMessage
   }
 }

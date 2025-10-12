@@ -11,6 +11,8 @@ import type {
 } from './user-connection.type'
 import type { IUserConnectionGrpcController } from './user-connection.interface'
 import { UserConnectionService } from './user-connection.service'
+import { EFriendRequestStatus } from '@/friend-request/friend-request.enum'
+import { EMessagingEmitSocketEvents } from '@/utils/events/socket.event'
 
 @Controller()
 export class UserConnectionGrpcController implements IUserConnectionGrpcController {
@@ -18,7 +20,11 @@ export class UserConnectionGrpcController implements IUserConnectionGrpcControll
 
   @GrpcMethod(EGrpcServices.USER_CONNECTION_SERVICE, 'SendFriendRequest')
   async sendFriendRequest(data: TSendFriendRequestPayload) {
-    this.userConnectionService.sendFriendRequest(data.sender, data.recipientId, data.requestData)
+    this.userConnectionService.sendFriendRequest(
+      JSON.parse(data.senderJson),
+      data.recipientId,
+      JSON.parse(data.requestDataJson)
+    )
   }
 
   @GrpcMethod(EGrpcServices.USER_CONNECTION_SERVICE, 'RemoveConnectedClient')
@@ -34,7 +40,11 @@ export class UserConnectionGrpcController implements IUserConnectionGrpcControll
 
   @GrpcMethod(EGrpcServices.USER_CONNECTION_SERVICE, 'FriendRequestAction')
   async friendRequestAction(data: TFriendRequestActionPayload) {
-    this.userConnectionService.friendRequestAction(data.senderId, data.requestId, data.action)
+    this.userConnectionService.friendRequestAction(
+      data.senderId,
+      data.requestId,
+      data.action as EFriendRequestStatus
+    )
   }
 
   @GrpcMethod(EGrpcServices.USER_CONNECTION_SERVICE, 'GetConnectedClientsCountForAdmin')
@@ -45,11 +55,18 @@ export class UserConnectionGrpcController implements IUserConnectionGrpcControll
 
   @GrpcMethod(EGrpcServices.USER_CONNECTION_SERVICE, 'EmitToDirectChat')
   async emitToDirectChat(data: TEmitToDirectChatPayload) {
-    await this.userConnectionService.emitToDirectChat(data.directChatId, data.event, data.payload)
+    await this.userConnectionService.emitToDirectChat(
+      data.directChatId,
+      data.event as EMessagingEmitSocketEvents,
+      data.payload
+    )
   }
 
   @GrpcMethod(EGrpcServices.USER_CONNECTION_SERVICE, 'SendNewMessageToGroupChat')
   async sendNewMessageToGroupChat(data: TSendNewMessageToGroupChatPayload) {
-    this.userConnectionService.sendNewMessageToGroupChat(data.groupChatId, data.newMessage)
+    this.userConnectionService.sendNewMessageToGroupChat(
+      data.groupChatId,
+      JSON.parse(data.newMessageJson)
+    )
   }
 }

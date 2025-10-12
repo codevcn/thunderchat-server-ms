@@ -3,7 +3,7 @@ import path from 'path'
 import { Worker } from 'worker_threads'
 import type { TRetryRequestOptions } from './types'
 import validator from 'validator'
-import { Express } from 'express'
+import type { Request } from 'express'
 import { EMessageMediaTypes } from '@/message/message.enum'
 import { EGlobalMessages } from './enums'
 
@@ -236,4 +236,9 @@ export function createGroupChatRoomName(groupChatId: number): string {
 
 export const isEmptyJSON = (json: object): boolean => {
   return Object.keys(json).length === 0
+}
+
+export const extractStringXHeader = (request: Request, headerName: string): string | null => {
+  const headerValue = request.headers[headerName]
+  return headerValue ? Buffer.from(headerValue as string, 'base64').toString('utf-8') : null
 }

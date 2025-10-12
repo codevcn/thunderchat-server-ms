@@ -1,16 +1,12 @@
-import { BadRequestException, Controller, Injectable } from '@nestjs/common'
+import { Controller } from '@nestjs/common'
 import { GrpcMethod, RpcException } from '@nestjs/microservices'
 import { MessageService } from './message.service'
 import type { IMessageGrpcService } from './message.interface'
 import type {
   TGetNewerDirectMessagesRequest,
-  TGetNewerDirectMessagesResponse,
   TCreateNewMessageRequest,
-  TCreateNewMessageResponse,
   TUpdateMessageStatusRequest,
-  TUpdateMessageStatusResponse,
   TFindMessagesForGlobalSearchRequest,
-  TFindMessagesForGlobalSearchResponse,
 } from './message.type'
 import { EMessageTypes } from './message.enum'
 import { EGrpcServices, EMessageStatus } from '@/utils/enums'
@@ -48,7 +44,7 @@ export class MessageGrpcController implements IMessageGrpcService {
       request.encryptedContent,
       request.authorId,
       timestamp,
-      type,
+      type as EMessageTypes,
       request.recipientId,
       request.stickerId,
       request.mediaId,
@@ -58,17 +54,20 @@ export class MessageGrpcController implements IMessageGrpcService {
     )
 
     return {
-      newMessage,
+      newMessageJson: JSON.stringify(newMessage),
     }
   }
 
   @GrpcMethod(EGrpcServices.MESSAGE_SERVICE, 'UpdateMessageStatus')
   async updateMessageStatus(request: TUpdateMessageStatusRequest) {
     const status = request.status
-    const message = await this.messageService.updateMessageStatus(request.msgId, status)
+    const message = await this.messageService.updateMessageStatus(
+      request.msgId,
+      status as EMessageStatus
+    )
 
     return {
-      message,
+      messageJson: JSON.stringify(message),
     }
   }
 
@@ -80,7 +79,7 @@ export class MessageGrpcController implements IMessageGrpcService {
     )
 
     return {
-      messages,
+      messagesJson: messages.map((msg) => JSON.stringify(msg)),
     }
   }
 }

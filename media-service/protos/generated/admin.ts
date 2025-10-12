@@ -5,6 +5,7 @@
 // source: admin.proto
 
 /* eslint-disable */
+import { Observable } from "rxjs";
 
 export const protobufPackage = "admin";
 
@@ -17,5 +18,5 @@ export interface ExampleResponse {
 }
 
 export interface AdminService {
-  GetExample(request: ExampleRequest): Promise<ExampleResponse>;
+  GetExample(request: ExampleRequest): Observable<ExampleResponse>;
 }

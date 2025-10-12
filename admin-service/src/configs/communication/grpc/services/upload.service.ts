@@ -1,6 +1,6 @@
 import type { TUploadResult } from '@/upload/upload.type'
-import type { TCastedFieldObject } from '@/utils/types'
-import type { UploadService as UploadServiceType, UploadFileResponse } from 'protos/generated/media'
+import type { UploadService as UploadServiceType } from 'protos/generated/media'
+import { firstValueFrom } from 'rxjs'
 
 export class UploadService {
   constructor(private instance: UploadServiceType) {}
@@ -10,11 +10,12 @@ export class UploadService {
   }
 
   async uploadFile(file: Express.Multer.File): Promise<TUploadResult> {
-    return (
-      (await this.instance.UploadFile({
+    const response = await firstValueFrom(
+      this.instance.UploadFile({
         content: file.buffer,
         filename: file.originalname,
-      })) as TCastedFieldObject<UploadFileResponse, 'fileInfo', TUploadResult>
-    ).fileInfo
+      })
+    )
+    return JSON.parse(response.fileInfoJson) as TUploadResult
   }
 }

@@ -21,7 +21,7 @@ export class GroupMemberGrpcController implements IGroupMemberGrpcService {
     )
 
     return {
-      groupChatMember: groupChatMember || undefined,
+      groupChatMemberJson: groupChatMember ? JSON.stringify(groupChatMember) : undefined,
     }
   }
 

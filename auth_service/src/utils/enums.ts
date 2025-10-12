@@ -31,6 +31,8 @@ export enum EGrpcPackages {
   CHAT_PACKAGE = 'CHAT_PACKAGE',
   USER_PACKAGE = 'USER_PACKAGE',
   USER = 'user',
+  AUTH = 'auth',
+  AUTH_PACKAGE = 'AUTH_PACKAGE',
 }
 
 export enum EGrpcServices {
@@ -127,4 +129,8 @@ export enum EInternalEvents {
 export enum EUserOnlineStatus {
   ONLINE = 'ONLINE',
   OFFLINE = 'OFFLINE',
+}
+
+export enum ERequestXHeaders {
+  X_USER_DATA = 'x-user-data',
 }

@@ -5,6 +5,7 @@
 // source: search.proto
 
 /* eslint-disable */
+import { Observable } from "rxjs";
 import type { Empty } from "./google/protobuf/empty";
 
 export const protobufPackage = "search";
@@ -16,7 +17,7 @@ export interface DataToSync {
 }
 
 export interface DataToSyncObject {
-  data: { [key: string]: any } | undefined;
+  dataJson: string;
 }
 
 export interface DataToSyncArray {
@@ -24,5 +25,5 @@ export interface DataToSyncArray {
 }
 
 export interface ElasticSearchService {
-  SyncDataToES(request: DataToSync): Promise<Empty>;
+  SyncDataToES(request: DataToSync): Observable<Empty>;
 }

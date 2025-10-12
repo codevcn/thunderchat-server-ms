@@ -1,8 +1,7 @@
-import type { TUserWithProfile } from '@/utils/entities/user.entity';
-
-import type { UserConnectionService as UserConnectionServiceType } from '../../../../../protos/generated/chat';
-import { TGetFriendRequestsData } from '@/friend-request/friend-request.type';
-import { FriendRequestActionDTO } from '@/friend-request/friend-request.dto';
+import type { TUserWithProfile } from '@/utils/entities/user.entity'
+import type { UserConnectionService as UserConnectionServiceType } from '../../../../../protos/generated/chat'
+import type { TGetFriendRequestsData } from '@/friend-request/friend-request.type'
+import { firstValueFrom } from 'rxjs'
 
 export class UserConnectionService {
   constructor(private instance: UserConnectionServiceType) {}
@@ -10,24 +9,24 @@ export class UserConnectionService {
   async sendFriendRequest(
     sender: TUserWithProfile,
     recipientId: number,
-    requestData: TGetFriendRequestsData,
+    requestData: TGetFriendRequestsData
   ): Promise<void> {
-    await this.instance.SendFriendRequest({
-      sender,
-      recipientId,
-      requestData,
-    });
+    await firstValueFrom(
+      this.instance.SendFriendRequest({
+        senderJson: JSON.stringify(sender),
+        recipientId,
+        requestDataJson: JSON.stringify(requestData),
+      })
+    )
   }
 
-  async friendRequestAction(
-    senderId: number,
-    requestId: number,
-    action: string,
-  ): Promise<void> {
-    await this.instance.FriendRequestAction({
-      senderId,
-      requestId,
-      action,
-    });
+  async friendRequestAction(senderId: number, requestId: number, action: string): Promise<void> {
+    await firstValueFrom(
+      this.instance.FriendRequestAction({
+        senderId,
+        requestId,
+        action,
+      })
+    )
   }
 }

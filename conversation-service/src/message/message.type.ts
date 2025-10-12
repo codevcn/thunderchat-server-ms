@@ -13,7 +13,6 @@ import {
   UpdateMessageStatusRequest,
   UpdateMessageStatusResponse,
 } from 'protos/generated/conversation'
-import { TCastedFields } from '@/utils/types'
 
 export type TNewGroupMessage = {
   id: number
@@ -59,29 +58,14 @@ export type TGetNewerDirectMessagesResponse = {
   messages: any[]
 }
 
-export type TCreateNewMessageRequest = TCastedFields<
-  CreateNewMessageRequest,
-  { type: EMessageTypes }
->
+export type TCreateNewMessageRequest = CreateNewMessageRequest
 
-export type TCreateNewMessageResponse = TCastedFields<
-  CreateNewMessageResponse,
-  { newMessage: TGetDirectMessagesMessage }
->
+export type TCreateNewMessageResponse = CreateNewMessageResponse
 
-export type TUpdateMessageStatusRequest = TCastedFields<
-  UpdateMessageStatusRequest,
-  { status: EMessageStatus }
->
+export type TUpdateMessageStatusRequest = UpdateMessageStatusRequest
 
-export type TUpdateMessageStatusResponse = TCastedFields<
-  UpdateMessageStatusResponse,
-  { message: TMessage }
->
+export type TUpdateMessageStatusResponse = UpdateMessageStatusResponse
 
 export type TFindMessagesForGlobalSearchRequest = FindMessagesForGlobalSearchRequest
 
-export type TFindMessagesForGlobalSearchResponse = TCastedFields<
-  FindMessagesForGlobalSearchResponse,
-  { messages: TMessageForGlobalSearch[] }
->
+export type TFindMessagesForGlobalSearchResponse = FindMessagesForGlobalSearchResponse

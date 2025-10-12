@@ -4,10 +4,11 @@ import { UserService } from '@/user/user.service'
 import { BlockUserService } from '@/user/block-user.service'
 import { GrpcClientModule } from '@/configs/communication/grpc/grpc-client.module'
 import { JWTService } from '@/configs/communication/grpc/services/jwt.service'
+import { UserGrpcController } from './user-grpc.controller'
 
 @Module({
   imports: [GrpcClientModule],
-  controllers: [UserController],
+  controllers: [UserController, UserGrpcController],
   providers: [UserService, BlockUserService, JWTService],
   exports: [UserService, BlockUserService],
 })

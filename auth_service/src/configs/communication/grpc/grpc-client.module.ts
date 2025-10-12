@@ -1,11 +1,10 @@
-import { Module } from '@nestjs/common';
-import { ClientsModule } from '@nestjs/microservices';
-import { GrpcClientConfig } from './grpc-client.config';
-import { UserConnectionService } from './services/user-connection.service';
+import { Module } from '@nestjs/common'
+import { ClientsModule } from '@nestjs/microservices'
+import { GrpcClientConfig } from './grpc-client.config'
 
 @Module({
   imports: [
-    ClientsModule.register([
+    ClientsModule.registerAsync([
       GrpcClientConfig.getUserConnectionClient(),
       GrpcClientConfig.getUserClient(),
     ]),
