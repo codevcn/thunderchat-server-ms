@@ -1,0 +1,15 @@
+{
+  "settings": {
+    "index": {
+      "analysis": {
+        "analyzer": {
+          "custom_content_analyzer": {
+            "filter": ["lowercase", "asciifolding"],
+            "type": "custom",
+            "tokenizer": "standard"
+          }
+        }
+      }
+    }
+  }
+}

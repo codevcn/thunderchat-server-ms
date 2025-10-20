@@ -138,3 +138,7 @@ export const extractStringXHeader = (request: Request, headerName: string): stri
   const headerValue = request.headers[headerName]
   return headerValue ? Buffer.from(headerValue as string, 'base64').toString('utf-8') : null
 }
+
+export const convertGrpcTimestampToDate = (seconds: number, nanos: number): Date => {
+  return new Date(seconds * 1000 + nanos / 1000000)
+}

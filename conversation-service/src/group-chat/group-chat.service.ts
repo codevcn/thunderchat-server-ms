@@ -299,7 +299,7 @@ export class GroupChatService {
       })
       this.syncDataToESService.syncDataToES({
         type: ESyncDataToESWorkerType.DELETE_MESSAGES_IN_BULK,
-        data: messages.map(({ id }) => id),
+        messageIds: messages.map(({ id }) => id),
       })
       await tx.groupChat.delete({
         where: { id: groupChatId },

@@ -12,6 +12,7 @@ import { EMessageTypes } from './message.enum'
 import { EGrpcServices, EMessageStatus } from '@/utils/enums'
 import { status } from '@grpc/grpc-js'
 import { EMsgMessages } from './message.message'
+import { convertGrpcTimestampToDate } from '@/utils/helpers'
 
 @Controller()
 export class MessageGrpcController implements IMessageGrpcService {
@@ -43,7 +44,7 @@ export class MessageGrpcController implements IMessageGrpcService {
     const newMessage = await this.messageService.createNewMessage(
       request.encryptedContent,
       request.authorId,
-      timestamp,
+      convertGrpcTimestampToDate(timestamp.seconds, timestamp.nanos),
       type as EMessageTypes,
       request.recipientId,
       request.stickerId,

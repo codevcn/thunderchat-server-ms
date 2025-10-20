@@ -103,7 +103,7 @@ export class DeleteMessageService {
 
     this.syncDataToESService.syncDataToES({
       type: ESyncDataToESWorkerType.DELETE_MESSAGE,
-      data: msg,
+      message: msg,
     })
 
     return result

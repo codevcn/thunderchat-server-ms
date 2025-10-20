@@ -2,6 +2,7 @@ import { EMessageStatus, EMessageTypes } from '@/message/message.enum'
 import type { TMessageOffset } from '@/message/message.type'
 import type { TMessageFullInfo } from '@/utils/entities/message.entity'
 import type { TMessage } from '@/utils/entities/message.entity copy'
+import { convertDateToGrpcTimestamp } from '@/utils/helpers'
 import type { MessageService as MessageServiceType } from 'protos/generated/conversation'
 import { firstValueFrom } from 'rxjs'
 
@@ -45,7 +46,7 @@ export class MessageService {
           this.instance.CreateNewMessage({
             encryptedContent,
             authorId,
-            timestamp,
+            timestamp: convertDateToGrpcTimestamp(timestamp),
             type,
             recipientId,
             stickerId,

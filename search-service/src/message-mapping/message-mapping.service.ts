@@ -26,7 +26,7 @@ export class MessageMappingService {
         mappings,
         key: symmetricEncryptor.encrypt(
           symmetricEncryptor.generateSecretKey(),
-          process.env.DECRYPT_USER_KEY_MASTER_KEY
+          process.env.ENDECRYPT_USER_SECRET_KEY
         ),
       },
     })

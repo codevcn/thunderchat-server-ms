@@ -7,7 +7,6 @@ import { extractStringXHeader } from '@/utils/helpers'
 
 export const User = createParamDecorator((data: string | undefined, ctx: ExecutionContext) => {
   const request = ctx.switchToHttp().getRequest<Request>()
-  console.log('>>> req headers:', request.headers)
   const userString = extractStringXHeader(request, ERequestXHeaders.X_USER_DATA)
   if (!userString) {
     throw new BadRequestException(EUserMessages.USER_DATA_REQUIRED)

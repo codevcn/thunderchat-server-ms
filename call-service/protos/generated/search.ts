@@ -11,17 +11,7 @@ import type { Empty } from "./google/protobuf/empty";
 export const protobufPackage = "search";
 
 export interface DataToSync {
-  type: string;
-  dataObject?: DataToSyncObject | undefined;
-  dataArray?: DataToSyncArray | undefined;
-}
-
-export interface DataToSyncObject {
-  dataJson: string;
-}
-
-export interface DataToSyncArray {
-  data: number[];
+  dataToSyncJson: string;
 }
 
 export interface ElasticSearchService {

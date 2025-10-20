@@ -3,6 +3,7 @@ import { PrismaService } from '../configs/db/prisma.service'
 import {
   EGrpcPackages,
   EGrpcServices,
+  EMsgEncryptionAlgorithms,
   EProviderTokens,
   ESyncDataToESWorkerType,
 } from '@/utils/enums'
@@ -21,6 +22,7 @@ import type {
 } from './message.type'
 import { ClientGrpc } from '@nestjs/microservices'
 import { ElasticSearchService } from '@/configs/communication/grpc/services/es.service'
+import { SymmetricEncryptor } from '@/utils/crypto/symmetric-encryption.crypto'
 
 @Injectable()
 export class MessageService {
@@ -45,6 +47,7 @@ export class MessageService {
     Sticker: true,
   }
   private syncDataToESService: ElasticSearchService
+  private symmetricEncryptor: SymmetricEncryptor
 
   constructor(
     @Inject(EProviderTokens.PRISMA_CLIENT) private PrismaService: PrismaService,
@@ -53,9 +56,10 @@ export class MessageService {
     this.syncDataToESService = new ElasticSearchService(
       this.searchClient.getService(EGrpcServices.ELASTIC_SEARCH_SERVICE)
     )
+    this.symmetricEncryptor = new SymmetricEncryptor(EMsgEncryptionAlgorithms.AES_256_ECB)
   }
 
-  async fidMsgById(msgId: number): Promise<TMessage | null> {
+  async findMsgById(msgId: number): Promise<TMessage | null> {
     return await this.PrismaService.message.findUnique({
       where: { id: msgId },
       include: {
@@ -75,6 +79,10 @@ export class MessageService {
     return originalContent
   }
 
+  async encryptMessageContent(originalContent: string): Promise<string> {
+    return this.symmetricEncryptor.encrypt(originalContent, process.env.MESSAGE_ENCRYPTION_KEY)
+  }
+
   async createNewMessage(
     encryptedContent: string,
     authorId: number,
@@ -89,7 +97,9 @@ export class MessageService {
   ): Promise<TGetDirectMessagesMessage> {
     const message = await this.PrismaService.message.create({
       data: {
-        content: this.createMessageContentForMedia(encryptedContent, stickerId, mediaId),
+        content: await this.encryptMessageContent(
+          this.createMessageContentForMedia(encryptedContent, stickerId, mediaId)
+        ),
         authorId,
         createdAt: timestamp,
         status: EMessageStatus.SENT,
@@ -105,8 +115,7 @@ export class MessageService {
     })
     this.syncDataToESService.syncDataToES({
       type: ESyncDataToESWorkerType.CREATE_MESSAGE,
-      data: message,
-      // msgEncryptor: this.syncDataToESService.getESMessageEncryptor(authorId),
+      message,
     })
     return message
   }
@@ -121,7 +130,7 @@ export class MessageService {
     })
     this.syncDataToESService.syncDataToES({
       type: ESyncDataToESWorkerType.UPDATE_MESSAGE,
-      data: message,
+      message,
     })
     return message
   }

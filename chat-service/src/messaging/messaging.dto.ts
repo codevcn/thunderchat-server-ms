@@ -6,6 +6,7 @@ import {
   IsEnum,
   IsNotEmpty,
   IsNumber,
+  IsOptional,
   IsUUID,
   ValidateNested,
 } from 'class-validator'
@@ -29,6 +30,7 @@ export class SendDirectMessagePayloadDTO {
   timestamp: Date
 
   @IsNumber()
+  @IsOptional()
   @Type(() => Number)
   replyToId?: number
 }
@@ -40,6 +42,7 @@ export class SendDirectMessageDTO {
 
   @IsNotEmpty()
   @ValidateNested()
+  @Type(() => SendDirectMessagePayloadDTO)
   msgPayload: SendDirectMessagePayloadDTO
 }
 
@@ -88,6 +91,7 @@ export class SendGroupMessagePayloadDTO {
   timestamp: Date
 
   @IsNumber()
+  @IsOptional()
   @Type(() => Number)
   replyToId?: number
 }
@@ -99,6 +103,7 @@ export class SendGroupMessageDTO {
 
   @IsNotEmpty()
   @ValidateNested()
+  @Type(() => SendGroupMessagePayloadDTO)
   msgPayload: SendGroupMessagePayloadDTO
 }
 

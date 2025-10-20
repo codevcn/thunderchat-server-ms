@@ -1,6 +1,7 @@
 import { EMessageMediaTypes } from '@/message/message.enum'
 import { EGlobalMessages } from './enums'
 import type { Express } from 'express'
+import { Timestamp } from 'protos/generated/google/protobuf/timestamp'
 
 /**
  * Định dạng kích thước file
@@ -145,4 +146,11 @@ export function createDirectChatRoomName(directChatId: number): string {
 
 export function createGroupChatRoomName(groupChatId: number): string {
   return `group_chat_room-${groupChatId}`
+}
+
+export const convertDateToGrpcTimestamp = (date: Date): Timestamp => {
+  return {
+    seconds: Math.floor(date.getTime() / 1000),
+    nanos: (date.getTime() % 1000) * 1000000,
+  }
 }

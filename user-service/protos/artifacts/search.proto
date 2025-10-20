@@ -9,17 +9,5 @@ service ElasticSearchService {
 }
 
 message DataToSync {
-  string type = 1;
-  oneof data_to_sync {
-    DataToSyncObject dataObject = 2;
-    DataToSyncArray dataArray = 3;
-  }
-}
-
-message DataToSyncObject {
-  string data_json = 1;
-}
-
-message DataToSyncArray {
-  repeated int32 data = 1;
+  string data_to_sync_json = 2;
 }

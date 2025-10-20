@@ -147,7 +147,7 @@ export class DirectChatService {
       })
       this.syncDataToESService.syncDataToES({
         type: ESyncDataToESWorkerType.DELETE_MESSAGES_IN_BULK,
-        data: messages.map(({ id }) => id),
+        messageIds: messages.map(({ id }) => id),
       })
       await tx.directChat.delete({
         where: { id: directChatId },

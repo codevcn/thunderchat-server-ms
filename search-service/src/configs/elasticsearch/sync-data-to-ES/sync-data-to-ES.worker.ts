@@ -14,15 +14,18 @@ import { SyncDataToESWorkerMessageDTO } from './sync-data-to-ES.dto'
 import { validate } from 'class-validator'
 import { plainToInstance } from 'class-transformer'
 import { EMessageMediaTypes, EMessageTypes } from '@/message/message.enum'
-import { EMsgEncryptionAlgorithms, ESyncDataToESWorkerType } from '@/utils/enums'
+import { ESyncDataToESWorkerType } from '@/utils/enums'
 import { Client } from '@elastic/elasticsearch'
 import { EESIndexes } from '@/configs/elasticsearch/elasticsearch.enum'
 import { ESyncDataToESMessages } from './sync-data-to-ES.message'
 import { replaceHTMLTagInMessageContent, retryAsyncRequest, typeToRawObject } from '@/utils/helpers'
-import UserMessageEncryptor from '@/message/security/es-message-encryptor'
 import type { TMessageESMapping, TUserESMapping } from '@/configs/elasticsearch/elasticsearch.type'
-import { SymmetricEncryptor } from '@/utils/crypto/symmetric-encryption.crypto'
 import { NotFoundException } from '@nestjs/common'
+import {
+  TCastedMessage,
+  TCastedMessageWithMedia,
+  TCastedUserWithProfile,
+} from './sync-data-to-ES.type'
 
 type TCheckInputDataResult = {
   messageData: SyncDataToESWorkerMessageDTO
@@ -36,7 +39,7 @@ class SyncDataToESHandler {
   constructor(private ESClient: Client) {}
 
   recursiveCreateUpdateMessage = async (
-    message: TMessageWithMedia,
+    message: TCastedMessageWithMedia,
     prismaClient: PrismaClient
   ): Promise<void> => {
     try {
@@ -85,7 +88,7 @@ class SyncDataToESHandler {
               original_content: content,
               message_type: type as EMessageTypes,
               valid_user_ids: validUserIds,
-              created_at: createdAt.toISOString(),
+              created_at: createdAt as unknown as string,
               is_deleted: false,
             }),
           })
@@ -97,7 +100,7 @@ class SyncDataToESHandler {
     }
   }
 
-  recursiveDeleteMessage = async (message: TMessage): Promise<void> => {
+  recursiveDeleteMessage = async (message: TCastedMessage): Promise<void> => {
     try {
       await retryAsyncRequest(
         async () => {
@@ -138,7 +141,7 @@ class SyncDataToESHandler {
     )
   }
 
-  recursiveCreateUpdateUser = async (user: TUserWithProfile): Promise<void> => {
+  recursiveCreateUpdateUser = async (user: TCastedUserWithProfile): Promise<void> => {
     try {
       await retryAsyncRequest(
         async () => {
@@ -176,13 +179,28 @@ class SyncDataToESHandler {
     console.log('>>> start sync messages')
     await Promise.all(
       messages.map(async (msg) => {
-        await this.recursiveCreateUpdateMessage(msg, prismaClient)
+        await this.recursiveCreateUpdateMessage(
+          {
+            ...msg,
+            createdAt: msg.createdAt.toISOString(),
+            Media: msg.Media
+              ? { ...msg.Media, createdAt: msg.Media.createdAt.toISOString() }
+              : null,
+          },
+          prismaClient
+        )
       })
     )
     console.log('>>> start sync users')
     await Promise.all(
       users.map(async (user) => {
-        await this.recursiveCreateUpdateUser(user)
+        await this.recursiveCreateUpdateUser({
+          ...user,
+          createdAt: user.createdAt.toISOString(),
+          Profile: user.Profile
+            ? { ...user.Profile, createdAt: user.Profile.createdAt.toISOString() }
+            : null,
+        })
       })
     )
     console.log('>>> end sync users and messages')
@@ -222,92 +240,35 @@ const checkInputData = async (
   }
 }
 
-const createOrUpdateMessageMapping = async (
-  rawMsgContent: string,
-  prismaClient: PrismaClient,
-  userId: number,
-  currentRawMappings: string,
-  userSecretKey: string
-): Promise<void> => {
-  let encryptedMsgContent: string
-  const symmetricEncryptor = new SymmetricEncryptor(EMsgEncryptionAlgorithms.AES_256_ECB)
-  if (currentRawMappings) {
-    const newMappings = new Set(currentRawMappings + rawMsgContent)
-    encryptedMsgContent = symmetricEncryptor.encrypt(
-      Array.from(newMappings).join(''),
-      userSecretKey
-    )
-  } else {
-    encryptedMsgContent = symmetricEncryptor.encrypt(rawMsgContent, userSecretKey)
-  }
-  await prismaClient.messageMapping.update({
-    where: {
-      userId,
-    },
-    data: {
-      mappings: encryptedMsgContent,
-    },
-  })
-}
-
-const encryptMessageContent = (
-  rawMsgContent: string,
-  msgEncryptor: UserMessageEncryptor
-): string => {
-  return msgEncryptor.encrypt(rawMsgContent)
-}
-
 const runWorker = async (workerData: SyncDataToESWorkerMessageDTO): Promise<void> => {
   console.log('launch worker 1: ', workerData)
   if (isMainThread) return
   console.log('launch worker 2')
 
   const { messageData, prismaClient, syncDataToESHandler } = await checkInputData(workerData)
-  // const { type, data, msgEncryptor } = messageData
-  const { type, data } = messageData
-
-  // if (data && 'content' in data) {
-  //   if (!msgEncryptor) {
-  //     throw new WorkerInputDataException(ESyncDataToESMessages.SYNC_MESSAGE_ENCRYPTOR_NOT_FOUND)
-  //   }
-  //   const rawMsgContent = data.content
-  //   await createOrUpdateMessageMapping(
-  //     rawMsgContent,
-  //     prismaClient,
-  //     data.authorId,
-  //     msgEncryptor.getMappings(),
-  //     msgEncryptor.getSecretKey()
-  //   )
-  //   data.content = encryptMessageContent(rawMsgContent, msgEncryptor)
-  // }
+  const { type, message, messageIds, user } = messageData
 
   switch (type) {
     case ESyncDataToESWorkerType.CREATE_MESSAGE:
-      await syncDataToESHandler.recursiveCreateUpdateMessage(
-        data as TMessageWithMedia,
-        prismaClient
-      )
+      await syncDataToESHandler.recursiveCreateUpdateMessage(message!, prismaClient)
       break
     case ESyncDataToESWorkerType.UPDATE_MESSAGE:
-      await syncDataToESHandler.recursiveCreateUpdateMessage(
-        data as TMessageWithMedia,
-        prismaClient
-      )
+      await syncDataToESHandler.recursiveCreateUpdateMessage(message!, prismaClient)
       break
     case ESyncDataToESWorkerType.DELETE_MESSAGE:
-      await syncDataToESHandler.recursiveDeleteMessage(data as TMessage)
+      await syncDataToESHandler.recursiveDeleteMessage(message!)
       break
     case ESyncDataToESWorkerType.CREATE_USER:
-      await syncDataToESHandler.recursiveCreateUpdateUser(data as TUserWithProfile)
+      await syncDataToESHandler.recursiveCreateUpdateUser(user!)
       break
     case ESyncDataToESWorkerType.UPDATE_USER:
-      await syncDataToESHandler.recursiveCreateUpdateUser(data as TUserWithProfile)
+      await syncDataToESHandler.recursiveCreateUpdateUser(user!)
       break
     case ESyncDataToESWorkerType.ALL_USERS_AND_MESSAGES:
       await syncDataToESHandler.recursiveSyncAllUsersAndMessages(prismaClient)
       break
     case ESyncDataToESWorkerType.DELETE_MESSAGES_IN_BULK:
-      await syncDataToESHandler.recursiveDeleteMessagesInBulk(data as TMessage['id'][])
+      await syncDataToESHandler.recursiveDeleteMessagesInBulk(messageIds!)
       break
   }
 

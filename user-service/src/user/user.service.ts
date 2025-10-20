@@ -293,7 +293,7 @@ export class UserService {
     })
     this.syncDataToESService.syncDataToES({
       type: ESyncDataToESWorkerType.CREATE_USER,
-      data: user,
+      user,
     })
     return user
   }

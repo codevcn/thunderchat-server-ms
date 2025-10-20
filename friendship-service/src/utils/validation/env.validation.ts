@@ -40,7 +40,7 @@ class EnvironmentVariables {
   ELASTIC_API_KEY: string
 
   @IsString()
-  DECRYPT_USER_KEY_MASTER_KEY: string
+  ENDECRYPT_USER_SECRET_KEY: string
 
   @IsString()
   VAPID_PUBLIC_KEY: string

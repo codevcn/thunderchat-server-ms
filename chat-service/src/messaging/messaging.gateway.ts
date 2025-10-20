@@ -85,10 +85,7 @@ import { FriendService } from '@/configs/communication/grpc/services/friend.serv
 
 @WebSocketGateway({
   cors: {
-    origin: [
-      process.env.NODE_ENV === 'production' ? process.env.CLIENT_HOST : process.env.CLIENT_HOST_DEV,
-      'http://localhost:3000',
-    ],
+    origin: true,
     credentials: true,
   },
   namespace: ESocketNamespaces.messaging,
@@ -325,16 +322,16 @@ export class MessagingGateway
           sender
         )
       }
-      this.handleSendPushNotification(newMessage, EChatType.DIRECT, [receiverId])
+      // this.handleSendPushNotification(newMessage, EChatType.DIRECT, [receiverId])
     } else if (groupChat) {
       this.userConnectionService.sendNewMessageToGroupChat(groupChat.id, newMessage)
       const memberIds = await this.groupMemberService.findGroupChatMemberIds(groupChat.id)
-      this.handleSendPushNotification(
-        newMessage,
-        EChatType.GROUP,
-        memberIds.filter((id) => id !== sender.id),
-        groupChat
-      )
+      // this.handleSendPushNotification(
+      //   newMessage,
+      //   EChatType.GROUP,
+      //   memberIds.filter((id) => id !== sender.id),
+      //   groupChat
+      // )
     }
   }
 

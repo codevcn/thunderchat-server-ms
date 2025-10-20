@@ -3,6 +3,8 @@ declare global {
     interface ProcessEnv {
       NODE_ENV: 'development' | 'production'
       PORT: string
+      GRPC_PORT: string
+      HOST_ADDRESS: string
       CHAT_SERVICE_PORT: string
       CONVERSATION_SERVICE_PORT: string
       USER_SERVICE_PORT: string
@@ -10,7 +12,7 @@ declare global {
       CLIENT_HOST: string
       CLIENT_HOST_DEV: string
       ELASTIC_API_KEY: string
-      DECRYPT_USER_KEY_MASTER_KEY: string
+      ENDECRYPT_USER_SECRET_KEY: string
       ELASTICSEARCH_URL: string
     }
   }

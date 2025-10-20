@@ -45,6 +45,7 @@ export enum EGrpcServices {
   USER_SETTINGS_SERVICE = 'UserSettingsService',
   BLOCK_USER_SERVICE = 'BlockUserService',
   USER_CONNECTION_SERVICE = 'UserConnectionService',
+  ELASTICSEARCH_SERVICE = 'ElasticSearchService',
 }
 
 export enum EClientCookieNames {

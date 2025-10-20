@@ -13,9 +13,11 @@ const globalConfigModules = [
 
 import { UserModule } from './user/user.module'
 import { RequestLoggerMiddleware } from './app.middleware'
+import { UserReportModule } from './user/user-report/user-report.module'
+import { UserSettingsModule } from './user/user-settings/user-settings.module'
 
 @Module({
-  imports: [...globalConfigModules, UserModule],
+  imports: [...globalConfigModules, UserModule, UserSettingsModule, UserReportModule],
 })
 export class AppModule implements NestModule {
   configure(consumer: MiddlewareConsumer) {

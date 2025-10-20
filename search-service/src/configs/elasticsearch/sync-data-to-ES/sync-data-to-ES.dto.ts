@@ -1,17 +1,13 @@
-import type {
-  TMessage,
-  TMessageWithMedia,
-} from '@/utils/entities/message.entity';
-import type { TUserWithProfile } from '@/utils/entities/user.entity';
-import { ESyncDataToESWorkerType } from '@/utils/enums';
-import { IsEnum } from 'class-validator';
+import type { TMessage } from '@/utils/entities/message.entity'
+import { ESyncDataToESWorkerType } from '@/utils/enums'
+import { IsEnum } from 'class-validator'
+import type { TCastedMessageWithMedia, TCastedUserWithProfile } from './sync-data-to-ES.type'
 
 export class SyncDataToESWorkerMessageDTO {
   @IsEnum(ESyncDataToESWorkerType)
-  type: ESyncDataToESWorkerType;
+  type: ESyncDataToESWorkerType
 
-  data?: TMessageWithMedia | TUserWithProfile | TMessage['id'][];
-
-  // @IsOptional()
-  // msgEncryptor?: UserMessageEncryptor
+  message?: TCastedMessageWithMedia
+  user?: TCastedUserWithProfile
+  messageIds?: TMessage['id'][]
 }

@@ -1,5 +1,4 @@
 import { NestFactory } from '@nestjs/core'
-import { AppModule } from './app.module'
 import { MicroserviceOptions, Transport } from '@nestjs/microservices'
 import { join } from 'path'
 import type { NestExpressApplication } from '@nestjs/platform-express'
@@ -9,7 +8,6 @@ import { BaseHttpExceptionFilter } from './utils/exception-filters/base-http-exc
 import cookieParser from 'cookie-parser'
 import { copyProtos } from '@/bootstrap/copy-protos-folder'
 import { EGrpcPackages } from './utils/enums'
-const apiPrefix: string = 'api'
 
 const beforeLaunch = async () => {
   await clearLogFiles()
@@ -36,6 +34,7 @@ async function bootstrap() {
     NODE_ENV === 'production' ? process.env.CLIENT_HOST : process.env.CLIENT_HOST_DEV
 
   // set api prefix
+  const apiPrefix: string = 'api'
   app.setGlobalPrefix(apiPrefix)
 
   // for getting cookie in request
@@ -43,7 +42,7 @@ async function bootstrap() {
 
   // cors
   app.enableCors({
-    origin: [CLIENT_HOST],
+    origin: true,
     credentials: true,
   })
 
@@ -62,8 +61,6 @@ async function bootstrap() {
       url: `${HOST_ADDRESS}:${GRPC_PORT}`,
     },
   })
-
-  await clearLogFiles()
 
   await app.startAllMicroservices()
   console.log(`>>> Microservice [Search-Service] is listening on: ${HOST_ADDRESS}:${GRPC_PORT}`)

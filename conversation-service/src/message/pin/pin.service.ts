@@ -166,7 +166,7 @@ export class PinService {
 
       this.syncDataToESService.syncDataToES({
         type: ESyncDataToESWorkerType.CREATE_MESSAGE,
-        data: pinNoticeMessage,
+        message: pinNoticeMessage,
       })
 
       // Emit socket event gửi message mới cho cả 2 user
@@ -245,7 +245,7 @@ export class PinService {
 
       this.syncDataToESService.syncDataToES({
         type: ESyncDataToESWorkerType.CREATE_MESSAGE,
-        data: pinNoticeMessage,
+        message: pinNoticeMessage,
       })
 
       // Emit socket event gửi message mới cho cả 2 user
@@ -463,7 +463,7 @@ export class PinService {
 
       this.syncDataToESService.syncDataToES({
         type: ESyncDataToESWorkerType.CREATE_MESSAGE,
-        data: pinNoticeMessage,
+        message: pinNoticeMessage,
       })
 
       // Emit socket event gửi message mới cho cả thành viên trong group
@@ -534,7 +534,7 @@ export class PinService {
 
       this.syncDataToESService.syncDataToES({
         type: ESyncDataToESWorkerType.CREATE_MESSAGE,
-        data: pinNoticeMessage,
+        message: pinNoticeMessage,
       })
 
       // Emit socket event gửi message mới cho cả 2 user

@@ -1,4 +1,4 @@
-import { Injectable, NotFoundException } from '@nestjs/common'
+import { Injectable } from '@nestjs/common'
 import { createWorker, typeToRawObject } from '@/utils/helpers'
 import { SyncDataToESWorkerMessageDTO } from './sync-data-to-ES.dto'
 import type {
@@ -15,7 +15,6 @@ import ESMessageEncryptor from '@/message/security/es-message-encryptor'
 import { MessageMappingService } from '@/message-mapping/message-mapping.service'
 import { EWorkerEvents, EMsgEncryptionAlgorithms, ESyncDataToESWorkerType } from '@/utils/enums'
 import { SystemException } from '@/utils/exceptions/system.exception'
-import { BaseHttpException } from '@/utils/exceptions/base-http.exception'
 
 @Injectable()
 export class SyncDataToESService {
@@ -47,22 +46,23 @@ export class SyncDataToESService {
     this.terminateWorker()
   }
 
-  syncDataToES(data: SyncDataToESWorkerMessageDTO) {
+  async syncDataToES(data: SyncDataToESWorkerMessageDTO) {
     this.initWorker()
+
     this.syncDataToESWorker.postMessage(data)
   }
 
   async initESMessageEncryptor(userId: TUserId): Promise<void> {
     const messageMapping = await this.messageMappingService.findMessageMapping(userId)
     if (!messageMapping) {
-      throw new BaseHttpException(ESyncDataToESMessages.MESSAGE_MAPPING_NOT_FOUND)
+      throw new SystemException(ESyncDataToESMessages.MESSAGE_MAPPING_NOT_FOUND)
     }
-    const masterKey = process.env.DECRYPT_USER_KEY_MASTER_KEY
+    const masterKey = process.env.ENDECRYPT_USER_SECRET_KEY
     const symmetricEncryptor = new SymmetricEncryptor(EMsgEncryptionAlgorithms.AES_256_ECB)
     const { mappings, key } = messageMapping
-    const decryptedSecretKey = symmetricEncryptor.decrypt(key, masterKey)
+    const decryptedUserKey = symmetricEncryptor.decrypt(key, masterKey)
     const decryptedMappings = mappings ? symmetricEncryptor.decrypt(mappings, masterKey) : null
-    const ESMsgEncryptor = new ESMessageEncryptor(decryptedSecretKey, decryptedMappings)
+    const ESMsgEncryptor = new ESMessageEncryptor(decryptedUserKey, decryptedMappings)
     this.ESMsgEncryptors.set(userId, ESMsgEncryptor)
   }
 

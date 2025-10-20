@@ -1,0 +1,27 @@
+{
+  "mappings": {
+    "properties": {
+      "content": {
+        "type": "text",
+        "analyzer": "custom_content_analyzer"
+      },
+      "created_at": {
+        "type": "date"
+      },
+      "doc_id": {
+        "type": "keyword"
+      },
+      "message_type": {
+        "type": "keyword",
+        "index": false
+      },
+      "original_content": {
+        "type": "text",
+        "index": false
+      },
+      "valid_user_ids": {
+        "type": "long"
+      }
+    }
+  }
+}

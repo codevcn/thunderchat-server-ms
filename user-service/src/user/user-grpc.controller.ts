@@ -21,9 +21,7 @@ export class UserGrpcController implements IUserGrpcController {
 
   @GrpcMethod(EGrpcServices.USER_SERVICE, 'FindUserWithProfileById')
   async FindUserWithProfileById(data: FindUserWithProfileByIdRequest) {
-    console.log('>>> data:', data)
     const user = await this.userService.findUserWithProfileById(data.userId)
-    console.log('>>> user:', user)
     return { userJson: JSON.stringify(user) }
   }
 

@@ -1,0 +1,29 @@
+{
+  "mappings": {
+    "properties": {
+      "doc_id": {
+        "type": "long"
+      },
+      "email": {
+        "type": "text",
+        "fields": {
+          "for_sort": {
+            "type": "keyword",
+            "normalizer": "lowercase_normalizer"
+          }
+        },
+        "analyzer": "custom_email_analyzer"
+      },
+      "full_name": {
+        "type": "text",
+        "fields": {
+          "for_sort": {
+            "type": "keyword",
+            "normalizer": "lowercase_normalizer"
+          }
+        },
+        "analyzer": "custom_fullname_analyzer"
+      }
+    }
+  }
+}

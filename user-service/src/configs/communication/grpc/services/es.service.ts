@@ -6,6 +6,6 @@ export class ElasticSearchService {
   constructor(private instance: ElasticSearchServiceType) {}
 
   async syncDataToES(dataToSync: SyncDataToESWorkerMessageDTO): Promise<void> {
-    await firstValueFrom(this.instance.SyncDataToES(dataToSync))
+    await firstValueFrom(this.instance.SyncDataToES({ dataToSyncJson: JSON.stringify(dataToSync) }))
   }
 }

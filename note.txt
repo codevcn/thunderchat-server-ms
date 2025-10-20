@@ -1,0 +1,15 @@
+D:\D-Documents\Code_VCN\React\VCN-THUNDER-CHAT-APP\server\src
+
+Chiến																									
+1. Authentication Service (port 4001)																									
+2. User Service (port 4002)																									
+3. Friendship Service (port 4003)																									
+4. Notification Service (port 4004)																									
+5. Search & Indexing Service (port 4005)																									
+																									
+Lợi																									
+6. Chat Service (port 4006)																									
+7. Media Service (port 4007)																									
+8. Call Service (VoIP) (port 4008)																									
+9. Admin Service (port 4009)																									
+10. Conversation Service (port 4010)																									

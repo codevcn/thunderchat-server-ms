@@ -7,6 +7,7 @@ declare global {
       SEARCH_SERVICE_PORT: string
       MEDIA_SERVICE_PORT: string
       CHAT_SERVICE_PORT: string
+      MESSAGE_ENCRYPTION_KEY: string
       HOST_ADDRESS: string
       DATABASE_URL: string
       CLIENT_HOST: string

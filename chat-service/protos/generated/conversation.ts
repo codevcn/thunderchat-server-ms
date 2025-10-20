@@ -7,6 +7,7 @@
 /* eslint-disable */
 import { Observable } from "rxjs";
 import type { Empty } from "./google/protobuf/empty";
+import type { Timestamp } from "./google/protobuf/timestamp";
 
 export const protobufPackage = "conversation";
 
@@ -50,7 +51,7 @@ export interface FindGroupChatMemberIdsResponse {
 export interface CreateNewMessageRequest {
   encryptedContent: string;
   authorId: number;
-  timestamp: Date | undefined;
+  timestamp: Timestamp | undefined;
   type: string;
   recipientId?: number | undefined;
   stickerId?: number | undefined;

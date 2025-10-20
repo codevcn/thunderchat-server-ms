@@ -2,9 +2,9 @@ import { SystemException } from '@/utils/exceptions/system.exception'
 import { createHash } from 'crypto'
 
 /**
- * Class xử lý mã hóa và giải mã tin nhắn của người dùng trước khi lưu vào Elasticsearch
- * Mã hóa từng ký tự Unicode thành chuỗi mã hóa có độ dài cố định 8 ký tự
- * Sử dụng SHA-256 để tạo mapping giữa ký tự và mã hóa
+ * Class xử lý mã hóa và giải mã tin nhắn của người dùng trước khi lưu vào Elasticsearch.
+ * Mã hóa từng ký tự Unicode thành chuỗi mã hóa có độ dài cố định 8 ký tự.
+ * Sử dụng SHA-256 để tạo mapping giữa ký tự và mã hóa.
  * Hỗ trợ encode/decode tiếng Việt đầy đủ nhờ codePointAt.
  * Có sử dụng hash từ thư viện crypto để giải quyết va chạm.
  */
