@@ -1,1 +1,2 @@
+title Server
 pnpm start

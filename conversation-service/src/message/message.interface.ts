@@ -1,4 +1,7 @@
-import { FindMessagesForGlobalSearchResponse } from 'protos/generated/conversation'
+import {
+  CreateMessageMappingsRequest,
+  FindMessagesForGlobalSearchResponse,
+} from 'protos/generated/conversation'
 import type { FetchMsgsParamsDTO } from './message.dto'
 import type { TFindMessagesForGlobalSearchPayload, TGetDirectMessagesData } from './message.type'
 import type {
@@ -31,4 +34,5 @@ export interface IMessageGrpcService {
   findMessagesForGlobalSearch(
     request: TFindMessagesForGlobalSearchRequest
   ): Promise<TFindMessagesForGlobalSearchResponse>
+  createMessageMappings(request: CreateMessageMappingsRequest): Promise<{}>
 }

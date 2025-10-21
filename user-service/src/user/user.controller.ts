@@ -1,4 +1,4 @@
-import { Body, Controller, Get, Inject, Post, Query, Res } from '@nestjs/common'
+import { Body, Controller, Get, Post, Query } from '@nestjs/common'
 import {
   ChangePasswordDTO,
   BlockUserDTO,
@@ -12,41 +12,23 @@ import {
   ResetPasswordDTO,
 } from '@/user/user.dto'
 import { UserService } from '@/user/user.service'
-import { EClientCookieNames, EGrpcPackages, EGrpcServices, ERoutes } from '@/utils/enums'
-import { JWTService } from '@/configs/communication/grpc/services/jwt.service'
-import type { Response } from 'express'
+import { ERoutes } from '@/utils/enums'
 import type { IUserController } from './user.interface'
 import { User } from './user.decorator'
 import { BlockUserService } from '@/user/block-user.service'
 import type { TUserWithProfile } from '@/utils/entities/user.entity'
-import { ClientGrpc } from '@nestjs/microservices'
 
 @Controller(ERoutes.USER)
 export class UserController implements IUserController {
-  private jwtService: JWTService
-
   constructor(
     private userService: UserService,
-    private blockUserService: BlockUserService,
-    @Inject(EGrpcPackages.AUTH_PACKAGE) private readonly authClient: ClientGrpc
-  ) {
-    this.jwtService = new JWTService(this.authClient.getService(EGrpcServices.JWT_SERVICE))
-  }
+    private blockUserService: BlockUserService
+  ) {}
 
   @Post('register')
-  async register(
-    @Body() createUserPayload: CreateUserDTO,
-    @Res({ passthrough: true }) res: Response
-  ) {
+  async register(@Body() createUserPayload: CreateUserDTO) {
     const { jwt_token } = await this.userService.registerUser(createUserPayload)
-
-    res.cookie(
-      EClientCookieNames.JWT_TOKEN_AUTH,
-      jwt_token,
-      await this.jwtService.getJWTcookieOtps()
-    )
-
-    return { success: true }
+    return { jwt_token }
   }
 
   @Get('get-user')

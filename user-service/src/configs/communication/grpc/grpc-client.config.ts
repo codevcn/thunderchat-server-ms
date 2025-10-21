@@ -44,4 +44,18 @@ export class GrpcClientConfig {
       }),
     }
   }
+
+  static getConversationClient(): ClientsProviderAsyncOptions {
+    return {
+      name: EGrpcPackages.CONVERSATION_PACKAGE,
+      useFactory: () => ({
+        transport: Transport.GRPC,
+        options: {
+          package: EGrpcPackages.CONVERSATION,
+          protoPath: join(__dirname, '/../../../../protos/artifacts/', 'conversation.proto'),
+          url: `localhost:${process.env.CONVERSATION_SERVICE_PORT}`,
+        },
+      }),
+    }
+  }
 }

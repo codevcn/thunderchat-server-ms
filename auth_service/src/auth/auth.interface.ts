@@ -24,16 +24,17 @@ import type {
   TValidateSocketAuthRes,
   TVerifyTokenRes,
   TGetJWTcookieOtpsRes,
+  TLoginRes,
 } from './auth.type'
 import type { VerifyTokenRequest } from './auth'
 
 export interface IAuthController {
-  login: (loginUserPayload: LoginUserDTO, res: Response) => Promise<TSuccess>
-  adminLogin: (adminLoginPayload: AdminLoginDTO, res: Response) => Promise<TSuccess>
+  login: (loginUserPayload: LoginUserDTO) => Promise<TLoginRes>
+  adminLogin: (adminLoginPayload: AdminLoginDTO) => Promise<TLoginRes>
   checkAdminEmail: (
     checkAdminEmailPayload: CheckAdminEmailDTO
   ) => Promise<{ isAdmin: boolean; message?: string }>
-  logout: (res: Response, user: TUserWithProfile, reqBody: LogoutPayloadDTO) => Promise<TSuccess>
+  logout: (user: TUserWithProfile, reqBody: LogoutPayloadDTO) => Promise<TSuccess>
   checkAuth: (user: TUserWithProfile) => Promise<CheckAuthDataDTO>
   checkAdminAuth: (user: TUserWithProfile) => Promise<CheckAuthDataDTO>
 }
@@ -46,7 +47,6 @@ export interface IAuthGrpcController {
   ) => Promise<TValidateVoiceCallSocketAuthRes>
   VerifyToken: (data: VerifyTokenRequest) => Promise<TVerifyTokenRes>
   CreateJWT: (data: CreateJWTRequest) => Promise<CreateJWTResponse>
-  GetJWTcookieOtps: () => Promise<TGetJWTcookieOtpsRes>
   CompareHashedPassword: (
     data: CompareHashedPasswordRequest
   ) => Promise<CompareHashedPasswordResponse>

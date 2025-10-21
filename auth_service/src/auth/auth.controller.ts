@@ -2,7 +2,6 @@ import {
   Controller,
   Post,
   Body,
-  Res,
   Get,
   UseInterceptors,
   ClassSerializerInterceptor,
@@ -17,7 +16,6 @@ import {
   LogoutPayloadDTO,
 } from '@/auth/auth.dto'
 import { AuthService } from '@/auth/auth.service'
-import type { Response } from 'express'
 import type { IAuthController } from './auth.interface'
 import { User } from '@/user/user.decorator'
 import { TUserWithProfile } from '@/utils/entities/user.entity'
@@ -28,18 +26,15 @@ export class AuthController implements IAuthController {
   constructor(private authService: AuthService) {}
 
   @Post('login')
-  async login(@Body() loginUserPayload: LoginUserDTO, @Res({ passthrough: true }) res: Response) {
-    await this.authService.loginUser(res, loginUserPayload)
-    return { success: true }
+  async login(@Body() loginUserPayload: LoginUserDTO) {
+    const { jwt_token } = await this.authService.loginUser(loginUserPayload)
+    return { jwt_token }
   }
 
   @Post('admin/login')
-  async adminLogin(
-    @Body() adminLoginPayload: AdminLoginDTO,
-    @Res({ passthrough: true }) res: Response
-  ) {
-    await this.authService.loginAdmin(res, adminLoginPayload)
-    return { success: true }
+  async adminLogin(@Body() adminLoginPayload: AdminLoginDTO) {
+    const { jwt_token } = await this.authService.loginAdmin(adminLoginPayload)
+    return { jwt_token }
   }
 
   @Post('admin/check-email')
@@ -49,18 +44,14 @@ export class AuthController implements IAuthController {
   }
 
   @Post('logout')
-  async logout(
-    @Res({ passthrough: true }) res: Response,
-    @User() user: TUserWithProfile,
-    @Body() reqBody: LogoutPayloadDTO
-  ) {
-    await this.authService.logoutUser(res, user.id, reqBody.socketId)
+  async logout(@User() user: TUserWithProfile, @Body() reqBody: LogoutPayloadDTO) {
+    await this.authService.logoutUser(user.id, reqBody.socketId)
     return { success: true }
   }
 
   @Post('admin/logout')
-  async adminLogout(@Res({ passthrough: true }) res: Response, @User() user: TUserWithProfile) {
-    await this.authService.adminLogout(res, user.id)
+  async adminLogout(@User() user: TUserWithProfile) {
+    await this.authService.adminLogout(user.id)
     return { success: true }
   }
 

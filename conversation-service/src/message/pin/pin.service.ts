@@ -156,6 +156,7 @@ export class PinService {
           type: EMessageTypes.PIN_NOTICE,
           status: EMessageStatus.SENT,
           replyToId: messageId, // Liên kết tới tin nhắn gốc
+          dek: '',
         },
         include: {
           Author: { include: { Profile: true } },
@@ -235,6 +236,7 @@ export class PinService {
           directChatId,
           type: EMessageTypes.PIN_NOTICE,
           status: EMessageStatus.SENT,
+          dek: '',
         },
         include: {
           Author: { include: { Profile: true } },
@@ -446,6 +448,7 @@ export class PinService {
           type: EMessageTypes.PIN_NOTICE,
           status: EMessageStatus.SENT,
           replyToId: messageId, // Liên kết tới tin nhắn gốc
+          dek: '',
         },
         include: {
           Author: { include: { Profile: true } },
@@ -517,6 +520,7 @@ export class PinService {
           groupChatId,
           type: EMessageTypes.PIN_NOTICE,
           status: EMessageStatus.SENT,
+          dek: '',
         },
         include: {
           Author: { include: { Profile: true } },

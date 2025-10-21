@@ -9,6 +9,7 @@ declare global {
       AUTH_SERVICE_PORT: string
       SEARCH_SERVICE_PORT: string
       MEDIA_SERVICE_PORT: string
+      CONVERSATION_SERVICE_PORT: string
       CLIENT_HOST: string
       CLIENT_HOST_DEV: string
     }

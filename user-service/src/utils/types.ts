@@ -1,6 +1,5 @@
 import type { Request } from 'express'
 import type { HttpStatus } from '@nestjs/common'
-import type { EClientCookieNames } from './enums'
 import type { TUser, TUserWithProfile } from './entities/user.entity'
 
 // export type TCastedFields<T, CastMap extends Partial<Record<keyof T, any>>> = {
@@ -25,8 +24,6 @@ export type THttpErrorResBody = {
 export type TJWTToken = {
   jwt_token: string
 }
-
-export type TClientCookie = Record<EClientCookieNames, string>
 
 export type TSuccess = {
   success: boolean // always true

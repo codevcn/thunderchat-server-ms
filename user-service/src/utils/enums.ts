@@ -50,6 +50,7 @@ export enum EGrpcServices {
   SEARCH_SERVICE = 'ElasticSearchService',
   UPLOAD_SERVICE = 'UploadService',
   CREDENTIALS_SERVICE = 'CredentialsService',
+  MESSAGE_MAPPINGS_SERVICE = 'MessageMappingsService',
 }
 
 export enum EClientCookieNames {

@@ -33,6 +33,11 @@ service MessageService {
       returns (FindMessagesForGlobalSearchResponse);
 }
 
+service MessageMappingsService {
+  rpc CreateMessageMappings(CreateMessageMappingsRequest)
+      returns (google.protobuf.Empty);
+}
+
 service GroupChatService {
   rpc CheckGroupChatPermission(CheckGroupChatPermissionRequest)
       returns (CheckGroupChatPermissionResponse);
@@ -139,4 +144,8 @@ message FindMessagesForGlobalSearchRequest {
 
 message FindMessagesForGlobalSearchResponse {
   repeated string messages_json = 1;
+}
+
+message CreateMessageMappingsRequest {
+  int32 user_id = 1;
 }

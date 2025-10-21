@@ -42,7 +42,7 @@ export class AuthGrpcController implements IAuthGrpcController {
 
   @GrpcMethod(EGrpcServices.AUTH_SERVICE, 'ValidateSocketConnection')
   async ValidateSocketConnection(data: TValidateSocketConnectionPayload) {
-    await this.authService.validateSocketConnection(JSON.parse(data.handshakeHeadersJson))
+    await this.authService.validateSocketConnection(JSON.parse(data.handshakeAuthJson))
   }
 
   @GrpcMethod(EGrpcServices.AUTH_SERVICE, 'ValidateSocketAuth')
@@ -100,13 +100,6 @@ export class AuthGrpcController implements IAuthGrpcController {
     })
     return {
       jwtToken: jwt_token,
-    }
-  }
-
-  @GrpcMethod(EGrpcServices.CREDENTIALS_SERVICE, 'GetJWTcookieOtps')
-  async GetJWTcookieOtps() {
-    return {
-      cookieOtpsJson: JSON.stringify(this.jwtService.getJWTcookieOtps()),
     }
   }
 

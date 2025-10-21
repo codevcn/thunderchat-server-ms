@@ -16,6 +16,7 @@ import type { TUserWithProfile } from '@/utils/entities/user.entity'
 import { PrismaService } from '@/configs/db/prisma.service'
 import { ClientGrpc } from '@nestjs/microservices'
 import { ElasticSearchService } from '@/configs/communication/grpc/services/es.service'
+import { EncryptMessageService } from '@/message/security/encrypt-message.service'
 
 @Injectable()
 export class DirectChatService {
@@ -23,7 +24,8 @@ export class DirectChatService {
 
   constructor(
     @Inject(EProviderTokens.PRISMA_CLIENT) private PrismaService: PrismaService,
-    @Inject(EGrpcPackages.SEARCH_PACKAGE) private searchClient: ClientGrpc
+    @Inject(EGrpcPackages.SEARCH_PACKAGE) private searchClient: ClientGrpc,
+    private encryptMessageService: EncryptMessageService
   ) {
     this.syncDataToESService = new ElasticSearchService(
       this.searchClient.getService(EGrpcServices.ELASTIC_SEARCH_SERVICE)
@@ -81,7 +83,7 @@ export class DirectChatService {
       // Giả sử muốn lấy các direct chat có id < lastId (phân trang lùi)
       findCondition.id = { lt: lastId }
     }
-    return await this.PrismaService.directChat.findMany({
+    const directChats = await this.PrismaService.directChat.findMany({
       where: findCondition,
       orderBy: [{ LastSentMessage: { createdAt: 'desc' } }, { id: 'desc' }],
       take: limit,
@@ -95,6 +97,12 @@ export class DirectChatService {
         },
       },
     })
+    return directChats.map((chat) => ({
+      ...chat,
+      LastSentMessage: chat.LastSentMessage
+        ? this.encryptMessageService.decryptMessage(chat.LastSentMessage)
+        : null,
+    }))
   }
 
   async findConversationWithOtherUser(

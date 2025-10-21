@@ -16,8 +16,6 @@ service AuthService {
 
 service JWTService {
   rpc CreateJWT(CreateJWTRequest) returns (CreateJWTResponse);
-  rpc GetJWTcookieOtps(google.protobuf.Empty)
-      returns (GetJWTcookieOtpsResponse);
 }
 
 service CredentialsService {
@@ -28,7 +26,7 @@ service CredentialsService {
 }
 
 message ValidateSocketConnectionRequest {
-  string handshake_headers_json = 1;
+  string handshake_auth_json = 1;
 }
 
 message ValidateSocketAuthRequest {

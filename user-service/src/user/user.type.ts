@@ -41,3 +41,7 @@ export type TFindUsersForGlobalSearchGrpcRes = { users: TUserWithProfile[] }
 export type TCheckBlockedUserGrpcRes = {
   blockedUser: TBlockedUserFullInfo | null
 }
+
+export type TRegisterRes = {
+  jwt_token: string
+}

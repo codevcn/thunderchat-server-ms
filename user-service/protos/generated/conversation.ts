@@ -114,6 +114,10 @@ export interface FindMessagesForGlobalSearchResponse {
   messagesJson: string[];
 }
 
+export interface CreateMessageMappingsRequest {
+  userId: number;
+}
+
 export interface DirectChatService {
   FindConversationWithOtherUser(
     request: FindConversationWithOtherUserRequest,
@@ -135,6 +139,10 @@ export interface MessageService {
   FindMessagesForGlobalSearch(
     request: FindMessagesForGlobalSearchRequest,
   ): Observable<FindMessagesForGlobalSearchResponse>;
+}
+
+export interface MessageMappingsService {
+  CreateMessageMappings(request: CreateMessageMappingsRequest): Observable<Empty>;
 }
 
 export interface GroupChatService {

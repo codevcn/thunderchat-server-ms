@@ -11,7 +11,7 @@ import type { Empty } from "./google/protobuf/empty";
 export const protobufPackage = "auth";
 
 export interface ValidateSocketConnectionRequest {
-  handshakeHeadersJson: string;
+  handshakeAuthJson: string;
 }
 
 export interface ValidateSocketAuthRequest {
@@ -84,7 +84,6 @@ export interface AuthService {
 
 export interface JWTService {
   CreateJWT(request: CreateJWTRequest): Observable<CreateJWTResponse>;
-  GetJWTcookieOtps(request: Empty): Observable<GetJWTcookieOtpsResponse>;
 }
 
 export interface CredentialsService {

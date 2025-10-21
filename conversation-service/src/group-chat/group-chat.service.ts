@@ -33,6 +33,7 @@ import { EGroupMemberMessages } from '@/group-member/group-member.message'
 import { GroupMemberService } from '@/group-member/group-member.service'
 import { UploadService } from '@/configs/communication/grpc/services/upload.service'
 import { ElasticSearchService } from '@/configs/communication/grpc/services/es.service'
+import { EncryptMessageService } from '@/message/security/encrypt-message.service'
 
 @Injectable()
 export class GroupChatService {
@@ -46,7 +47,8 @@ export class GroupChatService {
     private readonly eventEmitter: EventEmitter2,
     @Inject(EGrpcPackages.MEDIA_PACKAGE) private mediaClient: ClientGrpc,
     @Inject(EGrpcPackages.SEARCH_PACKAGE) private searchClient: ClientGrpc,
-    private readonly groupMemberService: GroupMemberService
+    private readonly groupMemberService: GroupMemberService,
+    private readonly encryptMessageService: EncryptMessageService
   ) {
     this.s3UploadService = new UploadService(
       this.mediaClient.getService(EGrpcServices.UPLOAD_SERVICE)
@@ -166,7 +168,7 @@ export class GroupChatService {
       // Giả sử muốn lấy các direct chat có id < lastId (phân trang lùi)
       findCondition.id = { lt: lastId }
     }
-    return await this.prismaService.groupChat.findMany({
+    const groupChats = await this.prismaService.groupChat.findMany({
       where: findCondition,
       orderBy: [{ LastSentMessage: { createdAt: 'desc' } }, { id: 'desc' }],
       take: limit,
@@ -177,6 +179,12 @@ export class GroupChatService {
         },
       },
     })
+    return groupChats.map((chat) => ({
+      ...chat,
+      LastSentMessage: chat.LastSentMessage
+        ? this.encryptMessageService.decryptMessage(chat.LastSentMessage)
+        : null,
+    }))
   }
 
   async updateGroupChat(

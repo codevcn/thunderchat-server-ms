@@ -3,7 +3,6 @@ import { PrismaService } from '../configs/db/prisma.service'
 import {
   EGrpcPackages,
   EGrpcServices,
-  EMsgEncryptionAlgorithms,
   EProviderTokens,
   ESyncDataToESWorkerType,
 } from '@/utils/enums'
@@ -22,7 +21,7 @@ import type {
 } from './message.type'
 import { ClientGrpc } from '@nestjs/microservices'
 import { ElasticSearchService } from '@/configs/communication/grpc/services/es.service'
-import { SymmetricEncryptor } from '@/utils/crypto/symmetric-encryption.crypto'
+import { EncryptMessageService } from './security/encrypt-message.service'
 
 @Injectable()
 export class MessageService {
@@ -47,25 +46,25 @@ export class MessageService {
     Sticker: true,
   }
   private syncDataToESService: ElasticSearchService
-  private symmetricEncryptor: SymmetricEncryptor
 
   constructor(
     @Inject(EProviderTokens.PRISMA_CLIENT) private PrismaService: PrismaService,
-    @Inject(EGrpcPackages.SEARCH_PACKAGE) private searchClient: ClientGrpc
+    @Inject(EGrpcPackages.SEARCH_PACKAGE) private searchClient: ClientGrpc,
+    private encryptMessageService: EncryptMessageService
   ) {
     this.syncDataToESService = new ElasticSearchService(
       this.searchClient.getService(EGrpcServices.ELASTIC_SEARCH_SERVICE)
     )
-    this.symmetricEncryptor = new SymmetricEncryptor(EMsgEncryptionAlgorithms.AES_256_ECB)
   }
 
   async findMsgById(msgId: number): Promise<TMessage | null> {
-    return await this.PrismaService.message.findUnique({
+    const msg = await this.PrismaService.message.findUnique({
       where: { id: msgId },
       include: {
         ReplyTo: true,
       },
     })
+    return msg ? this.encryptMessageService.decryptMessage(msg) : null
   }
 
   createMessageContentForMedia(
@@ -79,12 +78,8 @@ export class MessageService {
     return originalContent
   }
 
-  async encryptMessageContent(originalContent: string): Promise<string> {
-    return this.symmetricEncryptor.encrypt(originalContent, process.env.MESSAGE_ENCRYPTION_KEY)
-  }
-
   async createNewMessage(
-    encryptedContent: string,
+    originalContent: string,
     authorId: number,
     timestamp: Date,
     type: EMessageTypes = EMessageTypes.TEXT,
@@ -95,11 +90,12 @@ export class MessageService {
     directChatId?: number,
     groupChatId?: number
   ): Promise<TGetDirectMessagesMessage> {
+    const { encryptedContent, dek } = this.encryptMessageService.encryptMessageContent(
+      this.createMessageContentForMedia(originalContent, stickerId, mediaId)
+    )
     const message = await this.PrismaService.message.create({
       data: {
-        content: await this.encryptMessageContent(
-          this.createMessageContentForMedia(encryptedContent, stickerId, mediaId)
-        ),
+        content: encryptedContent,
         authorId,
         createdAt: timestamp,
         status: EMessageStatus.SENT,
@@ -110,6 +106,7 @@ export class MessageService {
         replyToId,
         groupChatId,
         directChatId,
+        dek,
       },
       include: this.messageFullInfo,
     })
@@ -117,7 +114,7 @@ export class MessageService {
       type: ESyncDataToESWorkerType.CREATE_MESSAGE,
       message,
     })
-    return message
+    return { ...message, content: originalContent }
   }
 
   async updateMsg(msgId: number, updates: TMessageUpdates): Promise<TMessageWithMedia> {
@@ -132,7 +129,7 @@ export class MessageService {
       type: ESyncDataToESWorkerType.UPDATE_MESSAGE,
       message,
     })
-    return message
+    return this.encryptMessageService.decryptMessage(message)
   }
 
   async getNewerDirectMessages(
@@ -155,7 +152,7 @@ export class MessageService {
       take: limit,
       include: this.messageFullInfo,
     })
-    return messages
+    return this.encryptMessageService.decryptMessages(messages)
   }
 
   private sortFetchedMessages(
@@ -178,20 +175,22 @@ export class MessageService {
     limit: number,
     equalOffset: boolean
   ): Promise<TGetDirectMessagesMessage[]> {
-    return await this.PrismaService.message.findMany({
-      where: {
-        id: {
-          [equalOffset ? 'lte' : 'lt']: messageOffset,
+    return this.encryptMessageService.decryptMessages(
+      await this.PrismaService.message.findMany({
+        where: {
+          id: {
+            [equalOffset ? 'lte' : 'lt']: messageOffset,
+          },
+          directChatId,
+          groupChatId,
         },
-        directChatId,
-        groupChatId,
-      },
-      orderBy: {
-        id: 'desc',
-      },
-      take: limit,
-      include: this.messageFullInfo,
-    })
+        orderBy: {
+          id: 'desc',
+        },
+        take: limit,
+        include: this.messageFullInfo,
+      })
+    )
   }
 
   async getOlderDirectMessagesHandler(
@@ -236,34 +235,36 @@ export class MessageService {
     ids: number[],
     limit: number
   ): Promise<TMessageForGlobalSearch[]> {
-    return await this.PrismaService.message.findMany({
-      where: {
-        id: { in: ids },
-        isDeleted: { not: true },
-      },
-      include: {
-        Media: true,
-        Author: {
-          include: {
-            Profile: true,
-          },
+    return this.encryptMessageService.decryptMessages(
+      await this.PrismaService.message.findMany({
+        where: {
+          id: { in: ids },
+          isDeleted: { not: true },
         },
-        GroupChat: {
-          include: {
-            Members: {
-              include: {
-                User: {
-                  include: {
-                    Profile: true,
+        include: {
+          Media: true,
+          Author: {
+            include: {
+              Profile: true,
+            },
+          },
+          GroupChat: {
+            include: {
+              Members: {
+                include: {
+                  User: {
+                    include: {
+                      Profile: true,
+                    },
                   },
                 },
               },
             },
           },
         },
-      },
-      take: limit,
-    })
+        take: limit,
+      })
+    )
   }
 
   async getVoiceMessages(
@@ -273,20 +274,22 @@ export class MessageService {
     sortType: ESortTypes = ESortTypes.TIME_ASC
   ) {
     // Lấy chỉ voice messages
-    const voiceMessages = await this.PrismaService.message.findMany({
-      where: {
-        OR: [{ directChatId: chatId }, { groupChatId: chatId }],
-        type: EMessageTypes.MEDIA,
-        mediaId: {
-          not: null,
+    const voiceMessages = this.encryptMessageService.decryptMessages(
+      await this.PrismaService.message.findMany({
+        where: {
+          OR: [{ directChatId: chatId }, { groupChatId: chatId }],
+          type: EMessageTypes.MEDIA,
+          mediaId: {
+            not: null,
+          },
         },
-      },
-      orderBy: {
-        createdAt: sortType === ESortTypes.TIME_ASC ? 'asc' : 'desc',
-      },
-      take: limit,
-      skip: offset,
-    })
+        orderBy: {
+          createdAt: sortType === ESortTypes.TIME_ASC ? 'asc' : 'desc',
+        },
+        take: limit,
+        skip: offset,
+      })
+    )
 
     return {
       hasMoreMessages: voiceMessages.length === limit,
@@ -336,6 +339,6 @@ export class MessageService {
       messages[messages.length - 1].isLastMsgInList = true
     }
 
-    return messages
+    return this.encryptMessageService.decryptMessages(messages)
   }
 }

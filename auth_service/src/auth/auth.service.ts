@@ -1,17 +1,12 @@
 import { Injectable, UnauthorizedException, Inject } from '@nestjs/common'
 import { JWTService } from './jwt/jwt.service'
 import { CredentialService } from './credentials/credentials.service'
-import { Response } from 'express'
-import type { TLoginUserParams } from './auth.type'
-import { Socket } from 'socket.io'
-import { EClientCookieNames, EGrpcPackages, EGrpcServices, EProviderTokens } from '@/utils/enums'
-import type { TClientCookie } from '@/utils/types'
-import * as cookie from 'cookie'
+import type { TLoginUserParams, TLoginUserRes } from './auth.type'
+import { EGrpcPackages, EGrpcServices, EProviderTokens } from '@/utils/enums'
 import { EAuthMessages } from '@/auth/auth.message'
 import { BaseWsException } from '@/utils/exceptions/base-ws.exception'
 import { EValidationMessages } from '@/utils/messages'
 import { ClientSocketAuthDTO, VoiceCallSocketAuthDTO } from './auth.dto'
-import type { TClientSocket, TVoiceCallClientSocket } from '@/utils/events/event.type'
 import { plainToInstance } from 'class-transformer'
 import { validate } from 'class-validator'
 import { SystemException } from '@/utils/exceptions/system.exception'
@@ -23,6 +18,7 @@ import type { TSocketId } from '@/connection/user-connection.type'
 import { ClientGrpc } from '@nestjs/microservices'
 import { UserService } from '@/configs/communication/grpc/services/user.service'
 import { Handshake } from 'socket.io/dist/socket-types'
+import * as crypto from 'crypto'
 
 @Injectable()
 export class AuthService {
@@ -40,6 +36,18 @@ export class AuthService {
       this.userConnectionGrpcClient.getService(EGrpcServices.USER_CONNECTION_SERVICE)
     )
     this.userService = new UserService(this.userGrpcClient.getService(EGrpcServices.USER_SERVICE))
+  }
+
+  async preAll(): Promise<void> {
+    const users = await this.prisma.user.findMany()
+    for (const user of users) {
+      await this.prisma.messageMapping.create({
+        data: {
+          userId: user.id,
+          key: crypto.randomBytes(32).toString('hex'),
+        },
+      })
+    }
   }
 
   /**
@@ -132,7 +140,7 @@ export class AuthService {
     }
   }
 
-  async loginUser(res: Response, { email, password }: TLoginUserParams): Promise<void> {
+  async loginUser({ email, password }: TLoginUserParams): Promise<TLoginUserRes> {
     const user = await this.userService.GetUserByEmail(email)
 
     const isMatch = await this.credentialService.compareHashedPassword(password, user.password)
@@ -151,13 +159,12 @@ export class AuthService {
       user_id: user.id,
     })
 
-    await this.jwtService.sendClientJWT({
-      response: res,
-      token: jwt_token,
-    })
+    return {
+      jwt_token,
+    }
   }
 
-  async loginAdmin(res: Response, { email, password }: TLoginUserParams): Promise<void> {
+  async loginAdmin({ email, password }: TLoginUserParams): Promise<TLoginUserRes> {
     const user = await this.userService.GetUserByEmail(email)
 
     // Kiểm tra password
@@ -182,10 +189,9 @@ export class AuthService {
       user_id: user.id,
     })
 
-    await this.jwtService.sendClientJWT({
-      response: res,
-      token: jwt_token,
-    })
+    return {
+      jwt_token,
+    }
   }
 
   async checkAdminEmail(email: string): Promise<{ isAdmin: boolean; message?: string }> {
@@ -210,28 +216,23 @@ export class AuthService {
     }
   }
 
-  async logoutUser(res: Response, userId: number, socketId?: TSocketId): Promise<void> {
-    await this.jwtService.removeJWT({ response: res })
+  async logoutUser(userId: number, socketId?: TSocketId): Promise<void> {
     this.userConnectionService.removeConnectedClient(userId, socketId)
   }
 
-  async adminLogout(res: Response, userId: number): Promise<void> {
+  async adminLogout(userId: number): Promise<void> {
     const user = await this.userService.FindById(userId)
     if (!user || user.role !== EAppRoles.ADMIN) {
       throw new UnauthorizedException(EAdminMessages.ADMIN_ACCESS_REQUIRED)
     }
-
-    await this.jwtService.removeJWT({ response: res })
     this.userConnectionService.removeConnectedClient(userId)
   }
 
-  async validateSocketConnection(handshakeHeaders: Handshake['headers']): Promise<void> {
-    const clientCookie = handshakeHeaders.cookie
-    if (!clientCookie) {
+  async validateSocketConnection(handshakeAuth: Handshake['auth']): Promise<void> {
+    const jwt = handshakeAuth.authToken
+    if (!jwt) {
       throw new SystemException(EAuthMessages.INVALID_CREDENTIALS)
     }
-    const parsed_cookie = cookie.parse(clientCookie) as TClientCookie
-    const jwt = parsed_cookie[EClientCookieNames.JWT_TOKEN_AUTH]
     try {
       await this.jwtService.verifyToken(jwt)
     } catch (error) {

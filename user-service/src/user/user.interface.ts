@@ -5,6 +5,7 @@ import type {
   TFindUserWithProfileByIdGrpcRes,
   TFindUsersForGlobalSearchGrpcRes,
   TGetUserByEmailGrpcRes,
+  TRegisterRes,
   TSearchUsersData,
 } from './user.type'
 import type { TSuccess } from '@/utils/types'
@@ -12,11 +13,11 @@ import type {
   BlockUserDTO,
   ChangePasswordDTO,
   CheckBlockedUserDTO,
+  CreateUserDTO,
   GetUserByEmailDTO,
   SearchUsersDTO,
   UnblockUserDTO,
 } from './user.dto'
-import type { Response } from 'express'
 import {
   CheckBlockedUserRequest,
   FindByIdRequest,
@@ -26,7 +27,7 @@ import {
 } from 'protos/generated/user'
 
 export interface IUserController {
-  //register: (createUserPayload: CreateUserDTO, res: Response) => Promise<TSuccess>
+  register: (createUserPayload: CreateUserDTO) => Promise<TRegisterRes>
   getUser: (getUserByEmailPayload: GetUserByEmailDTO) => Promise<TUserWithProfile>
   searchUsers: (searchUsersPayload: SearchUsersDTO) => Promise<TSearchUsersData[]>
   changePassword: (

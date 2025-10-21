@@ -133,6 +133,7 @@ model Message {
     isDeleted    Boolean           @default(false) @map("is_deleted")
     isViolated   Boolean           @default(false) @map("is_violated")
     mediaId      Int?              @map("media_id")
+    dek          String            @db.VarChar(128)
 
     DirectChat              DirectChat?       @relation("MessagesOnDirectChat", fields: [directChatId], references: [id])
     Author                  User              @relation("DirectMessagesAsSender", fields: [authorId], references: [id])
