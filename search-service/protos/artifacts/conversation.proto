@@ -36,6 +36,8 @@ service MessageService {
 service MessageMappingsService {
   rpc CreateMessageMappings(CreateMessageMappingsRequest)
       returns (google.protobuf.Empty);
+  rpc FindByUserId(FindMessageMappingsByUserIdRequest)
+      returns (FindMessageMappingsByUserIdResponse);
 }
 
 service GroupChatService {
@@ -148,4 +150,12 @@ message FindMessagesForGlobalSearchResponse {
 
 message CreateMessageMappingsRequest {
   int32 user_id = 1;
+}
+
+message FindMessageMappingsByUserIdRequest {
+  int32 user_id = 1;
+}
+
+message FindMessageMappingsByUserIdResponse {
+  optional string message_mappings_json = 1;
 }

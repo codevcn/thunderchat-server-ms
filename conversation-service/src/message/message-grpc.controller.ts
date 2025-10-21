@@ -1,7 +1,7 @@
 import { Controller } from '@nestjs/common'
 import { GrpcMethod, RpcException } from '@nestjs/microservices'
 import { MessageService } from './message.service'
-import type { IMessageGrpcService } from './message.interface'
+import type { IMessageGrpcController } from './message.interface'
 import type {
   TGetNewerDirectMessagesRequest,
   TCreateNewMessageRequest,
@@ -13,20 +13,31 @@ import { EGrpcServices, EMessageStatus } from '@/utils/enums'
 import { status } from '@grpc/grpc-js'
 import { EMsgMessages } from './message.message'
 import { convertGrpcTimestampToDate } from '@/utils/helpers'
-import { CreateMessageMappingsRequest } from 'protos/generated/conversation'
+import type {
+  CreateMessageMappingsRequest,
+  FindMessageMappingsByUserIdRequest,
+} from 'protos/generated/conversation'
 import { MessageMappingsService } from '@/message-mappings/message-mappings.service'
 
 @Controller()
-export class MessageGrpcController implements IMessageGrpcService {
+export class MessageGrpcController implements IMessageGrpcController {
   constructor(
     private readonly messageService: MessageService,
     private readonly messageMappingsService: MessageMappingsService
   ) {}
 
-  @GrpcMethod(EGrpcServices.MESSAGE_SERVICE, 'CreateMessageMappings')
+  @GrpcMethod(EGrpcServices.MESSAGE_MAPPINGS_SERVICE, 'CreateMessageMappings')
   async createMessageMappings(request: CreateMessageMappingsRequest) {
     await this.messageMappingsService.createMessageMappings(request.userId)
     return {}
+  }
+
+  @GrpcMethod(EGrpcServices.MESSAGE_MAPPINGS_SERVICE, 'FindByUserId')
+  async findMessageMappingsByUserId(request: FindMessageMappingsByUserIdRequest) {
+    const messageMappings = await this.messageMappingsService.findByUserId(request.userId)
+    return {
+      messageMappingsJson: messageMappings ? JSON.stringify(messageMappings) : undefined,
+    }
   }
 
   @GrpcMethod(EGrpcServices.MESSAGE_SERVICE, 'GetNewerDirectMessages')

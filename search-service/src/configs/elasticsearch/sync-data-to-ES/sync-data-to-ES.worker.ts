@@ -6,19 +6,18 @@ import {
   WorkerInputDataException,
   WorkerResponseException,
 } from '@/utils/exceptions/system.exception'
-import type { TMessage, TMessageWithMedia } from '@/utils/entities/message.entity'
-import type { TUserWithProfile } from '@/utils/entities/user.entity'
+import type { TMessage } from '@/utils/entities/message.entity'
 import type { TWorkerResponse } from '@/utils/types'
 import { isMainThread, parentPort } from 'worker_threads'
 import { SyncDataToESWorkerMessageDTO } from './sync-data-to-ES.dto'
 import { validate } from 'class-validator'
 import { plainToInstance } from 'class-transformer'
-import { EMessageMediaTypes, EMessageTypes } from '@/message/message.enum'
+import { EMessageTypes } from '@/message/message.enum'
 import { ESyncDataToESWorkerType } from '@/utils/enums'
 import { Client } from '@elastic/elasticsearch'
 import { EESIndexes } from '@/configs/elasticsearch/elasticsearch.enum'
 import { ESyncDataToESMessages } from './sync-data-to-ES.message'
-import { replaceHTMLTagInMessageContent, retryAsyncRequest, typeToRawObject } from '@/utils/helpers'
+import { retryAsyncRequest, typeToRawObject } from '@/utils/helpers'
 import type { TMessageESMapping, TUserESMapping } from '@/configs/elasticsearch/elasticsearch.type'
 import { NotFoundException } from '@nestjs/common'
 import {
@@ -46,17 +45,8 @@ class SyncDataToESHandler {
       await retryAsyncRequest(
         async () => {
           let validUserIds: number[] = []
-          const {
-            directChatId,
-            recipientId,
-            groupChatId,
-            authorId,
-            id,
-            content,
-            type,
-            createdAt,
-            Media,
-          } = message
+          const { directChatId, recipientId, groupChatId, authorId, id, content, type, createdAt } =
+            message
           if (directChatId && recipientId) {
             validUserIds = [recipientId, authorId]
           } else if (groupChatId) {
@@ -75,16 +65,12 @@ class SyncDataToESHandler {
             }
             validUserIds = groupChat.Members.map(({ userId }) => userId)
           }
-          const docContent =
-            type === EMessageTypes.MEDIA && Media && Media.type === EMessageMediaTypes.DOCUMENT
-              ? Media.fileName || replaceHTMLTagInMessageContent(content)
-              : replaceHTMLTagInMessageContent(content)
           await this.ESClient.index({
             index: EESIndexes.MESSAGES,
             id: id.toString(),
             document: typeToRawObject<TMessageESMapping>({
               doc_id: id,
-              content: docContent,
+              content,
               original_content: content,
               message_type: type as EMessageTypes,
               valid_user_ids: validUserIds,

@@ -118,6 +118,14 @@ export interface CreateMessageMappingsRequest {
   userId: number;
 }
 
+export interface FindMessageMappingsByUserIdRequest {
+  userId: number;
+}
+
+export interface FindMessageMappingsByUserIdResponse {
+  messageMappingsJson?: string | undefined;
+}
+
 export interface DirectChatService {
   FindConversationWithOtherUser(
     request: FindConversationWithOtherUserRequest,
@@ -143,6 +151,7 @@ export interface MessageService {
 
 export interface MessageMappingsService {
   CreateMessageMappings(request: CreateMessageMappingsRequest): Observable<Empty>;
+  FindByUserId(request: FindMessageMappingsByUserIdRequest): Observable<FindMessageMappingsByUserIdResponse>;
 }
 
 export interface GroupChatService {

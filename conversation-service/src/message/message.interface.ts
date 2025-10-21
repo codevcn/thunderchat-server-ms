@@ -1,9 +1,10 @@
-import {
+import type {
   CreateMessageMappingsRequest,
-  FindMessagesForGlobalSearchResponse,
+  FindMessageMappingsByUserIdRequest,
+  FindMessageMappingsByUserIdResponse,
 } from 'protos/generated/conversation'
 import type { FetchMsgsParamsDTO } from './message.dto'
-import type { TFindMessagesForGlobalSearchPayload, TGetDirectMessagesData } from './message.type'
+import type { TGetDirectMessagesData } from './message.type'
 import type {
   TGetNewerDirectMessagesRequest,
   TGetNewerDirectMessagesResponse,
@@ -20,12 +21,6 @@ export interface IMessageController {
 }
 
 export interface IMessageGrpcController {
-  findMessagesForGlobalSearch(
-    data: TFindMessagesForGlobalSearchPayload
-  ): Promise<FindMessagesForGlobalSearchResponse>
-}
-
-export interface IMessageGrpcService {
   getNewerDirectMessages(
     request: TGetNewerDirectMessagesRequest
   ): Promise<TGetNewerDirectMessagesResponse>
@@ -35,4 +30,7 @@ export interface IMessageGrpcService {
     request: TFindMessagesForGlobalSearchRequest
   ): Promise<TFindMessagesForGlobalSearchResponse>
   createMessageMappings(request: CreateMessageMappingsRequest): Promise<{}>
+  findMessageMappingsByUserId(
+    request: FindMessageMappingsByUserIdRequest
+  ): Promise<FindMessageMappingsByUserIdResponse>
 }

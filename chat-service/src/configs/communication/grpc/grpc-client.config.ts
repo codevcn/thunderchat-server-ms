@@ -72,4 +72,18 @@ export class GrpcClientConfig {
       }),
     }
   }
+
+  static getSearchClient(): ClientsProviderAsyncOptions {
+    return {
+      name: EGrpcPackages.SEARCH_PACKAGE,
+      useFactory: () => ({
+        transport: Transport.GRPC,
+        options: {
+          package: EGrpcPackages.SEARCH,
+          protoPath: join(__dirname, '/../../../../protos/artifacts/', 'search.proto'),
+          url: `localhost:${process.env.SEARCH_SERVICE_PORT}`,
+        },
+      }),
+    }
+  }
 }

@@ -5,6 +5,8 @@ import * as crypto from 'crypto'
 
 @Injectable()
 export class MessageMappingsService {
+  private readonly KEY_LENGTH = 32 // 256 bits
+
   constructor(@Inject(EProviderTokens.PRISMA_CLIENT) private prismaService: PrismaService) {}
 
   async findByUserId(userId: number) {
@@ -19,7 +21,7 @@ export class MessageMappingsService {
       await this.prismaService.messageMapping.create({
         data: {
           userId,
-          key: crypto.randomBytes(32).toString('hex'),
+          key: crypto.randomBytes(this.KEY_LENGTH).toString('hex'),
         },
       })
     }

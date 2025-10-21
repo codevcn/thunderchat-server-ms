@@ -9,6 +9,7 @@ declare global {
       FRIEND_SERVICE_PORT: string
       NOTIFICATION_SERVICE_PORT: string
       CONVERSATION_SERVICE_PORT: string
+      SEARCH_SERVICE_PORT: string
       HOST_ADDRESS: string
       DATABASE_URL: string
       CLIENT_HOST: string

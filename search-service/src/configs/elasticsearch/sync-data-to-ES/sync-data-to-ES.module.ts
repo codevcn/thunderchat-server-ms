@@ -1,10 +1,10 @@
 import { Module } from '@nestjs/common'
 import { SyncDataToESService } from './sync-data-to-ES.service'
-import { MessageMappingModule } from '@/message-mapping/message-mapping.module'
+import { GrpcClientModule } from '@/configs/communication/grpc/grpc-client.module'
 
 @Module({
-  imports: [MessageMappingModule],
+  imports: [GrpcClientModule],
   providers: [SyncDataToESService],
-  exports: [SyncDataToESService, MessageMappingModule],
+  exports: [SyncDataToESService],
 })
 export class SyncDataToESModule {}

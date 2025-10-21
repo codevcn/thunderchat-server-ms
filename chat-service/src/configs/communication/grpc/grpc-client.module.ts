@@ -10,6 +10,7 @@ import { GrpcClientConfig } from './grpc-client.config'
       GrpcClientConfig.getAuthClient(),
       GrpcClientConfig.getUserClient(),
       GrpcClientConfig.getNotificationClient(),
+      GrpcClientConfig.getSearchClient(),
     ]),
   ],
   exports: [ClientsModule],

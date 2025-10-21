@@ -35,6 +35,7 @@ export enum EGrpcServices {
   GROUP_CHAT_SERVICE = 'GroupChatService',
   MESSAGE_SERVICE = 'MessageService',
   GROUP_MEMBER_SERVICE = 'GroupMemberService',
+  MESSAGE_MAPPINGS_SERVICE = 'MessageMappingsService',
 }
 
 export enum EClientCookieNames {

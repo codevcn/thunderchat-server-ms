@@ -10,4 +10,5 @@ export enum ESyncDataToESMessages {
   SYNC_MESSAGE_ENCRYPTOR_NOT_FOUND = 'Message encryptor not found',
   MESSAGE_MAPPING_NOT_FOUND = 'Message mapping not found',
   GROUP_CHAT_NOT_FOUND = 'Group chat not found',
+  ES_MESSAGE_ENCRYPTOR_NOT_FOUND = 'Elasticsearch message encryptor not found',
 }

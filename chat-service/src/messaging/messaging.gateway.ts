@@ -82,6 +82,7 @@ import { UserService } from '@/configs/communication/grpc/services/user.service'
 import { UserSettingsService } from '@/configs/communication/grpc/services/user-settings.service'
 import { BlockUserService } from '@/configs/communication/grpc/services/block-user.service'
 import { FriendService } from '@/configs/communication/grpc/services/friend.service'
+import { ElasticSearchService } from '@/configs/communication/grpc/services/es.service'
 
 @WebSocketGateway({
   cors: {
@@ -112,6 +113,7 @@ export class MessagingGateway
   private userSettingsService: UserSettingsService
   private blockUserService: BlockUserService
   private pushNotificationService: PushNotificationService
+  private syncDataToESService: ElasticSearchService
 
   constructor(
     private userConnectionService: UserConnectionService,
@@ -124,7 +126,8 @@ export class MessagingGateway
     @Inject(EGrpcPackages.CONVERSATION_PACKAGE) private groupMemberClient: ClientGrpc,
     @Inject(EGrpcPackages.USER_PACKAGE) private userSettingsClient: ClientGrpc,
     @Inject(EGrpcPackages.USER_PACKAGE) private blockUserClient: ClientGrpc,
-    @Inject(EGrpcPackages.NOTIFICATION_PACKAGE) private pushNotificationClient: ClientGrpc
+    @Inject(EGrpcPackages.NOTIFICATION_PACKAGE) private pushNotificationClient: ClientGrpc,
+    @Inject(EGrpcPackages.SEARCH_PACKAGE) private searchClient: ClientGrpc
   ) {
     // Initialize all gRPC services
     this.friendService = new FriendService(
@@ -152,6 +155,9 @@ export class MessagingGateway
     )
     this.pushNotificationService = new PushNotificationService(
       this.pushNotificationClient.getService(EGrpcServices.NOTIFICATION_SERVICE)
+    )
+    this.syncDataToESService = new ElasticSearchService(
+      this.searchClient.getService(EGrpcServices.ELASTIC_SEARCH_SERVICE)
     )
   }
 
@@ -189,7 +195,7 @@ export class MessagingGateway
     try {
       const { clientId, messageOffset, directChatId, groupId } =
         await this.authService.validateSocketAuth(client)
-      // await this.syncDataToESService.initESMessageEncryptor(clientId)
+      await this.syncDataToESService.initESMessageEncryptorByUser(clientId)
       this.userConnectionService.addConnectedClient(clientId, client)
       this.userConnectionService.broadcastUserOnlineStatus(clientId, EUserOnlineStatus.ONLINE)
       client.emit(EMessagingEmitSocketEvents.server_hello, 'You connected sucessfully!')

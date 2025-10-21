@@ -1,5 +1,5 @@
-import { Injectable } from '@nestjs/common'
-import { createWorker, typeToRawObject } from '@/utils/helpers'
+import { Inject, Injectable } from '@nestjs/common'
+import { createWorker, replaceHTMLTagInMessageContent, typeToRawObject } from '@/utils/helpers'
 import { SyncDataToESWorkerMessageDTO } from './sync-data-to-ES.dto'
 import type {
   TWorkerErrorCallback,
@@ -12,18 +12,28 @@ import { TUserId } from '@/user/user.type'
 import { ESyncDataToESMessages } from './sync-data-to-ES.message'
 import { SymmetricEncryptor } from '@/utils/crypto/symmetric-encryption.crypto'
 import ESMessageEncryptor from '@/message/security/es-message-encryptor'
-import { MessageMappingService } from '@/message-mapping/message-mapping.service'
-import { EWorkerEvents, EMsgEncryptionAlgorithms, ESyncDataToESWorkerType } from '@/utils/enums'
+import { EWorkerEvents, ESyncDataToESWorkerType, EGrpcPackages, EGrpcServices } from '@/utils/enums'
 import { SystemException } from '@/utils/exceptions/system.exception'
+import { ClientGrpc } from '@nestjs/microservices'
+import { MessageMappingsService } from '@/configs/communication/grpc/services/message-mappings.service'
+import { EMessageMediaTypes, EMessageTypes } from '@/message/message.enum'
 
 @Injectable()
 export class SyncDataToESService {
   private readonly ESMsgEncryptors: Map<TUserId, ESMessageEncryptor> = new Map()
   private syncDataToESWorker: Worker
+  private messageMappingService: MessageMappingsService
 
-  constructor(private messageMappingService: MessageMappingService) {}
+  constructor(
+    @Inject(EGrpcPackages.CONVERSATION_PACKAGE) private readonly conversationClient: ClientGrpc
+  ) {
+    this.messageMappingService = new MessageMappingsService(
+      this.conversationClient.getService(EGrpcServices.MESSAGE_MAPPINGS_SERVICE)
+    )
+  }
 
   initWorker() {
+    if (this.syncDataToESWorker) return
     this.syncDataToESWorker = createWorker(path.join(__dirname, 'sync-data-to-ES.worker.js'))
   }
 
@@ -48,22 +58,35 @@ export class SyncDataToESService {
 
   async syncDataToES(data: SyncDataToESWorkerMessageDTO) {
     this.initWorker()
-
+    const message = data.message
+    if (message) {
+      const { content } = message
+      if (content) {
+        const { authorId } = message
+        const esMsgEncryptor = this.getESMessageEncryptor(authorId)
+        if (!esMsgEncryptor) {
+          throw new SystemException(ESyncDataToESMessages.ES_MESSAGE_ENCRYPTOR_NOT_FOUND)
+        }
+        const { type, Media } = message
+        const convertedContent =
+          type === EMessageTypes.MEDIA && Media && Media.type === EMessageMediaTypes.DOCUMENT
+            ? Media.fileName || replaceHTMLTagInMessageContent(content)
+            : replaceHTMLTagInMessageContent(content)
+        message.content = esMsgEncryptor.encrypt(convertedContent)
+      }
+    }
     this.syncDataToESWorker.postMessage(data)
   }
 
-  async initESMessageEncryptor(userId: TUserId): Promise<void> {
-    const messageMapping = await this.messageMappingService.findMessageMapping(userId)
+  async initESMessageEncryptorByUser(userId: TUserId): Promise<void> {
+    const messageMapping = await this.messageMappingService.findMessageMappings(userId)
     if (!messageMapping) {
       throw new SystemException(ESyncDataToESMessages.MESSAGE_MAPPING_NOT_FOUND)
     }
-    const masterKey = process.env.ENDECRYPT_USER_SECRET_KEY
-    const symmetricEncryptor = new SymmetricEncryptor(EMsgEncryptionAlgorithms.AES_256_ECB)
+    const symmetricEncryptor = new SymmetricEncryptor()
     const { mappings, key } = messageMapping
-    const decryptedUserKey = symmetricEncryptor.decrypt(key, masterKey)
-    const decryptedMappings = mappings ? symmetricEncryptor.decrypt(mappings, masterKey) : null
-    const ESMsgEncryptor = new ESMessageEncryptor(decryptedUserKey, decryptedMappings)
-    this.ESMsgEncryptors.set(userId, ESMsgEncryptor)
+    const decryptedMappings = mappings ? symmetricEncryptor.decrypt(mappings, key) : null
+    this.ESMsgEncryptors.set(userId, new ESMessageEncryptor(key, decryptedMappings))
   }
 
   getESMessageEncryptor(userId: TUserId): ESMessageEncryptor | undefined {
