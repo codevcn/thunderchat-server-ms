@@ -9,6 +9,7 @@ import { EESIndexes } from './elasticsearch.enum'
 import type { SearchHit, SearchResponse } from '@elastic/elasticsearch/lib/api/types'
 import type { TMessageSearchOffset, TUserSearchOffset } from '@/search/search.type'
 import { DevLogger } from '@/dev/dev-logger'
+import { ESMessageEncryptionService } from './es-message-encryption.service'
 
 export const ESClient = new Client({
   node: process.env.ELASTICSEARCH_URL,
@@ -17,6 +18,8 @@ export const ESClient = new Client({
 
 @Injectable()
 export class ElasticsearchService implements OnModuleInit {
+  constructor(private messageEncryptionService: ESMessageEncryptionService) {}
+
   async onModuleInit(): Promise<void> {
     ESClient.diagnostic.on('request', (err, event) => {
       if (err) DevLogger.logESQuery('ES Request Error:', err)
@@ -91,12 +94,13 @@ export class ElasticsearchService implements OnModuleInit {
     limit: number,
     searchOffset?: TMessageSearchOffset
   ): Promise<TESSearchGeneralResult<TMessageESMapping>[]> {
+    const encryptedKeyword = await this.messageEncryptionService.encryptTextByESEncryptor(keyword)
     const result = await ESClient.search<TMessageESMapping>({
       index: EESIndexes.MESSAGES,
       query: {
         bool: {
           must: [
-            { match_phrase: { content: { query: keyword } } },
+            { match_phrase: { content: { query: encryptedKeyword } } },
             { term: { valid_user_ids: userId } },
             { term: { is_deleted: false } },
           ],

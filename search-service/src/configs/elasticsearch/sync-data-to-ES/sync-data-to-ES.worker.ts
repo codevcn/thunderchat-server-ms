@@ -233,6 +233,7 @@ const runWorker = async (workerData: SyncDataToESWorkerMessageDTO): Promise<void
 
   const { messageData, prismaClient, syncDataToESHandler } = await checkInputData(workerData)
   const { type, message, messageIds, user } = messageData
+  console.log('>>> message 236:', { message, type })
 
   switch (type) {
     case ESyncDataToESWorkerType.CREATE_MESSAGE:

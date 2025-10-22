@@ -34,7 +34,7 @@ export class UserGrpcController implements IUserGrpcController {
   @GrpcMethod(EGrpcServices.USER_SERVICE, 'FindById')
   async FindById(data: FindByIdRequest) {
     const user = await this.userService.findById(data.id)
-    return { user }
+    return { userJson: JSON.stringify(user) }
   }
 
   @GrpcMethod(EGrpcServices.USER_SERVICE, 'findUsersForGlobalSearch')
@@ -44,12 +44,12 @@ export class UserGrpcController implements IUserGrpcController {
       data.selfUserId,
       data.limit
     )
-    return { users }
+    return { usersJson: users.map((user) => JSON.stringify(user)) }
   }
 
   @GrpcMethod(EGrpcServices.BLOCK_USER_SERVICE, 'CheckBlockedUser')
   async CheckBlockedUser(data: CheckBlockedUserRequest) {
     const blockedUser = await this.blockUserService.checkBlockedUser(data.blockerId, data.blockedId)
-    return { blockedUser }
+    return { blockedUserJson: JSON.stringify(blockedUser) }
   }
 }

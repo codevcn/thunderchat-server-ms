@@ -6,14 +6,8 @@ import "google/protobuf/empty.proto";
 
 service ElasticSearchService {
   rpc SyncDataToES(DataToSync) returns (google.protobuf.Empty);
-  rpc InitESMessageEncryptorByUser(InitESMessageEncryptorByUserRequest)
-      returns (google.protobuf.Empty);
 }
 
 message DataToSync {
   string data_to_sync_json = 2;
-}
-
-message InitESMessageEncryptorByUserRequest {
-  int32 user_id = 1;
 }

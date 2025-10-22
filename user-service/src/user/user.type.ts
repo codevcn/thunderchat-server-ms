@@ -1,5 +1,11 @@
-import type { TBlockedUserFullInfo, TUser, TUserWithProfile } from '@/utils/entities/user.entity'
-import type { FindUserWithProfileByIdResponse, GetUserByEmailResponse } from 'protos/generated/user'
+import type { TUser } from '@/utils/entities/user.entity'
+import type {
+  CheckBlockedUserResponse,
+  FindByIdResponse,
+  findUsersForGlobalSearchRp,
+  FindUserWithProfileByIdResponse,
+  GetUserByEmailResponse,
+} from 'protos/generated/user'
 
 export type TUserId = TUser['id']
 
@@ -34,13 +40,11 @@ export type TFindUserWithProfileByIdGrpcRes = FindUserWithProfileByIdResponse
 
 export type TGetUserByEmailGrpcRes = GetUserByEmailResponse
 
-export type TFindByIdGrpcRes = { user: TUser | null }
+export type TFindByIdGrpcRes = FindByIdResponse
 
-export type TFindUsersForGlobalSearchGrpcRes = { users: TUserWithProfile[] }
+export type TFindUsersForGlobalSearchGrpcRes = findUsersForGlobalSearchRp
 
-export type TCheckBlockedUserGrpcRes = {
-  blockedUser: TBlockedUserFullInfo | null
-}
+export type TCheckBlockedUserGrpcRes = CheckBlockedUserResponse
 
 export type TRegisterRes = {
   jwt_token: string

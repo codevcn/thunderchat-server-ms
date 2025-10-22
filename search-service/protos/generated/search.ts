@@ -14,11 +14,6 @@ export interface DataToSync {
   dataToSyncJson: string;
 }
 
-export interface InitESMessageEncryptorByUserRequest {
-  userId: number;
-}
-
 export interface ElasticSearchService {
   SyncDataToES(request: DataToSync): Observable<Empty>;
-  InitESMessageEncryptorByUser(request: InitESMessageEncryptorByUserRequest): Observable<Empty>;
 }

@@ -26,22 +26,18 @@ import * as bcrypt from 'bcryptjs'
 import nodemailer from 'nodemailer'
 import { ClientGrpc } from '@nestjs/microservices'
 import { CredentialsService } from '@/configs/communication/grpc/services/credentials.service'
-import { MessageMappingsService } from '@/configs/communication/grpc/services/message.service'
 
 @Injectable()
 export class UserService {
   private jwtService: JWTService
   private syncDataToESService: ElasticSearchService
   private credentialService: CredentialsService
-  private messageMappingsService: MessageMappingsService
 
   constructor(
     @Inject(EGrpcPackages.AUTH_PACKAGE)
     private readonly authClient: ClientGrpc,
     @Inject(EProviderTokens.PRISMA_CLIENT) private PrismaService: PrismaService,
-    @Inject(EGrpcPackages.SEARCH_PACKAGE) private readonly esGrpcClient: ClientGrpc,
-    @Inject(EGrpcPackages.CONVERSATION_PACKAGE)
-    private readonly messageMappingsGrpcClient: ClientGrpc
+    @Inject(EGrpcPackages.SEARCH_PACKAGE) private readonly esGrpcClient: ClientGrpc
   ) {
     this.jwtService = new JWTService(this.authClient.getService(EGrpcServices.JWT_SERVICE))
     this.credentialService = new CredentialsService(
@@ -49,9 +45,6 @@ export class UserService {
     )
     this.syncDataToESService = new ElasticSearchService(
       this.esGrpcClient.getService(EGrpcServices.SEARCH_SERVICE)
-    )
-    this.messageMappingsService = new MessageMappingsService(
-      this.messageMappingsGrpcClient.getService(EGrpcServices.MESSAGE_MAPPINGS_SERVICE)
     )
   }
 
@@ -297,7 +290,6 @@ export class UserService {
         Profile: true,
       },
     })
-    await this.messageMappingsService.createMessageMappings(user.id)
     this.syncDataToESService.syncDataToES({
       type: ESyncDataToESWorkerType.CREATE_USER,
       user,

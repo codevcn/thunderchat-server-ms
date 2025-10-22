@@ -39,3 +39,8 @@ export type TConversationSearchResult = {
     content: string
   }
 }
+
+export type TMessageIdObject = {
+  id: number
+  highlight?: Record<string, string[]>
+}

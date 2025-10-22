@@ -13,32 +13,10 @@ import { EGrpcServices, EMessageStatus } from '@/utils/enums'
 import { status } from '@grpc/grpc-js'
 import { EMsgMessages } from './message.message'
 import { convertGrpcTimestampToDate } from '@/utils/helpers'
-import type {
-  CreateMessageMappingsRequest,
-  FindMessageMappingsByUserIdRequest,
-} from 'protos/generated/conversation'
-import { MessageMappingsService } from '@/message-mappings/message-mappings.service'
 
 @Controller()
 export class MessageGrpcController implements IMessageGrpcController {
-  constructor(
-    private readonly messageService: MessageService,
-    private readonly messageMappingsService: MessageMappingsService
-  ) {}
-
-  @GrpcMethod(EGrpcServices.MESSAGE_MAPPINGS_SERVICE, 'CreateMessageMappings')
-  async createMessageMappings(request: CreateMessageMappingsRequest) {
-    await this.messageMappingsService.createMessageMappings(request.userId)
-    return {}
-  }
-
-  @GrpcMethod(EGrpcServices.MESSAGE_MAPPINGS_SERVICE, 'FindByUserId')
-  async findMessageMappingsByUserId(request: FindMessageMappingsByUserIdRequest) {
-    const messageMappings = await this.messageMappingsService.findByUserId(request.userId)
-    return {
-      messageMappingsJson: messageMappings ? JSON.stringify(messageMappings) : undefined,
-    }
-  }
+  constructor(private readonly messageService: MessageService) {}
 
   @GrpcMethod(EGrpcServices.MESSAGE_SERVICE, 'GetNewerDirectMessages')
   async getNewerDirectMessages(request: TGetNewerDirectMessagesRequest) {

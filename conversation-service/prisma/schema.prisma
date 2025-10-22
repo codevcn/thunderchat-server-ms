@@ -9,15 +9,13 @@ datasource db {
 }
 
 model MessageMapping {
-    id        Int      @id @default(autoincrement())
-    userId    Int      @unique @map("user_id")
-    mappings  String?
-    key       String   @db.VarChar(255)
-    createdAt DateTime @default(now()) @map("created_at") @db.Timestamptz(3)
+    id          Int      @id @default(autoincrement())
+    mappings    String
+    key         String   @db.VarChar(255)
+    versionCode String   @unique @map("version_code") @db.VarChar(128)
+    createdAt   DateTime @default(now()) @map("created_at") @db.Timestamptz(3)
 
-    User User @relation("MessageMappings", fields: [userId], references: [id])
-
-    @@index([userId], type: BTree)
+    @@index([versionCode], type: BTree)
     @@map("message_mappings")
 }
 
@@ -51,7 +49,6 @@ model User {
     FriendRequestsSent            FriendRequest[]                @relation("FriendRequestsSent")
     FriendRequestsReceived        FriendRequest[]                @relation("FriendRequestsReceived")
     DirectMessagesAsRecipient     Message[]                      @relation("DirectMessagesAsRecipient")
-    MessageMappings               MessageMapping[]               @relation("MessageMappings")
     GroupChatCreator              GroupChat[]                    @relation("GroupChatCreator")
     GroupChatMembers              GroupChatMember[]              @relation("GroupChatMembers")
     PinnedMessages                PinnedMessage[]                @relation("PinnedMessagesByUser")

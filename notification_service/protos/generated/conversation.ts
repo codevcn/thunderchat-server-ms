@@ -115,15 +115,25 @@ export interface FindMessagesForGlobalSearchResponse {
 }
 
 export interface CreateMessageMappingsRequest {
-  userId: number;
+  mappings: string;
+  encryptionKey: string;
 }
 
-export interface FindMessageMappingsByUserIdRequest {
-  userId: number;
+export interface CreateMessageMappingsResponse {
+  messageMappingsJson: string;
 }
 
-export interface FindMessageMappingsByUserIdResponse {
+export interface GetMessageMappingsResponse {
   messageMappingsJson?: string | undefined;
+}
+
+export interface UpdateMessageMappingsRequest {
+  mappings: string;
+  encryptionKeyIfCreate?: string | undefined;
+}
+
+export interface UpdateMessageMappingsResponse {
+  messageMappingsJson: string;
 }
 
 export interface DirectChatService {
@@ -150,8 +160,9 @@ export interface MessageService {
 }
 
 export interface MessageMappingsService {
-  CreateMessageMappings(request: CreateMessageMappingsRequest): Observable<Empty>;
-  FindByUserId(request: FindMessageMappingsByUserIdRequest): Observable<FindMessageMappingsByUserIdResponse>;
+  CreateMessageMappings(request: CreateMessageMappingsRequest): Observable<CreateMessageMappingsResponse>;
+  GetMessageMappings(request: Empty): Observable<GetMessageMappingsResponse>;
+  UpdateMessageMappings(request: UpdateMessageMappingsRequest): Observable<UpdateMessageMappingsResponse>;
 }
 
 export interface GroupChatService {

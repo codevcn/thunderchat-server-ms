@@ -31,6 +31,7 @@ export enum EGrpcPackages {
   FRIEND_PACKAGE = 'FRIEND_PACKAGE',
   SEARCH = 'search',
   SEARCH_PACKAGE = 'SEARCH_PACKAGE',
+  MESSAGE_MAPPINGS_SERVICE = 'MessageMappingsService',
 }
 
 export enum EGrpcServices {

@@ -82,7 +82,6 @@ import { UserService } from '@/configs/communication/grpc/services/user.service'
 import { UserSettingsService } from '@/configs/communication/grpc/services/user-settings.service'
 import { BlockUserService } from '@/configs/communication/grpc/services/block-user.service'
 import { FriendService } from '@/configs/communication/grpc/services/friend.service'
-import { ElasticSearchService } from '@/configs/communication/grpc/services/es.service'
 
 @WebSocketGateway({
   cors: {
@@ -113,7 +112,6 @@ export class MessagingGateway
   private userSettingsService: UserSettingsService
   private blockUserService: BlockUserService
   private pushNotificationService: PushNotificationService
-  private syncDataToESService: ElasticSearchService
 
   constructor(
     private userConnectionService: UserConnectionService,
@@ -126,8 +124,7 @@ export class MessagingGateway
     @Inject(EGrpcPackages.CONVERSATION_PACKAGE) private groupMemberClient: ClientGrpc,
     @Inject(EGrpcPackages.USER_PACKAGE) private userSettingsClient: ClientGrpc,
     @Inject(EGrpcPackages.USER_PACKAGE) private blockUserClient: ClientGrpc,
-    @Inject(EGrpcPackages.NOTIFICATION_PACKAGE) private pushNotificationClient: ClientGrpc,
-    @Inject(EGrpcPackages.SEARCH_PACKAGE) private searchClient: ClientGrpc
+    @Inject(EGrpcPackages.NOTIFICATION_PACKAGE) private pushNotificationClient: ClientGrpc
   ) {
     // Initialize all gRPC services
     this.friendService = new FriendService(
@@ -156,9 +153,6 @@ export class MessagingGateway
     this.pushNotificationService = new PushNotificationService(
       this.pushNotificationClient.getService(EGrpcServices.NOTIFICATION_SERVICE)
     )
-    this.syncDataToESService = new ElasticSearchService(
-      this.searchClient.getService(EGrpcServices.ELASTIC_SEARCH_SERVICE)
-    )
   }
 
   /**
@@ -173,7 +167,7 @@ export class MessagingGateway
       try {
         await this.authService.validateSocketConnection(socket)
       } catch (error) {
-        console.log('>>> error at 173:', error)
+        console.error('>>> error at afterInit:', error)
         DevLogger.logForWebsocket('error at validate socket connection 173:', error)
         next(error)
         return
@@ -195,7 +189,6 @@ export class MessagingGateway
     try {
       const { clientId, messageOffset, directChatId, groupId } =
         await this.authService.validateSocketAuth(client)
-      await this.syncDataToESService.initESMessageEncryptorByUser(clientId)
       this.userConnectionService.addConnectedClient(clientId, client)
       this.userConnectionService.broadcastUserOnlineStatus(clientId, EUserOnlineStatus.ONLINE)
       client.emit(EMessagingEmitSocketEvents.server_hello, 'You connected sucessfully!')
@@ -203,6 +196,7 @@ export class MessagingGateway
         await this.recoverMissingMessages(client, messageOffset, directChatId, groupId)
       }
     } catch (error) {
+      console.error('>>> error at handleConnection:', error)
       DevLogger.logForWebsocket('error at handleConnection:', error)
       client.disconnect(true)
     }

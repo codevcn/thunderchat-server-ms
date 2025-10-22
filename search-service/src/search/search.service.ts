@@ -4,6 +4,7 @@ import type {
   TMessageSearchOffset,
   TUserSearchOffset,
   TConversationSearchResult,
+  TMessageIdObject,
 } from './search.type'
 import { ElasticsearchService } from '@/configs/elasticsearch/elasticsearch.service'
 import { MessageService } from '@/configs/communication/grpc/services/message.service'
@@ -50,55 +51,75 @@ export class SearchService {
     messageSearchOffset?: TMessageSearchOffset,
     userSearchOffset?: TUserSearchOffset
   ): Promise<TGlobalSearchData> {
+    let finalMessages: TGlobalSearchData['messages'] = []
+    let finalUsers: TGlobalSearchData['users'] = []
     const [messageHits, userHits] = await Promise.all([
       this.elasticSearchService.searchMessages(keyword, userId, limit, messageSearchOffset),
       this.elasticSearchService.searchUsers(keyword, limit, userSearchOffset),
     ])
-    const messageIdObjects = messageHits
-      .filter((message) => !!message._source)
-      .map((message) => ({
-        id: parseInt(message._id!),
-        highlight: message.highlight,
-      }))
-    const messageIds = messageIdObjects.map((message) => message.id)
-    const userIds = userHits.filter((user) => !!user._source).map((user) => parseInt(user._id!))
+    console.log('>>> message hits:', messageHits)
+    console.log('>>> user hits:', userHits)
+    let messageIds: number[] = []
+    let highlights: string[] = []
+    let messageIdObjects: TMessageIdObject[] = []
+    if (messageHits.length > 0) {
+      messageIdObjects = messageHits
+        .filter((message) => !!message._source)
+        .map((message) => ({
+          id: parseInt(message._id!),
+          highlight: message.highlight,
+        }))
+      highlights
+      messageIds = messageIdObjects.map((message) => message.id)
+    }
+    let userIds: number[] = []
+    if (userHits.length > 0) {
+      userIds = userHits.filter((user) => !!user._source).map((user) => parseInt(user._id!))
+    }
     // find messages and users by ids in database
     const [messages, users] = await Promise.all([
-      this.messageService.findMessagesForGlobalSearch(messageIds, limit),
-      this.userService.findUsersForGlobalSearch(userIds, selfUserId, limit),
+      messageIds.length > 0
+        ? this.messageService.findMessagesForGlobalSearch(messageIds, limit)
+        : null,
+      userIds.length > 0
+        ? this.userService.findUsersForGlobalSearch(userIds, selfUserId, limit)
+        : null,
     ])
-    const finalMessages = messages.map<TGlobalSearchData['messages'][number]>(
-      ({ id, GroupChat, content, directChatId, groupChatId, createdAt, Author, Media }) => {
-        let avatarUrl: string | undefined,
-          conversationName: string = ''
-        if (Author) {
-          const authorProfile = Author.Profile
-          avatarUrl = authorProfile?.avatar || undefined
-          conversationName = authorProfile?.fullName || ''
-        } else {
-          avatarUrl = GroupChat!.Members[0].User.Profile!.avatar || undefined
-          conversationName = GroupChat!.name
+    if (messages && messages.length > 0) {
+      finalMessages = messages.map<TGlobalSearchData['messages'][number]>(
+        ({ id, GroupChat, content, directChatId, groupChatId, createdAt, Author, Media }) => {
+          let avatarUrl: string | undefined,
+            conversationName: string = ''
+          if (Author) {
+            const authorProfile = Author.Profile
+            avatarUrl = authorProfile?.avatar || undefined
+            conversationName = authorProfile?.fullName || ''
+          } else {
+            avatarUrl = GroupChat!.Members[0].User.Profile!.avatar || undefined
+            conversationName = GroupChat!.name
+          }
+          return {
+            id,
+            avatarUrl,
+            conversationName,
+            messageContent: replaceHTMLTagInMessageContent(content),
+            mediaContent: Media?.fileName,
+            highlights: messageIdObjects.find((m) => m.id === id)!.highlight?.content || [],
+            chatType: directChatId ? EChatType.DIRECT : EChatType.GROUP,
+            chatId: (directChatId || groupChatId)!,
+            createdAt,
+          }
         }
-        return {
-          id,
-          avatarUrl,
-          conversationName,
-          messageContent: replaceHTMLTagInMessageContent(content),
-          mediaContent: Media?.fileName,
-          highlights: messageIdObjects.find((m) => m.id === id)!.highlight?.content || [],
-          chatType: directChatId ? EChatType.DIRECT : EChatType.GROUP,
-          chatId: (directChatId || groupChatId)!,
-          createdAt: createdAt.toISOString(),
-        }
-      }
-    )
-    const finalUsers = await Promise.all(
-      users.map(async (user) => ({
-        ...user,
-        isOnline: await this.userConnectionService.checkUserIsOnline(user.id),
-      }))
-    )
-
+      )
+    }
+    if (users && users.length > 0) {
+      finalUsers = await Promise.all(
+        users.map(async (user) => ({
+          ...user,
+          isOnline: await this.userConnectionService.checkUserIsOnline(user.id),
+        }))
+      )
+    }
     const nextSearchOffset: TGlobalSearchData['nextSearchOffset'] = {
       messageSearchOffset: messageHits.at(-1)?.sort,
       userSearchOffset: userHits.at(-1)?.sort,

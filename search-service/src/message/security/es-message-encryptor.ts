@@ -1,5 +1,6 @@
 import { SystemException } from '@/utils/exceptions/system.exception'
 import { createHash } from 'crypto'
+import * as crypto from 'crypto'
 
 /**
  * Class xử lý mã hóa và giải mã tin nhắn của người dùng trước khi lưu vào Elasticsearch
@@ -23,6 +24,10 @@ export default class ESMessageEncryptor {
     this.charMap = new Map()
     this.reverseMap = new Map()
     this.initMapping(mappingsData)
+  }
+
+  static generateESMessageSecretKey(length: number = 32): string {
+    return crypto.randomBytes(length).toString('base64')
   }
 
   /**

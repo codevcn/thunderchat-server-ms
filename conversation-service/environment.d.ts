@@ -12,6 +12,7 @@ declare global {
       DATABASE_URL: string
       CLIENT_HOST: string
       CLIENT_HOST_DEV: string
+      MESSAGE_MAPPINGS_VERSION_CODE: string
     }
   }
 }

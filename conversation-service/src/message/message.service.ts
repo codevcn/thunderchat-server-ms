@@ -110,11 +110,12 @@ export class MessageService {
       },
       include: this.messageFullInfo,
     })
+    const originalMessage = { ...message, content: originalContent }
     this.syncDataToESService.syncDataToES({
       type: ESyncDataToESWorkerType.CREATE_MESSAGE,
-      message,
+      message: originalMessage,
     })
-    return { ...message, content: originalContent }
+    return originalMessage
   }
 
   async updateMsg(msgId: number, updates: TMessageUpdates): Promise<TMessageWithMedia> {
