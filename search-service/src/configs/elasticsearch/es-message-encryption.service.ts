@@ -1,22 +1,14 @@
-import { Inject, Injectable } from '@nestjs/common'
-import { MessageMappingsService } from '../communication/grpc/services/message-mappings.service'
+import { Injectable } from '@nestjs/common'
 import ESMessageEncryptor from '@/message/security/es-message-encryptor'
-import { EGrpcPackages, EGrpcServices } from '@/utils/enums'
-import { ClientGrpc } from '@nestjs/microservices'
 import { SymmetricEncryptor } from '@/utils/crypto/symmetric-encryption.crypto'
+import { MessageMappingsService } from '@/message-mappings/message-mappings.service'
 
 @Injectable()
 export class ESMessageEncryptionService {
   private ESMsgEncryptor: ESMessageEncryptor | null = null
-  private messageMappingService: MessageMappingsService
+  private symmetricEncryptor: SymmetricEncryptor = new SymmetricEncryptor()
 
-  constructor(
-    @Inject(EGrpcPackages.CONVERSATION_PACKAGE) private readonly conversationClient: ClientGrpc
-  ) {
-    this.messageMappingService = new MessageMappingsService(
-      this.conversationClient.getService(EGrpcServices.MESSAGE_MAPPINGS_SERVICE)
-    )
-  }
+  constructor(private messageMappingService: MessageMappingsService) {}
 
   async getESMessageEncryptor(): Promise<ESMessageEncryptor> {
     if (this.ESMsgEncryptor) return this.ESMsgEncryptor
@@ -24,11 +16,17 @@ export class ESMessageEncryptionService {
   }
 
   private async initESMessageEncryptor(): Promise<ESMessageEncryptor> {
-    let messageMapping = await this.messageMappingService.getMessageMappings()
-    const symmetricEncryptor = new SymmetricEncryptor()
-    if (messageMapping) {
-      const { mappings, key } = messageMapping
-      this.ESMsgEncryptor = new ESMessageEncryptor(key, symmetricEncryptor.decrypt(mappings, key))
+    let messageMappings = await this.messageMappingService.getMessageMappings()
+    if (messageMappings) {
+      const { mappings, key, dek } = messageMappings
+      const decryptedDek = this.symmetricEncryptor.decrypt(
+        dek,
+        process.env.MESSAGE_MAPPINGS_SECRET_KEY
+      )
+      this.ESMsgEncryptor = new ESMessageEncryptor(
+        this.symmetricEncryptor.decrypt(key, decryptedDek),
+        this.symmetricEncryptor.decrypt(mappings, decryptedDek)
+      )
       return this.ESMsgEncryptor
     }
     this.ESMsgEncryptor = new ESMessageEncryptor(

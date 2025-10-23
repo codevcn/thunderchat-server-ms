@@ -114,28 +114,6 @@ export interface FindMessagesForGlobalSearchResponse {
   messagesJson: string[];
 }
 
-export interface CreateMessageMappingsRequest {
-  mappings: string;
-  encryptionKey: string;
-}
-
-export interface CreateMessageMappingsResponse {
-  messageMappingsJson: string;
-}
-
-export interface GetMessageMappingsResponse {
-  messageMappingsJson?: string | undefined;
-}
-
-export interface UpdateMessageMappingsRequest {
-  mappings: string;
-  encryptionKeyIfCreate?: string | undefined;
-}
-
-export interface UpdateMessageMappingsResponse {
-  messageMappingsJson: string;
-}
-
 export interface DirectChatService {
   FindConversationWithOtherUser(
     request: FindConversationWithOtherUserRequest,
@@ -157,12 +135,6 @@ export interface MessageService {
   FindMessagesForGlobalSearch(
     request: FindMessagesForGlobalSearchRequest,
   ): Observable<FindMessagesForGlobalSearchResponse>;
-}
-
-export interface MessageMappingsService {
-  CreateMessageMappings(request: CreateMessageMappingsRequest): Observable<CreateMessageMappingsResponse>;
-  GetMessageMappings(request: Empty): Observable<GetMessageMappingsResponse>;
-  UpdateMessageMappings(request: UpdateMessageMappingsRequest): Observable<UpdateMessageMappingsResponse>;
 }
 
 export interface GroupChatService {

@@ -12,6 +12,7 @@ model MessageMapping {
     id          Int      @id @default(autoincrement())
     mappings    String
     key         String   @db.VarChar(255)
+    dek         String   @db.VarChar(128)
     versionCode String   @unique @map("version_code") @db.VarChar(128)
     createdAt   DateTime @default(now()) @map("created_at") @db.Timestamptz(3)
 
@@ -116,21 +117,22 @@ model PinnedChat {
 }
 
 model Message {
-    id           Int               @id @default(autoincrement())
-    content      String
-    authorId     Int               @map("author_id")
-    recipientId  Int?              @map("recipient_id")
-    directChatId Int?              @map("direct_chat_id")
-    groupChatId  Int?              @map("group_chat_id")
-    type         MessageType       @default(TEXT)
-    status       MessageStatusEnum
-    stickerId    Int?              @map("sticker_id")
-    createdAt    DateTime          @default(now()) @map("created_at") @db.Timestamptz(3)
-    replyToId    Int?              @map("reply_to_id")
-    isDeleted    Boolean           @default(false) @map("is_deleted")
-    isViolated   Boolean           @default(false) @map("is_violated")
-    mediaId      Int?              @map("media_id")
-    dek          String            @db.VarChar(128)
+    id             Int               @id @default(autoincrement())
+    content        String
+    authorId       Int               @map("author_id")
+    recipientId    Int?              @map("recipient_id")
+    directChatId   Int?              @map("direct_chat_id")
+    groupChatId    Int?              @map("group_chat_id")
+    type           MessageType       @default(TEXT)
+    status         MessageStatusEnum
+    stickerId      Int?              @map("sticker_id")
+    createdAt      DateTime          @default(now()) @map("created_at") @db.Timestamptz(3)
+    replyToId      Int?              @map("reply_to_id")
+    isDeleted      Boolean           @default(false) @map("is_deleted")
+    isViolated     Boolean           @default(false) @map("is_violated")
+    mediaId        Int?              @map("media_id")
+    dek            String            @db.VarChar(128)
+    dekVersionCode String            @map("dek_version_code") @db.VarChar(128)
 
     DirectChat              DirectChat?       @relation("MessagesOnDirectChat", fields: [directChatId], references: [id])
     Author                  User              @relation("DirectMessagesAsSender", fields: [authorId], references: [id])

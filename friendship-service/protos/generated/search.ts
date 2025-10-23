@@ -14,6 +14,34 @@ export interface DataToSync {
   dataToSyncJson: string;
 }
 
+export interface CreateMessageMappingsRequest {
+  mappings: string;
+  encryptionKey: string;
+}
+
+export interface CreateMessageMappingsResponse {
+  messageMappingsJson: string;
+}
+
+export interface GetMessageMappingsResponse {
+  messageMappingsJson?: string | undefined;
+}
+
+export interface UpdateMessageMappingsRequest {
+  mappings: string;
+  encryptionKeyIfCreate?: string | undefined;
+}
+
+export interface UpdateMessageMappingsResponse {
+  messageMappingsJson: string;
+}
+
 export interface ElasticSearchService {
   SyncDataToES(request: DataToSync): Observable<Empty>;
+}
+
+export interface MessageMappingsService {
+  CreateMessageMappings(request: CreateMessageMappingsRequest): Observable<CreateMessageMappingsResponse>;
+  GetMessageMappings(request: Empty): Observable<GetMessageMappingsResponse>;
+  UpdateMessageMappings(request: UpdateMessageMappingsRequest): Observable<UpdateMessageMappingsResponse>;
 }

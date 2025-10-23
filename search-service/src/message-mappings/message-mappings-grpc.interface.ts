@@ -4,7 +4,7 @@ import type {
   GetMessageMappingsResponse,
   UpdateMessageMappingsRequest,
   UpdateMessageMappingsResponse,
-} from 'protos/generated/conversation'
+} from 'protos/generated/search'
 
 export interface IMessageMappingsGrpcController {
   createMessageMappings(

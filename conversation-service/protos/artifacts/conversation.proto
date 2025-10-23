@@ -33,15 +33,6 @@ service MessageService {
       returns (FindMessagesForGlobalSearchResponse);
 }
 
-service MessageMappingsService {
-  rpc CreateMessageMappings(CreateMessageMappingsRequest)
-      returns (CreateMessageMappingsResponse);
-  rpc GetMessageMappings(google.protobuf.Empty)
-      returns (GetMessageMappingsResponse);
-  rpc UpdateMessageMappings(UpdateMessageMappingsRequest)
-      returns (UpdateMessageMappingsResponse);
-}
-
 service GroupChatService {
   rpc CheckGroupChatPermission(CheckGroupChatPermissionRequest)
       returns (CheckGroupChatPermissionResponse);
@@ -148,26 +139,4 @@ message FindMessagesForGlobalSearchRequest {
 
 message FindMessagesForGlobalSearchResponse {
   repeated string messages_json = 1;
-}
-
-message CreateMessageMappingsRequest {
-  string mappings = 1;
-  string encryption_key = 2;
-}
-
-message CreateMessageMappingsResponse {
-  string message_mappings_json = 1;
-}
-
-message GetMessageMappingsResponse {
-  optional string message_mappings_json = 1;
-}
-
-message UpdateMessageMappingsRequest {
-  string mappings = 1;
-  optional string encryption_key_if_create = 2;
-}
-
-message UpdateMessageMappingsResponse {
-  string message_mappings_json = 1;
 }

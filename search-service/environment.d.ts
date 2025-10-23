@@ -12,8 +12,9 @@ declare global {
       CLIENT_HOST: string
       CLIENT_HOST_DEV: string
       ELASTIC_API_KEY: string
-      ENDECRYPT_USER_SECRET_KEY: string
       ELASTICSEARCH_URL: string
+      MESSAGE_MAPPINGS_VERSION_CODE: string
+      MESSAGE_MAPPINGS_SECRET_KEY: string
     }
   }
 }

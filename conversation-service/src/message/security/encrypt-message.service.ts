@@ -11,16 +11,23 @@ export class EncryptMessageService {
     this.symmetricEncryptor = new SymmetricEncryptor()
   }
 
-  generateDEK(): string {
+  private generateDEK(): string {
     return this.symmetricEncryptor.generateSecretKey()
   }
 
   encryptMessageContent(originalContent: string): TEncryptMessageContentRes {
     if (originalContent) {
       const dek = this.generateDEK()
-      return { encryptedContent: this.symmetricEncryptor.encrypt(originalContent, dek), dek }
+      const encryptedDek = this.symmetricEncryptor.encrypt(
+        dek,
+        process.env.MESSAGES_ENCRYPTION_SECRET_KEY
+      )
+      return {
+        encryptedContent: this.symmetricEncryptor.encrypt(originalContent, dek),
+        encryptedDek,
+      }
     }
-    return { encryptedContent: '', dek: '' }
+    return { encryptedContent: '', encryptedDek: '' }
   }
 
   decryptMessageContent(encryptedContent: string, dek: string): string {

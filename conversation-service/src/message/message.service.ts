@@ -90,7 +90,7 @@ export class MessageService {
     directChatId?: number,
     groupChatId?: number
   ): Promise<TGetDirectMessagesMessage> {
-    const { encryptedContent, dek } = this.encryptMessageService.encryptMessageContent(
+    const { encryptedContent, encryptedDek } = this.encryptMessageService.encryptMessageContent(
       this.createMessageContentForMedia(originalContent, stickerId, mediaId)
     )
     const message = await this.PrismaService.message.create({
@@ -106,7 +106,8 @@ export class MessageService {
         replyToId,
         groupChatId,
         directChatId,
-        dek,
+        dek: encryptedDek,
+        dekVersionCode: process.env.MESSAGES_ENCRYPTION_VERSION_CODE,
       },
       include: this.messageFullInfo,
     })
