@@ -1,12 +1,12 @@
 import { Injectable } from '@nestjs/common'
 import ESMessageEncryptor from '@/message/security/es-message-encryptor'
-import { SymmetricEncryptor } from '@/utils/crypto/symmetric-encryption.crypto'
+import { SymmetricTextEncryptor } from '@/utils/crypto/symmetric-text-encryptor.crypto'
 import { MessageMappingsService } from '@/message-mappings/message-mappings.service'
 
 @Injectable()
 export class ESMessageEncryptionService {
   private ESMsgEncryptor: ESMessageEncryptor | null = null
-  private symmetricEncryptor: SymmetricEncryptor = new SymmetricEncryptor()
+  private symmetricTextEncryptor: SymmetricTextEncryptor = new SymmetricTextEncryptor()
 
   constructor(private messageMappingService: MessageMappingsService) {}
 
@@ -19,19 +19,21 @@ export class ESMessageEncryptionService {
     let messageMappings = await this.messageMappingService.getMessageMappings()
     if (messageMappings) {
       const { mappings, key, dek } = messageMappings
-      const decryptedDek = this.symmetricEncryptor.decrypt(
+      const decryptedDek = this.symmetricTextEncryptor.decrypt(
         dek,
         process.env.MESSAGE_MAPPINGS_SECRET_KEY
       )
       this.ESMsgEncryptor = new ESMessageEncryptor(
-        this.symmetricEncryptor.decrypt(key, decryptedDek),
-        this.symmetricEncryptor.decrypt(mappings, decryptedDek)
+        this.symmetricTextEncryptor.decrypt(key, decryptedDek),
+        this.symmetricTextEncryptor.decrypt(mappings, decryptedDek),
+        decryptedDek
       )
       return this.ESMsgEncryptor
     }
     this.ESMsgEncryptor = new ESMessageEncryptor(
       ESMessageEncryptor.generateESMessageSecretKey(),
-      null
+      null,
+      this.symmetricTextEncryptor.generateEncryptionKey()
     )
     return this.ESMsgEncryptor
   }
@@ -47,7 +49,8 @@ export class ESMessageEncryptionService {
     if (this.ESMsgEncryptor) {
       await this.messageMappingService.updateMessageMappings(
         this.ESMsgEncryptor.getMappings(),
-        this.ESMsgEncryptor.getSecretKey()
+        this.ESMsgEncryptor.getSecretKey(),
+        this.ESMsgEncryptor.getDek()
       )
     }
   }

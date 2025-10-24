@@ -5,7 +5,7 @@ import { EMsgEncryptionAlgorithms } from '../enums'
  * Class xử lý mã hóa/giải mã an toàn với AES-256-GCM
  * Cải tiến: IV ngẫu nhiên, Authentication tag, buffer pool
  */
-export class SymmetricEncryptor {
+export class SymmetricTextEncryptor {
   private readonly ALGORITHM = EMsgEncryptionAlgorithms.AES_256_GCM
   private readonly IV_LENGTH = 12 // 96 bits cho GCM
   private readonly AUTH_TAG_LENGTH = 16 // 128 bits
@@ -16,7 +16,7 @@ export class SymmetricEncryptor {
   /**
    * Tạo khóa mã hóa ngẫu nhiên 256-bit
    */
-  generateSecretKey(): string {
+  generateEncryptionKey(): string {
     return crypto.randomBytes(this.KEY_LENGTH).toString('base64')
   }
 

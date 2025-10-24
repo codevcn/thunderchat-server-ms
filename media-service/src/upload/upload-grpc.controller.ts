@@ -18,14 +18,10 @@ import {
   UploadReportMessageMediaResponse,
 } from 'protos/generated/media'
 import { convertUint8ArrayToMulterFile } from '@/utils/helpers'
-import { S3UploadService } from './s3-upload.service'
 
 @Controller()
 export class UploadGrpcController implements IUploadGrpcController {
-  constructor(
-    private readonly uploadService: UploadService,
-    private readonly s3UploadService: S3UploadService
-  ) {}
+  constructor(private uploadService: UploadService) {}
 
   @GrpcMethod(EGrpcServices.UPLOAD_SERVICE, 'DeleteFileByUrl')
   async DeleteFileByUrl(data: DeleteFileByUrlRequest): Promise<void> {
@@ -35,8 +31,10 @@ export class UploadGrpcController implements IUploadGrpcController {
   @GrpcMethod(EGrpcServices.UPLOAD_SERVICE, 'UploadFile')
   async UploadFile(data: UploadFileRequest): Promise<UploadFileResponse> {
     return {
-      fileInfo: await this.uploadService.uploadFile(
-        convertUint8ArrayToMulterFile(data.content, data.filename)
+      fileInfoJson: JSON.stringify(
+        await this.uploadService.uploadFile(
+          convertUint8ArrayToMulterFile(data.content, data.filename)
+        )
       ),
     }
   }
@@ -45,14 +43,14 @@ export class UploadGrpcController implements IUploadGrpcController {
   async UploadGroupChatAvatar(
     data: UploadGroupChatAvatarRequest
   ): Promise<UploadGroupChatAvatarResponse> {
-    return await this.s3UploadService.uploadGroupChatAvatar(
+    return await this.uploadService.uploadGroupChatAvatar(
       convertUint8ArrayToMulterFile(data.file, data.filename)
     )
   }
 
   @GrpcMethod(EGrpcServices.UPLOAD_SERVICE, 'DeleteGroupChatAvatar')
   async DeleteGroupChatAvatar(data: DeleteGroupChatAvatarRequest): Promise<void> {
-    await this.s3UploadService.deleteGroupChatAvatar(data.avatarUrl)
+    await this.uploadService.deleteGroupChatAvatar(data.avatarUrl)
   }
 
   @GrpcMethod(EGrpcServices.UPLOAD_SERVICE, 'UploadReportImage')

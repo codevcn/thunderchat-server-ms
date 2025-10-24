@@ -5,7 +5,7 @@ import { EMsgEncryptionAlgorithms } from '@/utils/enums'
  * Class xử lý mã hóa và giải mã text với khóa đã cho
  * Sử dụng AES-256-ECB cho mã hóa và giải mã
  */
-export class SymmetricEncryptor {
+export class SymmetricTextEncryptor {
    private readonly ALGORITHM: string
 
    constructor(algorithm: EMsgEncryptionAlgorithms) {
@@ -16,7 +16,7 @@ export class SymmetricEncryptor {
     * Tạo khóa mã hóa từ plain text
     * @returns Khóa mã hóa dạng string
     */
-   generateSecretKey(): string {
+   generateEncryptionKey(): string {
       return crypto.randomBytes(32).toString('hex')
    }
 

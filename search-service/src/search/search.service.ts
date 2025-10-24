@@ -57,8 +57,6 @@ export class SearchService {
       this.elasticSearchService.searchMessages(keyword, userId, limit, messageSearchOffset),
       this.elasticSearchService.searchUsers(keyword, limit, userSearchOffset),
     ])
-    console.log('>>> message hits:', messageHits)
-    console.log('>>> user hits:', userHits)
     let messageIds: number[] = []
     let highlights: string[] = []
     let messageIdObjects: TMessageIdObject[] = []

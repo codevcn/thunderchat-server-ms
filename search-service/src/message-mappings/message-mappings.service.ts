@@ -1,14 +1,12 @@
 import { PrismaService } from '@/configs/db/prisma.service'
 import { EProviderTokens } from '@/utils/enums'
-import { SystemException } from '@/utils/exceptions/system.exception'
 import { Inject, Injectable } from '@nestjs/common'
-import { EMessageMappingsMessages } from './message-mappings.message'
 import { TMessageMappings } from '@/utils/entities/message-mappings.entity'
-import { SymmetricEncryptor } from '@/utils/crypto/symmetric-encryption.crypto'
+import { SymmetricTextEncryptor } from '@/utils/crypto/symmetric-text-encryptor.crypto'
 
 @Injectable()
 export class MessageMappingsService {
-  private symmetricEncryptor: SymmetricEncryptor = new SymmetricEncryptor()
+  private SymmetricTextEncryptor: SymmetricTextEncryptor = new SymmetricTextEncryptor()
 
   constructor(@Inject(EProviderTokens.PRISMA_CLIENT) private prismaService: PrismaService) {}
 
@@ -19,9 +17,9 @@ export class MessageMappingsService {
   }
 
   async createMessageMappings(
-    mappings: string,
-    mappingsKey: string,
-    dek: string
+    encryptedMappings: string,
+    encryptedMappingsKey: string,
+    encryptedDek: string
   ): Promise<TMessageMappings> {
     const existing = await this.getMessageMappings()
     if (existing) {
@@ -29,28 +27,32 @@ export class MessageMappingsService {
     }
     return await this.prismaService.messageMapping.create({
       data: {
-        mappings,
-        key: mappingsKey,
-        dek,
+        mappings: encryptedMappings,
+        key: encryptedMappingsKey,
+        dek: encryptedDek,
         versionCode: process.env.MESSAGE_MAPPINGS_VERSION_CODE,
       },
     })
   }
 
-  async updateMessageMappings(mappings: string, mappingsKey: string): Promise<TMessageMappings> {
+  async updateMessageMappings(
+    originalMappings: string,
+    originalMappingsKey: string,
+    originalDek: string
+  ): Promise<TMessageMappings> {
     const existing = await this.getMessageMappings()
+    const encryptedMappings = this.SymmetricTextEncryptor.encrypt(originalMappings, originalDek)
     if (existing) {
       await this.prismaService.messageMapping.update({
         where: { id: existing.id },
-        data: { mappings },
+        data: { mappings: encryptedMappings },
       })
       return existing
     }
-    const dek = this.symmetricEncryptor.generateSecretKey()
     return await this.createMessageMappings(
-      this.symmetricEncryptor.encrypt(mappings, dek),
-      this.symmetricEncryptor.encrypt(mappingsKey, dek),
-      this.symmetricEncryptor.encrypt(dek, process.env.MESSAGE_MAPPINGS_SECRET_KEY)
+      encryptedMappings,
+      this.SymmetricTextEncryptor.encrypt(originalMappingsKey, originalDek),
+      this.SymmetricTextEncryptor.encrypt(originalDek, process.env.MESSAGE_MAPPINGS_SECRET_KEY)
     )
   }
 }

@@ -6,3 +6,10 @@ export type TUploadResult = {
   thumbnailUrl?: string
   fileSize: string
 }
+
+export type TFileMetadata = {
+  'original-filename': string
+  'original-mimetype': string
+  'original-size': string
+  encrypted: string
+}

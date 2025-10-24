@@ -1,26 +1,15 @@
 import { Injectable } from '@nestjs/common'
-import {
-  S3Client,
-  PutObjectCommand,
-  DeleteObjectCommand,
-  HeadObjectCommand,
-} from '@aws-sdk/client-s3'
 import ffmpeg from 'fluent-ffmpeg'
 import ffmpegInstaller from '@ffmpeg-installer/ffmpeg'
 import * as fs from 'fs'
 import * as path from 'path'
 import * as os from 'os'
 import { DevLogger } from '@/dev/dev-logger'
+import { S3FileService } from './s3-file.service'
 
 @Injectable()
 export class ThumbnailService {
-  private readonly s3 = new S3Client({
-    region: process.env.AWS_REGION,
-    credentials: {
-      accessKeyId: process.env.AWS_ACCESS_KEY,
-      secretAccessKey: process.env.AWS_SECRET_KEY,
-    },
-  })
+  constructor(private s3FileService: S3FileService) {}
 
   /**
    * Tạo thumbnail cho video và upload lên S3
@@ -46,7 +35,7 @@ export class ThumbnailService {
       this.cleanupTempFiles([tempVideoPath, tempThumbnailPath])
 
       return thumbnailUrl
-    } catch (error: any) {
+    } catch (error) {
       DevLogger.logError('generate Video Thumbnail error:', error)
 
       if (thumbnailUploaded) {
@@ -65,7 +54,7 @@ export class ThumbnailService {
       }
       const buffer = await response.arrayBuffer()
       fs.writeFileSync(localPath, Buffer.from(buffer))
-    } catch (error: any) {
+    } catch (error) {
       DevLogger.logError('download Video error:', error)
       throw error
     }
@@ -96,18 +85,17 @@ export class ThumbnailService {
     try {
       const fileBuffer = fs.readFileSync(thumbnailPath)
 
-      const command = new PutObjectCommand({
-        Bucket: process.env.AWS_S3_BUCKET!,
-        Key: `thumbnail/${thumbnailKey}`,
-        Body: fileBuffer,
-        ContentType: 'image/jpeg',
-      })
-
-      await this.s3.send(command)
+      await this.s3FileService.saveFile(
+        `thumbnail/${thumbnailKey}`,
+        fileBuffer,
+        'UNKNOWN',
+        'image/jpeg',
+        fileBuffer.length.toString()
+      )
 
       const location = `https://${process.env.AWS_S3_BUCKET}.s3.${process.env.AWS_REGION}.amazonaws.com/thumbnail/${thumbnailKey}`
       return location
-    } catch (error: any) {
+    } catch (error) {
       DevLogger.logError('upload Thumbnail error:', error)
       throw error
     }
@@ -124,7 +112,7 @@ export class ThumbnailService {
         if (fs.existsSync(filePath)) {
           fs.unlinkSync(filePath)
         }
-      } catch (error: any) {
+      } catch (error) {
         DevLogger.logError('cleanup Temp Files error:', error)
       }
     })
@@ -132,27 +120,17 @@ export class ThumbnailService {
 
   private async rollbackThumbnailUpload(thumbnailKey: string): Promise<void> {
     try {
-      const command = new DeleteObjectCommand({
-        Bucket: process.env.AWS_S3_BUCKET!,
-        Key: `thumbnail/${thumbnailKey}`,
-      })
-
-      await this.s3.send(command)
+      await this.s3FileService.deleteFileByKey(`thumbnail/${thumbnailKey}`)
     } catch (error) {
       DevLogger.logError('rollback Thumbnail Upload error:', error)
+      throw error
     }
   }
 
   async checkThumbnailExists(videoKey: string): Promise<string | null> {
     try {
       const thumbnailKey = this.generateThumbnailKey(videoKey)
-
-      const command = new HeadObjectCommand({
-        Bucket: process.env.AWS_S3_BUCKET!,
-        Key: `thumbnail/${thumbnailKey}`,
-      })
-
-      await this.s3.send(command)
+      await this.s3FileService.fetchFileMetadata(`thumbnail/${thumbnailKey}`)
       return `https://${process.env.AWS_S3_BUCKET}.s3.${process.env.AWS_REGION}.amazonaws.com/thumbnail/${thumbnailKey}`
     } catch {
       return null

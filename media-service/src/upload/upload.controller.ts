@@ -1,5 +1,5 @@
-import { Controller, Get, Post, UploadedFile, UseInterceptors } from '@nestjs/common'
-import { FileInterceptor } from '@nestjs/platform-express'
+import { Controller, Get, Post, UploadedFile, UploadedFiles, UseInterceptors } from '@nestjs/common'
+import { FileInterceptor, FilesInterceptor } from '@nestjs/platform-express'
 import { UploadService } from './upload.service'
 import { Express } from 'express'
 import type { IUploadController } from './upload.interface'
@@ -13,6 +13,13 @@ export class UploadController implements IUploadController {
   @UseInterceptors(FileInterceptor('file'))
   async uploadFile(@UploadedFile() file: Express.Multer.File) {
     const result = await this.uploadService.uploadFile(file)
+    return result
+  }
+
+  @Post('/multiple-files')
+  @UseInterceptors(FilesInterceptor('files'))
+  async uploadMultipleFiles(@UploadedFiles() files: Express.Multer.File[]) {
+    const result = await this.uploadService.uploadMultipleFiles(files)
     return result
   }
 

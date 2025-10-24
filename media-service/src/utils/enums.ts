@@ -77,7 +77,7 @@ export enum EWorkerEvents {
 }
 
 export enum EMsgEncryptionAlgorithms {
-  AES_256_ECB = 'aes-256-ecb',
+  AES_256_GCM = 'aes-256-gcm',
 }
 
 export enum EChatType {

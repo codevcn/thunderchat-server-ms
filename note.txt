@@ -14,4 +14,4 @@ Lợi
 9. Admin Service (port 4009)																									
 10. Conversation Service (port 4010)																									
 
-Primsa lần cập nhật cuối: conversation-service.
+Primsa lần cập nhật cuối: media-service.

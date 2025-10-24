@@ -2,28 +2,30 @@ import { Injectable, BadRequestException, Inject } from '@nestjs/common'
 import { DeleteObjectCommand, S3Client } from '@aws-sdk/client-s3'
 import { ThumbnailService } from './thumbnail.service'
 import { Express } from 'express'
-import type { TUploadResult } from './upload.type'
+import type { TFileMetadata, TUploadResult } from './upload.type'
 import { PrismaService } from '@/configs/db/prisma.service'
 import { detectFileType, formatBytes, decodeMulterFileName } from '@/utils/helpers'
 import { PutObjectCommand } from '@aws-sdk/client-s3'
 import { DevLogger } from '@/dev/dev-logger'
-import * as fs from 'fs'
-import * as path from 'path'
+import { EProviderTokens } from '@/utils/enums'
+import type { TMessageMedia } from '@/utils/entities/message-media.entity'
+import { S3FileService } from './s3-file.service'
+import { createReadStream, readFileSync } from 'fs'
+import { extname } from 'path'
 import * as https from 'https'
 import * as http from 'http'
-import { EProviderTokens } from '@/utils/enums'
+import { FileEncryptionService } from './file-encryption.service'
+import { SymmetricTextEncryptor } from '@/utils/crypto/symmetric-text-encryptor.crypto'
+import { readFile } from 'fs/promises'
 
 @Injectable()
 export class UploadService {
-  private s3 = new S3Client({
-    region: process.env.AWS_REGION,
-    credentials: {
-      accessKeyId: process.env.AWS_ACCESS_KEY,
-      secretAccessKey: process.env.AWS_SECRET_KEY,
-    },
-  })
+  private symmetricTextEncryptor: SymmetricTextEncryptor
+  private readonly MAX_FILE_SIZE = 50 * 1024 * 1024 // 50MB
+  private readonly groupChatAvatarFolder = 'system/group-chat'
+  private readonly awsBucketName = process.env.AWS_BUCKET_NAME
   // Định nghĩa các loại file được phép upload
-  private allowedMimeTypes = {
+  private readonly allowedMimeTypes = {
     // Images
     'image/jpeg': 'image',
     'image/png': 'image',
@@ -84,26 +86,164 @@ export class UploadService {
     'audio/flac': 'audio',
     'audio/mp4': 'audio',
   }
+  // Map content types to extensions based on allowedMimeTypes
+  private readonly contentTypeToExtension = {
+    'image/jpeg': 'jpg',
+    'image/png': 'png',
+    'image/gif': 'gif',
+    'image/webp': 'webp',
+    'image/bmp': 'bmp',
+    'image/svg+xml': 'svg',
+    'image/tiff': 'tiff',
+    'image/heic': 'heic',
+    'video/mp4': 'mp4',
+    'video/avi': 'avi',
+    'video/mov': 'mov',
+    'video/wmv': 'wmv',
+    'video/mpeg': 'mpeg',
+    'video/webm': 'webm',
+    'video/3gpp': '3gp',
+    'video/x-matroska': 'mkv',
+    'video/x-flv': 'flv',
+    'audio/mpeg': 'mp3',
+    'audio/mp3': 'mp3',
+    'audio/wav': 'wav',
+    'audio/webm': 'webm',
+    'audio/ogg': 'ogg',
+    'audio/aac': 'aac',
+    'audio/flac': 'flac',
+    'audio/mp4': 'm4a',
+    'application/pdf': 'pdf',
+    'application/msword': 'doc',
+    'application/vnd.openxmlformats-officedocument.wordprocessingml.document': 'docx',
+    'application/vnd.ms-excel': 'xls',
+    'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet': 'xlsx',
+    'application/vnd.ms-powerpoint': 'ppt',
+    'application/vnd.openxmlformats-officedocument.presentationml.presentation': 'pptx',
+    'text/plain': 'txt',
+    'text/csv': 'csv',
+    'application/rtf': 'rtf',
+    'application/vnd.oasis.opendocument.text': 'odt',
+    'application/vnd.oasis.opendocument.spreadsheet': 'ods',
+    'application/vnd.oasis.opendocument.presentation': 'odp',
+    'application/zip': 'zip',
+    'application/x-compressed': 'zip', // Alternative MIME type for ZIP files
+    'application/x-zip-compressed': 'zip', // Another alternative for ZIP
+    'application/x-rar-compressed': 'rar',
+    'application/x-7z-compressed': '7z',
+    'application/gzip': 'gz',
+    'application/x-gzip': 'gz', // Alternative for .gz
+    'application/x-tar': 'tar',
+    'application/x-bzip2': 'bz2', // .bz2 files
+    'application/x-bzip': 'bz', // .bz files
+    'text/html': 'html',
+    'application/json': 'json',
+    'text/markdown': 'md',
+  }
+  // Map extensions to content types based on allowedMimeTypes
+  private readonly extensionToContentType = {
+    jpg: 'image/jpeg',
+    jpeg: 'image/jpeg',
+    png: 'image/png',
+    gif: 'image/gif',
+    webp: 'image/webp',
+    bmp: 'image/bmp',
+    svg: 'image/svg+xml',
+    tiff: 'image/tiff',
+    heic: 'image/heic',
+    mp4: 'video/mp4',
+    avi: 'video/avi',
+    mov: 'video/mov',
+    wmv: 'video/wmv',
+    mpeg: 'video/mpeg',
+    webm: 'video/webm',
+    '3gp': 'video/3gpp',
+    mkv: 'video/x-matroska',
+    flv: 'video/x-flv',
+    mp3: 'audio/mpeg',
+    wav: 'audio/wav',
+    webma: 'audio/webm',
+    ogg: 'audio/ogg',
+    aac: 'audio/aac',
+    flac: 'audio/flac',
+    m4a: 'audio/mp4',
+    pdf: 'application/pdf',
+    doc: 'application/msword',
+    docx: 'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
+    xls: 'application/vnd.ms-excel',
+    xlsx: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
+    ppt: 'application/vnd.ms-powerpoint',
+    pptx: 'application/vnd.openxmlformats-officedocument.presentationml.presentation',
+    txt: 'text/plain',
+    csv: 'text/csv',
+    rtf: 'application/rtf',
+    odt: 'application/vnd.oasis.opendocument.text',
+    ods: 'application/vnd.oasis.opendocument.spreadsheet',
+    odp: 'application/vnd.oasis.opendocument.presentation',
+    zip: 'application/zip',
+    rar: 'application/x-rar-compressed',
+    '7z': 'application/x-7z-compressed',
+    gz: 'application/gzip',
+    bz2: 'application/x-bzip2',
+    bz: 'application/x-bzip',
+    tar: 'application/x-tar',
+    html: 'text/html',
+    json: 'application/json',
+    md: 'text/markdown',
+  }
 
   constructor(
     private readonly thumbnailService: ThumbnailService,
-    @Inject(EProviderTokens.PRISMA_CLIENT) private PrismaService: PrismaService
-  ) {}
+    @Inject(EProviderTokens.PRISMA_CLIENT) private prismaService: PrismaService,
+    private fileEncryptionService: FileEncryptionService,
+    private s3FileService: S3FileService
+  ) {
+    this.symmetricTextEncryptor = new SymmetricTextEncryptor()
+  }
+
+  async updateMessageMediaThumbnail(
+    messageMediaId: number,
+    thumbnailUrl: string
+  ): Promise<TMessageMedia> {
+    const updatedMedia = await this.prismaService.messageMedia.update({
+      where: { id: messageMediaId },
+      data: { thumbnailUrl },
+    })
+    return updatedMedia
+  }
+
+  async createMessageMedia(
+    uploadedFileUrl: string,
+    file: Express.Multer.File,
+    decodedOriginalName: string,
+    originalDek: string
+  ): Promise<TMessageMedia> {
+    const messageMedia = await this.prismaService.messageMedia.create({
+      data: {
+        url: uploadedFileUrl,
+        type: await detectFileType(file),
+        fileName: this.symmetricTextEncryptor.encrypt(decodedOriginalName, originalDek),
+        fileSize: file.size,
+        thumbnailUrl: '',
+        dek: this.symmetricTextEncryptor.encrypt(
+          originalDek,
+          process.env.MESSAGES_ENCRYPTION_SECRET_KEY
+        ),
+        dekVersionCode: process.env.MESSAGES_ENCRYPTION_VERSION_CODE,
+      },
+    })
+    return messageMedia
+  }
 
   async uploadFile(file: Express.Multer.File): Promise<TUploadResult> {
-    if (!process.env.AWS_S3_BUCKET) {
-      throw new Error('AWS_S3_BUCKET environment variable is not set')
-    }
-
     // Kiểm tra loại file
     const fileType = this.allowedMimeTypes[file.mimetype]
     if (!fileType) {
       throw new BadRequestException(`File type ${file.mimetype} is not allowed`)
     }
 
-    // Kiểm tra kích thước file (giới hạn 50MB)
-    const maxSize = 50 * 1024 * 1024 // 50MB
-    if (file.size > maxSize) {
+    // Kiểm tra kích thước file
+    if (file.size > this.MAX_FILE_SIZE) {
       throw new BadRequestException('File size exceeds 50MB limit')
     }
 
@@ -115,30 +255,26 @@ export class UploadService {
 
     let uploadedFileUrl: string | null = null
 
+    const dek = this.fileEncryptionService.generateEncryptionKey()
+    const encryptedBuffer = this.fileEncryptionService.encryptBuffer(file.buffer, dek)
     try {
-      // ✅ Upload file bằng AWS SDK v3
-      const putCommand = new PutObjectCommand({
-        Bucket: process.env.AWS_S3_BUCKET!,
-        Key: fileKey,
-        Body: file.buffer,
-        ContentType: file.mimetype,
-      })
-
-      await this.s3.send(putCommand)
+      await this.s3FileService.saveFile(
+        fileKey,
+        encryptedBuffer,
+        decodedOriginalName,
+        file.mimetype,
+        file.size.toString()
+      )
 
       // Tự build URL thay vì `data.Location` như v2
       uploadedFileUrl = `https://${process.env.AWS_S3_BUCKET}.s3.${process.env.AWS_REGION}.amazonaws.com/${fileKey}`
 
-      // Ghi vào DB
-      const messageMedia = await this.PrismaService.messageMedia.create({
-        data: {
-          url: uploadedFileUrl,
-          type: await detectFileType(file),
-          fileName: decodedOriginalName,
-          fileSize: file.size,
-          thumbnailUrl: '',
-        },
-      })
+      const messageMedia = await this.createMessageMedia(
+        uploadedFileUrl,
+        file,
+        decodedOriginalName,
+        dek
+      )
 
       const result: TUploadResult = {
         id: messageMedia.id,
@@ -163,13 +299,10 @@ export class UploadService {
             )
           }
 
-          await this.PrismaService.messageMedia.update({
-            where: { id: messageMedia.id },
-            data: { thumbnailUrl },
-          })
+          await this.updateMessageMediaThumbnail(messageMedia.id, thumbnailUrl)
 
           result.thumbnailUrl = thumbnailUrl
-        } catch (error: any) {
+        } catch (error) {
           // Rollback video nếu lỗi
           await this.rollbackFileUpload(fileKey)
           throw new Error(`Failed to create thumbnail: ${error.message}`)
@@ -191,14 +324,10 @@ export class UploadService {
    */
   private async rollbackFileUpload(fileKey: string): Promise<void> {
     try {
-      const deleteCommand = new DeleteObjectCommand({
-        Bucket: process.env.AWS_S3_BUCKET,
-        Key: fileKey,
-      })
-
-      await this.s3.send(deleteCommand)
-    } catch (error: any) {
+      await this.s3FileService.deleteFileByKey(fileKey)
+    } catch (error) {
       DevLogger.logError(`Rollback File Upload error: ${error.message}`)
+      throw error
     }
   }
 
@@ -206,18 +335,8 @@ export class UploadService {
    * Xoá file bất kỳ trên S3 theo url
    */
   public async deleteFileByUrl(fileUrl: string): Promise<void> {
-    const objectKey = fileUrl.split('.amazonaws.com/')[1]
-    if (!objectKey) {
-      throw new Error('Không tìm thấy object key trong url')
-    }
-
     try {
-      const deleteCommand = new DeleteObjectCommand({
-        Bucket: process.env.AWS_S3_BUCKET,
-        Key: objectKey,
-      })
-
-      await this.s3.send(deleteCommand)
+      await this.s3FileService.deleteFileByURL(fileUrl)
     } catch (error: any) {
       DevLogger.logError(`Delete File error: ${error.message}`)
       throw error
@@ -251,24 +370,23 @@ export class UploadService {
     messageId: number,
     contentType: string
   ): Promise<{ url: string }> {
-    const fileBuffer = fs.readFileSync(filePath)
+    const fileBuffer = await readFile(filePath)
 
     // Extract file extension from file path
     const fileExtension =
-      path.extname(filePath).substring(1) || this.getExtensionFromContentType(contentType)
+      extname(filePath).substring(1) || this.getExtensionFromContentType(contentType)
     const fileKey = `report-message/${Date.now()}_message-${messageId}.${fileExtension}`
 
     // Get proper content type based on file extension
     const properContentType = this.getContentTypeFromExtension(fileExtension) || contentType
 
-    const putCommand = new PutObjectCommand({
-      Bucket: process.env.AWS_S3_BUCKET!,
-      Key: fileKey,
-      Body: fileBuffer,
-      ContentType: properContentType,
-    })
-
-    await this.s3.send(putCommand)
+    await this.s3FileService.saveFile(
+      fileKey,
+      fileBuffer,
+      `message-${messageId}`,
+      properContentType,
+      fileBuffer.length.toString()
+    )
 
     // Trả về URL public (nếu bucket public) hoặc URL dạng S3
     const fileUrl = `https://${process.env.AWS_S3_BUCKET}.s3.${process.env.AWS_REGION}.amazonaws.com/${fileKey}`
@@ -333,7 +451,13 @@ export class UploadService {
             })
 
             try {
-              await this.s3.send(command)
+              await this.s3FileService.saveFile(
+                fileKey,
+                fileBuffer,
+                `message-${messageId}`,
+                properContentType,
+                fileBuffer.length.toString()
+              )
             } catch (s3Error) {
               if (retryCount < maxRetries) {
                 setTimeout(
@@ -409,66 +533,10 @@ export class UploadService {
    * Get file extension from content type
    */
   private getExtensionFromContentType(contentType: string): string {
-    // Map content types to extensions based on allowedMimeTypes
-    const contentTypeToExtension: { [key: string]: string } = {
-      'image/jpeg': 'jpg',
-      'image/png': 'png',
-      'image/gif': 'gif',
-      'image/webp': 'webp',
-      'image/bmp': 'bmp',
-      'image/svg+xml': 'svg',
-      'image/tiff': 'tiff',
-      'image/heic': 'heic',
-      'video/mp4': 'mp4',
-      'video/avi': 'avi',
-      'video/mov': 'mov',
-      'video/wmv': 'wmv',
-      'video/mpeg': 'mpeg',
-      'video/webm': 'webm',
-      'video/3gpp': '3gp',
-      'video/x-matroska': 'mkv',
-      'video/x-flv': 'flv',
-      'audio/mpeg': 'mp3',
-      'audio/mp3': 'mp3',
-      'audio/wav': 'wav',
-      'audio/webm': 'webm',
-      'audio/ogg': 'ogg',
-      'audio/aac': 'aac',
-      'audio/flac': 'flac',
-      'audio/mp4': 'm4a',
-      'application/pdf': 'pdf',
-      'application/msword': 'doc',
-      'application/vnd.openxmlformats-officedocument.wordprocessingml.document': 'docx',
-      'application/vnd.ms-excel': 'xls',
-      'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet': 'xlsx',
-      'application/vnd.ms-powerpoint': 'ppt',
-      'application/vnd.openxmlformats-officedocument.presentationml.presentation': 'pptx',
-      'text/plain': 'txt',
-      'text/csv': 'csv',
-      'application/rtf': 'rtf',
-      'application/vnd.oasis.opendocument.text': 'odt',
-      'application/vnd.oasis.opendocument.spreadsheet': 'ods',
-      'application/vnd.oasis.opendocument.presentation': 'odp',
-      'application/zip': 'zip',
-      'application/x-compressed': 'zip', // Alternative MIME type for ZIP files
-      'application/x-zip-compressed': 'zip', // Another alternative for ZIP
-      'application/x-rar-compressed': 'rar',
-      'application/x-7z-compressed': '7z',
-      'application/gzip': 'gz',
-      'application/x-gzip': 'gz', // Alternative for .gz
-      'application/x-tar': 'tar',
-      'application/x-bzip2': 'bz2', // .bz2 files
-      'application/x-bzip': 'bz', // .bz files
-      'text/html': 'html',
-      'application/json': 'json',
-      'text/markdown': 'md',
-    }
-
     // Check if content type is in allowedMimeTypes
     if (this.allowedMimeTypes[contentType]) {
-      return contentTypeToExtension[contentType] || 'bin'
+      return this.contentTypeToExtension[contentType] || 'bin'
     }
-
     return 'bin'
   }
 
@@ -476,65 +544,30 @@ export class UploadService {
    * Get content type from file extension
    */
   private getContentTypeFromExtension(extension: string): string {
-    // Map extensions to content types based on allowedMimeTypes
-    const extensionToContentType: { [key: string]: string } = {
-      jpg: 'image/jpeg',
-      jpeg: 'image/jpeg',
-      png: 'image/png',
-      gif: 'image/gif',
-      webp: 'image/webp',
-      bmp: 'image/bmp',
-      svg: 'image/svg+xml',
-      tiff: 'image/tiff',
-      heic: 'image/heic',
-      mp4: 'video/mp4',
-      avi: 'video/avi',
-      mov: 'video/mov',
-      wmv: 'video/wmv',
-      mpeg: 'video/mpeg',
-      webm: 'video/webm',
-      '3gp': 'video/3gpp',
-      mkv: 'video/x-matroska',
-      flv: 'video/x-flv',
-      mp3: 'audio/mpeg',
-      wav: 'audio/wav',
-      webma: 'audio/webm',
-      ogg: 'audio/ogg',
-      aac: 'audio/aac',
-      flac: 'audio/flac',
-      m4a: 'audio/mp4',
-      pdf: 'application/pdf',
-      doc: 'application/msword',
-      docx: 'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
-      xls: 'application/vnd.ms-excel',
-      xlsx: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
-      ppt: 'application/vnd.ms-powerpoint',
-      pptx: 'application/vnd.openxmlformats-officedocument.presentationml.presentation',
-      txt: 'text/plain',
-      csv: 'text/csv',
-      rtf: 'application/rtf',
-      odt: 'application/vnd.oasis.opendocument.text',
-      ods: 'application/vnd.oasis.opendocument.spreadsheet',
-      odp: 'application/vnd.oasis.opendocument.presentation',
-      zip: 'application/zip',
-      rar: 'application/x-rar-compressed',
-      '7z': 'application/x-7z-compressed',
-      gz: 'application/gzip',
-      bz2: 'application/x-bzip2',
-      bz: 'application/x-bzip',
-      tar: 'application/x-tar',
-      html: 'text/html',
-      json: 'application/json',
-      md: 'text/markdown',
-    }
-
-    const contentType = extensionToContentType[extension.toLowerCase()]
-
+    const contentType = this.extensionToContentType[extension.toLowerCase()]
     // Verify that the content type is in allowedMimeTypes
     if (contentType && this.allowedMimeTypes[contentType]) {
       return contentType
     }
-
     return 'application/octet-stream'
+  }
+
+  async uploadGroupChatAvatar(file: Express.Multer.File): Promise<{ url: string }> {
+    const fileBuffer = await readFile(file.path)
+    const uploadKey = `${this.groupChatAvatarFolder}/${Date.now()}-${S3FileService.hashFileName(file.originalname)}`
+    await this.s3FileService.saveFile(
+      uploadKey,
+      fileBuffer,
+      file.originalname,
+      file.mimetype,
+      file.size.toString()
+    )
+    return {
+      url: `https://${this.awsBucketName}.s3.${process.env.AWS_REGION}.amazonaws.com/${uploadKey}`,
+    }
+  }
+
+  async deleteGroupChatAvatar(avatarUrl: string): Promise<void> {
+    await this.s3FileService.deleteFileByKey(S3FileService.extractObjectKeyFromUrl(avatarUrl))
   }
 }

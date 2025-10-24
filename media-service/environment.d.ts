@@ -16,6 +16,8 @@ declare global {
       AWS_S3_BUCKET: string
       CLIENT_HOST: string
       CLIENT_HOST_DEV: string
+      MESSAGES_ENCRYPTION_SECRET_KEY: string
+      MESSAGES_ENCRYPTION_VERSION_CODE: string
     }
   }
 }
