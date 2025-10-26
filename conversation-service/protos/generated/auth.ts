@@ -22,12 +22,12 @@ export interface ValidateSocketAuthResponse {
   clientSocketAuthJson: string;
 }
 
-export interface ValidateVoiceCallSocketAuthRequest {
+export interface ValidateCallSocketAuthRequest {
   handshakeAuthJson: string;
 }
 
-export interface ValidateVoiceCallSocketAuthResponse {
-  voiceCallSocketAuthJson: string;
+export interface ValidateCallSocketAuthResponse {
+  callSocketAuthJson: string;
 }
 
 export interface VerifyTokenRequest {
@@ -76,9 +76,7 @@ export interface GetJWTcookieOtpsResponse {
 export interface AuthService {
   ValidateSocketConnection(request: ValidateSocketConnectionRequest): Observable<Empty>;
   ValidateSocketAuth(request: ValidateSocketAuthRequest): Observable<ValidateSocketAuthResponse>;
-  ValidateVoiceCallSocketAuth(
-    request: ValidateVoiceCallSocketAuthRequest,
-  ): Observable<ValidateVoiceCallSocketAuthResponse>;
+  ValidateCallSocketAuth(request: ValidateCallSocketAuthRequest): Observable<ValidateCallSocketAuthResponse>;
   VerifyToken(request: VerifyTokenRequest): Observable<VerifyTokenResponse>;
 }
 

@@ -17,8 +17,8 @@ import {
   GetHashedPasswordResponse,
 } from 'protos/generated/auth'
 import type {
-  TValidateVoiceCallSocketAuthRes,
-  TValidateVoiceCallSocketAuthPayload,
+  TValidateCallSocketAuthRes,
+  TValidateCallSocketAuthPayload,
   TValidateSocketConnectionPayload,
   TValidateSocketAuthPayload,
   TValidateSocketAuthRes,
@@ -42,9 +42,9 @@ export interface IAuthController {
 export interface IAuthGrpcController {
   ValidateSocketAuth: (data: TValidateSocketAuthPayload) => Promise<TValidateSocketAuthRes>
   ValidateSocketConnection: (data: TValidateSocketConnectionPayload) => Promise<void>
-  ValidateVoiceCallSocketAuth: (
-    data: TValidateVoiceCallSocketAuthPayload
-  ) => Promise<TValidateVoiceCallSocketAuthRes>
+  ValidateCallSocketAuth: (
+    data: TValidateCallSocketAuthPayload
+  ) => Promise<TValidateCallSocketAuthRes>
   VerifyToken: (data: VerifyTokenRequest) => Promise<TVerifyTokenRes>
   CreateJWT: (data: CreateJWTRequest) => Promise<CreateJWTResponse>
   CompareHashedPassword: (

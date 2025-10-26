@@ -5,7 +5,6 @@ import type { TUserWithProfile } from '@/utils/entities/user.entity'
 import { EAppRoles } from '@/utils/enums'
 import { Exclude, Type } from 'class-transformer'
 import { IsDate, IsNotEmpty, IsNumber, IsOptional, IsString } from 'class-validator'
-import type { User } from '@prisma/client'
 import { TSocketId } from '@/connection/user-connection.type'
 
 export class LoginUserDTO {
@@ -72,7 +71,7 @@ export class LogoutPayloadDTO {
   socketId?: TSocketId
 }
 
-export class VoiceCallSocketAuthDTO {
+export class CallSocketAuthDTO {
   @IsNumber()
   @Type(() => Number)
   userId: TUserId

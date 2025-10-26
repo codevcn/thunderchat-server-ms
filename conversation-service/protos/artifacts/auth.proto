@@ -9,8 +9,8 @@ service AuthService {
       returns (google.protobuf.Empty);
   rpc ValidateSocketAuth(ValidateSocketAuthRequest)
       returns (ValidateSocketAuthResponse);
-  rpc ValidateVoiceCallSocketAuth(ValidateVoiceCallSocketAuthRequest)
-      returns (ValidateVoiceCallSocketAuthResponse);
+  rpc ValidateCallSocketAuth(ValidateCallSocketAuthRequest)
+      returns (ValidateCallSocketAuthResponse);
   rpc VerifyToken(VerifyTokenRequest) returns (VerifyTokenResponse);
 }
 
@@ -37,12 +37,12 @@ message ValidateSocketAuthResponse {
   string client_socket_auth_json = 1;
 }
 
-message ValidateVoiceCallSocketAuthRequest {
+message ValidateCallSocketAuthRequest {
   string handshake_auth_json = 1;
 }
 
-message ValidateVoiceCallSocketAuthResponse {
-  string voice_call_socket_auth_json = 1;
+message ValidateCallSocketAuthResponse {
+  string call_socket_auth_json = 1;
 }
 
 message VerifyTokenRequest {

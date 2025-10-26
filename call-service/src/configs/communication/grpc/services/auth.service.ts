@@ -1,5 +1,5 @@
-import type { VoiceCallSocketAuthDTO } from '@/auth/auth.dto'
-import { TVoiceCallClientSocket } from '@/utils/events/event.type'
+import type { CallSocketAuthDTO } from '@/auth/auth.dto'
+import type { TCallClientSocket } from '@/utils/events/event.type'
 import type { AuthService as AuthServiceType } from 'protos/generated/auth'
 import { firstValueFrom } from 'rxjs'
 import type { Socket } from 'socket.io'
@@ -15,17 +15,15 @@ export class AuthService {
     )
   }
 
-  async validateVoiceCallSocketAuth(
-    clientSocket: TVoiceCallClientSocket
-  ): Promise<VoiceCallSocketAuthDTO> {
+  async validateCallSocketAuth(clientSocket: TCallClientSocket): Promise<CallSocketAuthDTO> {
     return JSON.parse(
       (
         await firstValueFrom(
-          this.instance.ValidateVoiceCallSocketAuth({
+          this.instance.ValidateCallSocketAuth({
             handshakeAuthJson: JSON.stringify(clientSocket.handshake.auth),
           })
         )
-      ).voiceCallSocketAuthJson
-    ) as VoiceCallSocketAuthDTO
+      ).callSocketAuthJson
+    ) as CallSocketAuthDTO
   }
 }

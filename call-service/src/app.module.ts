@@ -3,7 +3,7 @@ import { RequestLoggerMiddleware } from './app.middleware'
 import { ConfigModule } from '@nestjs/config'
 import { PrismaModule } from './configs/db/prisma.module'
 import { EventEmitterModule } from '@nestjs/event-emitter'
-import { VoiceCallGatewayModule } from './voice-call/voice-call.module'
+import { CallGatewayModule } from './call/call.module'
 
 const globalConfigModules = [
   ConfigModule.forRoot({
@@ -14,7 +14,7 @@ const globalConfigModules = [
 ]
 
 @Module({
-  imports: [...globalConfigModules, VoiceCallGatewayModule],
+  imports: [...globalConfigModules, CallGatewayModule],
 })
 export class AppModule implements NestModule {
   configure(consumer: MiddlewareConsumer) {

@@ -1,11 +1,10 @@
-import type { CookieOptions, Response } from 'express'
 import type {
   GetJWTcookieOtpsResponse,
   ValidateSocketAuthRequest,
   ValidateSocketAuthResponse,
   ValidateSocketConnectionRequest,
-  ValidateVoiceCallSocketAuthRequest,
-  ValidateVoiceCallSocketAuthResponse,
+  ValidateCallSocketAuthRequest,
+  ValidateCallSocketAuthResponse,
   VerifyTokenResponse,
 } from 'protos/generated/auth'
 
@@ -33,9 +32,9 @@ export type TJWTPayload = {
 //   cookie_otps?: CookieOptions
 // }
 
-export type TValidateVoiceCallSocketAuthPayload = ValidateVoiceCallSocketAuthRequest
+export type TValidateCallSocketAuthPayload = ValidateCallSocketAuthRequest
 
-export type TValidateVoiceCallSocketAuthRes = ValidateVoiceCallSocketAuthResponse
+export type TValidateCallSocketAuthRes = ValidateCallSocketAuthResponse
 
 export type TValidateSocketConnectionPayload = ValidateSocketConnectionRequest
 

@@ -6,7 +6,7 @@ import { EGrpcPackages, EGrpcServices, EProviderTokens } from '@/utils/enums'
 import { EAuthMessages } from '@/auth/auth.message'
 import { BaseWsException } from '@/utils/exceptions/base-ws.exception'
 import { EValidationMessages } from '@/utils/messages'
-import { ClientSocketAuthDTO, VoiceCallSocketAuthDTO } from './auth.dto'
+import { ClientSocketAuthDTO, CallSocketAuthDTO } from './auth.dto'
 import { plainToInstance } from 'class-transformer'
 import { validate } from 'class-validator'
 import { SystemException } from '@/utils/exceptions/system.exception'
@@ -249,10 +249,8 @@ export class AuthService {
     return socketAuth
   }
 
-  async validateVoiceCallSocketAuth(
-    handshakeAuth: Handshake['auth']
-  ): Promise<VoiceCallSocketAuthDTO> {
-    const socketAuth = plainToInstance(VoiceCallSocketAuthDTO, handshakeAuth)
+  async validateCallSocketAuth(handshakeAuth: Handshake['auth']): Promise<CallSocketAuthDTO> {
+    const socketAuth = plainToInstance(CallSocketAuthDTO, handshakeAuth)
     const errors = await validate(socketAuth)
     if (errors && errors.length > 0) {
       throw new BaseWsException(EValidationMessages.INVALID_INPUT)

@@ -15,9 +15,16 @@ import { UserModule } from './user/user.module'
 import { RequestLoggerMiddleware } from './app.middleware'
 import { UserReportModule } from './user/user-report/user-report.module'
 import { UserSettingsModule } from './user/user-settings/user-settings.module'
+import { ProfileModule } from './profile/profile.module'
 
 @Module({
-  imports: [...globalConfigModules, UserModule, UserSettingsModule, UserReportModule],
+  imports: [
+    ...globalConfigModules,
+    UserModule,
+    UserSettingsModule,
+    UserReportModule,
+    ProfileModule,
+  ],
 })
 export class AppModule implements NestModule {
   configure(consumer: MiddlewareConsumer) {

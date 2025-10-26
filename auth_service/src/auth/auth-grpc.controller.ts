@@ -20,7 +20,7 @@ import type {
   TJWTPayload,
   TValidateSocketAuthPayload,
   TValidateSocketConnectionPayload,
-  TValidateVoiceCallSocketAuthPayload,
+  TValidateCallSocketAuthPayload,
   TVerifyTokenRes,
 } from './auth.type'
 import type { TUserWithProfile } from '@/utils/entities/user.entity'
@@ -54,11 +54,11 @@ export class AuthGrpcController implements IAuthGrpcController {
     }
   }
 
-  @GrpcMethod(EGrpcServices.AUTH_SERVICE, 'ValidateVoiceCallSocketAuth')
-  async ValidateVoiceCallSocketAuth(data: TValidateVoiceCallSocketAuthPayload) {
+  @GrpcMethod(EGrpcServices.AUTH_SERVICE, 'ValidateCallSocketAuth')
+  async ValidateCallSocketAuth(data: TValidateCallSocketAuthPayload) {
     return {
-      voiceCallSocketAuthJson: JSON.stringify(
-        await this.authService.validateVoiceCallSocketAuth(JSON.parse(data.handshakeAuthJson))
+      callSocketAuthJson: JSON.stringify(
+        await this.authService.validateCallSocketAuth(JSON.parse(data.handshakeAuthJson))
       ),
     }
   }
