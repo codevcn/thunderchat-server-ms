@@ -1,7 +1,13 @@
 {
+  "scripts": {
+    "prepare": "husky"
+  },
   "devDependencies": {
     "@grpc/grpc-js": "^1.14.0",
     "@protobuf-ts/plugin": "^2.11.1",
+    "husky": "^9.1.7",
+    "lint-staged": "^16.2.6",
+    "prettier": "^3.6.2",
     "protobufjs": "^7.5.4",
     "protoc": "^32.1.0",
     "protoc-gen-ts": "^0.8.7",
@@ -11,5 +17,8 @@
   "dependencies": {
     "@bufbuild/protobuf": "^2.9.0",
     "rxjs": "^7.8.2"
+  },
+  "lint-staged": {
+    "**/*": "prettier --write --ignore-unknown"
   }
 }
