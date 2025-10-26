@@ -89,8 +89,7 @@ export class ThumbnailService {
         `thumbnail/${thumbnailKey}`,
         fileBuffer,
         'UNKNOWN',
-        'image/jpeg',
-        fileBuffer.length.toString()
+        'image/jpeg'
       )
 
       const location = `https://${process.env.AWS_S3_BUCKET}.s3.${process.env.AWS_REGION}.amazonaws.com/thumbnail/${thumbnailKey}`

@@ -6,21 +6,38 @@ import {
   S3Client,
 } from '@aws-sdk/client-s3'
 import type { DeleteObjectCommandOutput, PutObjectCommandOutput } from '@aws-sdk/client-s3'
-import { Inject, Injectable, InternalServerErrorException, NotFoundException } from '@nestjs/common'
+import {
+  HttpStatus,
+  Injectable,
+  InternalServerErrorException,
+  NotFoundException,
+} from '@nestjs/common'
 import crypto from 'crypto'
 import type { TFileMetadata } from './upload.type'
-import { EProviderTokens } from '@/utils/enums'
-import { PrismaClient } from '@prisma/client'
 import stream from 'stream'
-import { Response } from 'express'
 import { SymmetricFileEncryptor } from '@/utils/crypto/symmetric-file-encryptor.crypto'
+import { Upload } from '@aws-sdk/lib-storage'
+import { MessageMediaService } from './message-media.service'
+import { typeToObject } from '@/utils/helpers'
+import { UploadConfig } from './upload.config'
+import mime from 'mime-types'
+import type { TMessageMedia } from '@/utils/entities/message-media.entity'
+import type { Response } from 'express'
+import { IncomingHttpHeaders } from 'http'
+import { ERoutes } from '@/utils/enums'
+import { SymmetricTextEncryptor } from '@/utils/crypto/symmetric-text-encryptor.crypto'
 
 @Injectable()
 export class S3FileService {
   private s3Client: S3Client
-  private fileEncryptor: SymmetricFileEncryptor
+  private symmetricFileEncryptor: SymmetricFileEncryptor
+  private symmetricTextEncryptor: SymmetricTextEncryptor
+  private readonly uploadFolderPath: string = 'system/uploads'
 
-  constructor(@Inject(EProviderTokens.PRISMA_CLIENT) private prismaClient: PrismaClient) {
+  constructor(
+    private messageMediaService: MessageMediaService,
+    private uploadConfig: UploadConfig
+  ) {
     this.s3Client = new S3Client({
       region: process.env.AWS_REGION,
       credentials: {
@@ -28,32 +45,36 @@ export class S3FileService {
         secretAccessKey: process.env.AWS_SECRET_KEY,
       },
     })
-    this.fileEncryptor = new SymmetricFileEncryptor()
+    this.symmetricFileEncryptor = new SymmetricFileEncryptor()
+    this.symmetricTextEncryptor = new SymmetricTextEncryptor()
   }
 
-  static hashFileName(fileName: string, fileNameLength: number = 16) {
+  private hashFileName(fileName: string, fileNameLength: number = 16) {
     return crypto.createHash('sha256').update(fileName).digest('hex').slice(0, fileNameLength)
   }
 
-  static extractObjectKeyFromUrl(url: string) {
+  createS3FileKey(originalFileName: string): string {
+    return `${this.uploadFolderPath}/${Date.now()}-${this.hashFileName(originalFileName)}`
+  }
+
+  extractObjectKeyFromUrl(url: string) {
     return url.split('.amazonaws.com/')[1]
   }
 
-  private getS3BucketName(): string {
+  getS3Client(): S3Client {
+    return this.s3Client
+  }
+
+  getS3BucketName(): string {
     return process.env.AWS_S3_BUCKET
   }
 
-  private createFileMetadata(
-    originalFileName: string,
-    fileMimeType: string,
-    fileSize: string
-  ): TFileMetadata {
-    return {
-      'original-filename': originalFileName,
-      'original-mimetype': fileMimeType,
-      'original-size': fileSize,
-      encrypted: 'true',
-    }
+  getS3Region(): string {
+    return process.env.AWS_REGION
+  }
+
+  createS3FileURL(fileKey: string): string {
+    return `https://${this.getS3BucketName()}.s3.${this.getS3Region()}.amazonaws.com/${fileKey}`
   }
 
   async deleteFileByKey(fileKey: string): Promise<DeleteObjectCommandOutput> {
@@ -73,12 +94,30 @@ export class S3FileService {
     return await this.deleteFileByKey(objectKey)
   }
 
+  createUploadStream(
+    fileKey: string,
+    passThroughStream: stream.PassThrough,
+    fileMetadata: TFileMetadata,
+    abortController: AbortController
+  ): Upload {
+    return new Upload({
+      client: this.getS3Client(),
+      params: {
+        Bucket: this.getS3BucketName(),
+        Key: fileKey,
+        Body: passThroughStream,
+        ContentType: 'application/octet-stream',
+        Metadata: fileMetadata,
+      },
+      abortController: abortController,
+    })
+  }
+
   async saveFile(
     fileKey: string,
     fileBuffer: Buffer,
     originalFileName: string,
-    fileMimeType: string,
-    fileSize: string
+    fileMimeType: string
   ): Promise<PutObjectCommandOutput> {
     return await this.s3Client.send(
       new PutObjectCommand({
@@ -86,7 +125,11 @@ export class S3FileService {
         Key: fileKey,
         Body: fileBuffer,
         ContentType: fileMimeType,
-        Metadata: this.createFileMetadata(originalFileName, fileMimeType, fileSize),
+        Metadata: typeToObject<TFileMetadata>({
+          'original-filename': originalFileName,
+          'original-mimetype': fileMimeType,
+          encrypted: 'true',
+        }),
       })
     )
   }
@@ -101,8 +144,70 @@ export class S3FileService {
     return headResponse.Metadata as TFileMetadata
   }
 
-  async getFileFromURL(url: string, res: Response): Promise<void> {
-    const msgMedia = await this.prismaClient.messageMedia.findUnique({ where: { url } })
+  getContentTypeHeaderByFileExtension(fileExt: string): string | undefined {
+    return this.uploadConfig.getFileExtToMimeTypeMappings()[fileExt]
+  }
+
+  private getMimeTypeFromFilePath = (filePath: string): string => {
+    return mime.lookup(filePath) || 'application/octet-stream'
+  }
+
+  private checkNeedRangeSupport = (filePath: string): boolean => {
+    const mimeType = this.getMimeTypeFromFilePath(filePath)
+    return mimeType.startsWith('video/') || mimeType.startsWith('audio/')
+  }
+
+  private setResponseHeadersForGetFile(
+    reqHeaders: IncomingHttpHeaders,
+    res: Response,
+    msgMedia: TMessageMedia
+  ): void {
+    // Set headers
+    res.setHeader(
+      'Content-Type',
+      this.getContentTypeHeaderByFileExtension(msgMedia.fileType) || 'application/octet-stream'
+    )
+    res.setHeader('Content-Disposition', 'inline') // Hiển thị trên browser thay vì download
+    res.setHeader('Accept-Ranges', 'bytes')
+    const range = reqHeaders.range
+    if (range && this.checkNeedRangeSupport(msgMedia.fileName)) {
+      const { fileSize } = msgMedia
+      // Parse range header: "bytes=start-end"
+      const parts = range.replace(/bytes=/, '').split('-')
+      const start = parseInt(parts[0], 10)
+      const end = parts[1] ? parseInt(parts[1], 10) : fileSize - 1
+      const chunkSize = end - start + 1
+
+      // Validate range
+      if (start >= fileSize || end >= fileSize) {
+        res
+          .status(HttpStatus.REQUESTED_RANGE_NOT_SATISFIABLE)
+          .setHeader('Content-Range', `bytes */${fileSize}`)
+        res.end()
+        return
+      }
+
+      // Set headers cho partial content
+      res.status(HttpStatus.PARTIAL_CONTENT) // Partial Content
+      res.setHeader('Content-Range', `bytes ${start}-${end}/${fileSize}`)
+      res.setHeader('Content-Length', chunkSize)
+    }
+  }
+
+  createMessageMediaUrl(s3MediaFileKey: string, needToEncodeFileKey?: boolean): string {
+    return `${process.env.NODE_ENV === 'development' ? process.env.SERVER_ENDPOINT_DEV : process.env.SERVER_ENDPOINT}/${ERoutes.UPLOAD}/file?fkey=${needToEncodeFileKey ? encodeURIComponent(s3MediaFileKey) : s3MediaFileKey}`
+  }
+
+  async getFileFromURL(
+    fileKey: string,
+    reqHeaders: IncomingHttpHeaders,
+    res: Response
+  ): Promise<void> {
+    console.log('>>> fileKey:', fileKey)
+    const msgMedia = await this.messageMediaService.findMessageMediaByURL(
+      this.createMessageMediaUrl(fileKey)
+    )
+    console.log('>>> msg Media:', msgMedia)
     if (!msgMedia) {
       throw new NotFoundException('MessageMedia not found')
     }
@@ -113,7 +218,7 @@ export class S3FileService {
       const s3Response = await this.s3Client.send(
         new GetObjectCommand({
           Bucket: this.getS3BucketName(),
-          Key: S3FileService.extractObjectKeyFromUrl(url),
+          Key: fileKey,
         })
       )
       s3Stream = s3Response.Body as NodeJS.ReadableStream
@@ -127,31 +232,28 @@ export class S3FileService {
     if (!s3Stream || typeof (s3Stream as any).pipe !== 'function') {
       throw new InternalServerErrorException('S3 response body is not a readable stream')
     }
-    if (
-      !metadata ||
-      !metadata['original-filename'] ||
-      !metadata['original-mimetype'] ||
-      !metadata['original-size']
-    ) {
-      throw new InternalServerErrorException('Missing file metadata')
-    }
 
     // Tạo decipher stream
-    const decipher = this.fileEncryptor.createStreamEncryptor(
-      Buffer.from(msgMedia.dek), // 32 bytes
-      Buffer.from(msgMedia.iv) // 16 bytes
+    const decipher = this.symmetricFileEncryptor.createStreamDecryptor(
+      Buffer.from(
+        this.symmetricTextEncryptor.decrypt(
+          msgMedia.dek,
+          process.env.MESSAGES_ENCRYPTION_SECRET_KEY
+        ),
+        'base64'
+      ), // 32 bytes
+      Buffer.from(msgMedia.iv, 'base64') // 16 bytes
     )
+    decipher.setAuthTag(Buffer.from(msgMedia.authTag, 'base64'))
 
-    // Set headers
-    res.setHeader('Content-Type', 'application/pdf')
-    res.setHeader('Content-Disposition', 'attachment; filename="decrypted.pdf"')
+    this.setResponseHeadersForGetFile(reqHeaders, res, msgMedia)
 
     // Pipeline: S3 Stream -> Decipher -> Response
     stream.pipeline(s3Stream as NodeJS.ReadableStream, decipher, res, (error) => {
       if (error) {
         console.error('>>> Pipeline error:', error)
         if (!res.headersSent) {
-          res.status(500).send('Decryption failed')
+          res.status(HttpStatus.INTERNAL_SERVER_ERROR).send('Decryption failed')
         }
       }
     })

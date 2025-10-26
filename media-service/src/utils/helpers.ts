@@ -2,6 +2,7 @@ import { EMessageMediaTypes } from '@/message/message.enum'
 import { EGlobalMessages } from './enums'
 import type { Express } from 'express'
 import { Readable } from 'stream'
+import { TSignatureObject } from './types'
 
 /**
  * Định dạng kích thước file
@@ -37,12 +38,19 @@ export function decodeMulterFileName(originalName: string): string {
   }
 }
 
+export const convertFileMimeTypeToMessageMediaType = (mimeType: string): EMessageMediaTypes => {
+  if (mimeType.startsWith('image/')) return EMessageMediaTypes.IMAGE
+  if (mimeType.startsWith('video/')) return EMessageMediaTypes.VIDEO
+  if (mimeType.startsWith('audio/')) return EMessageMediaTypes.AUDIO
+  return EMessageMediaTypes.DOCUMENT
+}
+
 /**
  * Xác định loại file từ buffer của file
  * @param {Express.Multer.File} file - File để xác định loại
  * @returns {Promise<EMessageMediaTypes>} Loại file
  */
-export async function detectFileType(file: Express.Multer.File): Promise<EMessageMediaTypes> {
+export function detectFileType(file: Express.Multer.File): EMessageMediaTypes {
   const mime = file.mimetype
 
   // Special handling for WebM files
@@ -166,4 +174,17 @@ export const convertUint8ArrayToMulterFile = (
   }
 
   return file
+}
+
+export const typeToObject = <ObjectType extends TSignatureObject>(obj: ObjectType): ObjectType =>
+  obj
+
+/**
+ * Lấy ID lớn nhất từ mảng các đối tượng có thuộc tính id, id bắt đầu từ 1
+ * @param arr Mảng các đối tượng
+ * @returns ID lớn nhất, hoặc 0 nếu mảng rỗng
+ */
+export function getMaxIdFromObjectArray<T extends { id: number }>(arr: T[]): number {
+  if (arr.length === 0) return 0
+  return Math.max(...arr.map((item) => item.id))
 }

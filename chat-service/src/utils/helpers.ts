@@ -42,7 +42,7 @@ export function decodeMulterFileName(originalName: string): string {
  * @param {Express.Multer.File} file - File để xác định loại
  * @returns {Promise<EMessageMediaTypes>} Loại file
  */
-export async function detectFileType(file: Express.Multer.File): Promise<EMessageMediaTypes> {
+export function detectFileType(file: Express.Multer.File): EMessageMediaTypes {
   const mime = file.mimetype
 
   // Special handling for WebM files

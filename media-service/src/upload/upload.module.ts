@@ -3,10 +3,11 @@ import { UploadService } from './upload.service'
 import { UploadController } from './upload.controller'
 import { ThumbnailService } from './thumbnail.service'
 import { S3FileService } from './s3-file.service'
-import { FileEncryptionService } from './file-encryption.service'
+import { MessageMediaService } from './message-media.service'
+import { UploadConfig } from './upload.config'
 
 @Module({
   controllers: [UploadController],
-  providers: [UploadService, ThumbnailService, S3FileService, FileEncryptionService],
+  providers: [UploadService, ThumbnailService, S3FileService, MessageMediaService, UploadConfig],
 })
 export class UploadModule {}

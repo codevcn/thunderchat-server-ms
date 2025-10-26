@@ -1,29 +1,43 @@
-import { Injectable, BadRequestException, Inject } from '@nestjs/common'
-import { DeleteObjectCommand, S3Client } from '@aws-sdk/client-s3'
+import { Injectable, BadRequestException, HttpStatus } from '@nestjs/common'
 import { ThumbnailService } from './thumbnail.service'
-import { Express } from 'express'
-import type { TFileMetadata, TUploadResult } from './upload.type'
-import { PrismaService } from '@/configs/db/prisma.service'
-import { detectFileType, formatBytes, decodeMulterFileName } from '@/utils/helpers'
-import { PutObjectCommand } from '@aws-sdk/client-s3'
+import type { Express, Request, Response } from 'express'
+import type {
+  TUploadedPromise,
+  TUploadMultipleFilesResult,
+  TUploadGroupChatAvatar,
+  TUploadReportImageRes,
+  TUploadReportMessageFromUrl,
+  TUploadResult,
+} from './upload.type'
+import {
+  detectFileType,
+  formatBytes,
+  decodeMulterFileName,
+  typeToObject,
+  convertFileMimeTypeToMessageMediaType,
+  getMaxIdFromObjectArray,
+} from '@/utils/helpers'
 import { DevLogger } from '@/dev/dev-logger'
-import { EProviderTokens } from '@/utils/enums'
 import type { TMessageMedia } from '@/utils/entities/message-media.entity'
 import { S3FileService } from './s3-file.service'
-import { createReadStream, readFileSync } from 'fs'
 import { extname } from 'path'
 import * as https from 'https'
 import * as http from 'http'
-import { FileEncryptionService } from './file-encryption.service'
 import { SymmetricTextEncryptor } from '@/utils/crypto/symmetric-text-encryptor.crypto'
 import { readFile } from 'fs/promises'
+import * as stream from 'stream'
+import Busboy from 'busboy'
+import { SymmetricFileEncryptor } from '@/utils/crypto/symmetric-file-encryptor.crypto'
+import type { MessageMediaType } from '@prisma/client'
+import { MessageMediaService } from './message-media.service'
+import { UploadConfig } from './upload.config'
+import { ERoutes } from '@/utils/enums'
 
 @Injectable()
 export class UploadService {
   private symmetricTextEncryptor: SymmetricTextEncryptor
-  private readonly MAX_FILE_SIZE = 50 * 1024 * 1024 // 50MB
-  private readonly groupChatAvatarFolder = 'system/group-chat'
-  private readonly awsBucketName = process.env.AWS_BUCKET_NAME
+  private symmetricFileEncryptor: SymmetricFileEncryptor
+  private readonly MAX_FILE_SIZE: number = 50 * 1024 * 1024 // 50MB
   // Định nghĩa các loại file được phép upload
   private readonly allowedMimeTypes = {
     // Images
@@ -57,21 +71,8 @@ export class UploadService {
     'application/vnd.openxmlformats-officedocument.presentationml.presentation': 'document', // .pptx
     'text/plain': 'document', // .txt
     'text/csv': 'document', // .csv
-    'application/rtf': 'document', // .rtf
-    'application/vnd.oasis.opendocument.text': 'document',
-    'application/vnd.oasis.opendocument.spreadsheet': 'document',
-    'application/vnd.oasis.opendocument.presentation': 'document',
     'application/zip': 'document',
-    'application/x-compressed': 'document', // Alternative MIME type for ZIP files
-    'application/x-zip-compressed': 'document', // Another alternative for ZIP
-    'application/x-rar-compressed': 'document',
-    'application/x-7z-compressed': 'document',
     'application/gzip': 'archive', // .gz
-    'application/x-gzip': 'archive', // Alternative for .gz
-    'application/x-tar': 'archive',
-    'application/x-bzip2': 'archive', // .bz2 files
-    'application/x-bzip': 'archive', // .bz files
-
     'text/html': 'document', // .html
     'application/json': 'document', // .json
     'text/markdown': 'document',
@@ -122,120 +123,200 @@ export class UploadService {
     'application/vnd.openxmlformats-officedocument.presentationml.presentation': 'pptx',
     'text/plain': 'txt',
     'text/csv': 'csv',
-    'application/rtf': 'rtf',
-    'application/vnd.oasis.opendocument.text': 'odt',
-    'application/vnd.oasis.opendocument.spreadsheet': 'ods',
-    'application/vnd.oasis.opendocument.presentation': 'odp',
     'application/zip': 'zip',
-    'application/x-compressed': 'zip', // Alternative MIME type for ZIP files
-    'application/x-zip-compressed': 'zip', // Another alternative for ZIP
-    'application/x-rar-compressed': 'rar',
-    'application/x-7z-compressed': '7z',
     'application/gzip': 'gz',
-    'application/x-gzip': 'gz', // Alternative for .gz
-    'application/x-tar': 'tar',
-    'application/x-bzip2': 'bz2', // .bz2 files
-    'application/x-bzip': 'bz', // .bz files
     'text/html': 'html',
     'application/json': 'json',
     'text/markdown': 'md',
   }
-  // Map extensions to content types based on allowedMimeTypes
-  private readonly extensionToContentType = {
-    jpg: 'image/jpeg',
-    jpeg: 'image/jpeg',
-    png: 'image/png',
-    gif: 'image/gif',
-    webp: 'image/webp',
-    bmp: 'image/bmp',
-    svg: 'image/svg+xml',
-    tiff: 'image/tiff',
-    heic: 'image/heic',
-    mp4: 'video/mp4',
-    avi: 'video/avi',
-    mov: 'video/mov',
-    wmv: 'video/wmv',
-    mpeg: 'video/mpeg',
-    webm: 'video/webm',
-    '3gp': 'video/3gpp',
-    mkv: 'video/x-matroska',
-    flv: 'video/x-flv',
-    mp3: 'audio/mpeg',
-    wav: 'audio/wav',
-    webma: 'audio/webm',
-    ogg: 'audio/ogg',
-    aac: 'audio/aac',
-    flac: 'audio/flac',
-    m4a: 'audio/mp4',
-    pdf: 'application/pdf',
-    doc: 'application/msword',
-    docx: 'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
-    xls: 'application/vnd.ms-excel',
-    xlsx: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
-    ppt: 'application/vnd.ms-powerpoint',
-    pptx: 'application/vnd.openxmlformats-officedocument.presentationml.presentation',
-    txt: 'text/plain',
-    csv: 'text/csv',
-    rtf: 'application/rtf',
-    odt: 'application/vnd.oasis.opendocument.text',
-    ods: 'application/vnd.oasis.opendocument.spreadsheet',
-    odp: 'application/vnd.oasis.opendocument.presentation',
-    zip: 'application/zip',
-    rar: 'application/x-rar-compressed',
-    '7z': 'application/x-7z-compressed',
-    gz: 'application/gzip',
-    bz2: 'application/x-bzip2',
-    bz: 'application/x-bzip',
-    tar: 'application/x-tar',
-    html: 'text/html',
-    json: 'application/json',
-    md: 'text/markdown',
-  }
 
   constructor(
     private readonly thumbnailService: ThumbnailService,
-    @Inject(EProviderTokens.PRISMA_CLIENT) private prismaService: PrismaService,
-    private fileEncryptionService: FileEncryptionService,
-    private s3FileService: S3FileService
+    private s3FileService: S3FileService,
+    private messageMediaService: MessageMediaService,
+    private uploadConfig: UploadConfig
   ) {
     this.symmetricTextEncryptor = new SymmetricTextEncryptor()
-  }
-
-  async updateMessageMediaThumbnail(
-    messageMediaId: number,
-    thumbnailUrl: string
-  ): Promise<TMessageMedia> {
-    const updatedMedia = await this.prismaService.messageMedia.update({
-      where: { id: messageMediaId },
-      data: { thumbnailUrl },
-    })
-    return updatedMedia
+    this.symmetricFileEncryptor = new SymmetricFileEncryptor()
   }
 
   async createMessageMedia(
-    uploadedFileUrl: string,
-    file: Express.Multer.File,
-    decodedOriginalName: string,
-    originalDek: string
+    s3FileKey: string,
+    msgMediaType: MessageMediaType,
+    fileMimeType: string,
+    originalFilename: string,
+    fileSize: number,
+    originalDek: string,
+    iv: string,
+    authTag: string
   ): Promise<TMessageMedia> {
-    const messageMedia = await this.prismaService.messageMedia.create({
-      data: {
-        url: uploadedFileUrl,
-        type: await detectFileType(file),
-        fileName: this.symmetricTextEncryptor.encrypt(decodedOriginalName, originalDek),
-        fileSize: file.size,
-        thumbnailUrl: '',
-        dek: this.symmetricTextEncryptor.encrypt(
-          originalDek,
-          process.env.MESSAGES_ENCRYPTION_SECRET_KEY
-        ),
-        dekVersionCode: process.env.MESSAGES_ENCRYPTION_VERSION_CODE,
-      },
-    })
+    const messageMedia = await this.messageMediaService.createMessageMedia(
+      this.s3FileService.createMessageMediaUrl(s3FileKey),
+      msgMediaType,
+      fileMimeType,
+      this.symmetricTextEncryptor.encrypt(originalFilename, originalDek),
+      fileSize,
+      undefined,
+      this.symmetricTextEncryptor.encrypt(originalDek, process.env.MESSAGES_ENCRYPTION_SECRET_KEY),
+      iv,
+      authTag
+    )
+    console.log('>>> msg media:', messageMedia)
     return messageMedia
   }
 
-  async uploadFile(file: Express.Multer.File): Promise<TUploadResult> {
+  async createMessageMediaNonEncrypted(
+    uploadedFileUrl: string,
+    file: Express.Multer.File,
+    originalFilename: string,
+    originalDek?: string,
+    iv?: string
+  ): Promise<TMessageMedia> {
+    const messageMedia = await this.messageMediaService.createMessageMedia(
+      uploadedFileUrl,
+      detectFileType(file),
+      file.mimetype,
+      originalDek
+        ? this.symmetricTextEncryptor.encrypt(originalFilename, originalDek)
+        : originalFilename,
+      file.size,
+      undefined,
+      originalDek
+        ? this.symmetricTextEncryptor.encrypt(
+            originalDek,
+            process.env.MESSAGES_ENCRYPTION_SECRET_KEY
+          )
+        : undefined,
+      iv
+    )
+    return messageMedia
+  }
+
+  async uploadMultipleFiles(req: Request, res: Response): Promise<void> {
+    const busboy = Busboy({ headers: req.headers })
+    const uploads: TUploadedPromise[] = []
+    busboy.on('file', (fieldname, fileStream, fileInfo) => {
+      const { mimeType } = fileInfo
+      if (!this.allowedMimeTypes[mimeType]) return
+      const { filename } = fileInfo
+      const fileKey = this.s3FileService.createS3FileKey(filename)
+      const iv = this.symmetricFileEncryptor.generateRandomIV()
+      const dek = this.symmetricFileEncryptor.generateEncryptionKey()
+      const cipher = this.symmetricFileEncryptor.createStreamEncryptor(dek, iv)
+      const passThrough = new stream.PassThrough()
+      const abortController = new AbortController()
+      const uploadId = getMaxIdFromObjectArray(uploads) + 1
+      const sizeCounter = new stream.PassThrough()
+      sizeCounter.on('data', ({ length }) => {
+        uploads.find(({ id }) => id === uploadId)!.fileSize += length
+      })
+      cipher.on('end', () => {
+        uploads.find(({ id }) => id === uploadId)!.authTag = cipher.getAuthTag().toString('base64')
+      })
+      stream.pipeline(fileStream, sizeCounter, cipher, passThrough, (error) => {
+        if (error) {
+          console.error('>>> file stream Pipeline error:', error)
+          abortController.abort()
+        }
+      })
+      const upload = this.s3FileService.createUploadStream(
+        fileKey,
+        passThrough,
+        {
+          'original-filename': filename,
+          'original-mimetype': mimeType,
+          encrypted: 'true',
+        },
+        abortController
+      )
+      uploads.push({
+        promise: upload.done(),
+        filename: filename,
+        iv: iv.toString('base64'),
+        fileType: mimeType,
+        dek: dek.toString('base64'),
+        id: uploadId,
+        fileSize: 0,
+        fileKey,
+        authTag: '',
+      })
+    })
+    busboy.on('finish', async () => {
+      if (uploads.length === 0) {
+        return res.status(HttpStatus.INTERNAL_SERVER_ERROR).json(
+          typeToObject<TUploadMultipleFilesResult>({
+            success: false,
+            message: 'No files uploaded',
+            uploadedFiles: [],
+          })
+        )
+      }
+      res.status(HttpStatus.OK).json(
+        typeToObject<TUploadMultipleFilesResult>({
+          success: true,
+          message: `${uploads.length} files processed`,
+          uploadedFiles: await Promise.all<TUploadMultipleFilesResult['uploadedFiles'][number]>(
+            uploads.map(
+              async ({ promise, filename, iv, fileType, dek, fileSize, fileKey, authTag }) => {
+                try {
+                  const { Key, Location } = await promise
+                  console.log('>>> info to create:', { filename, fileSize, fileType, fileKey })
+                  const { id } = await this.createMessageMedia(
+                    fileKey,
+                    convertFileMimeTypeToMessageMediaType(fileType),
+                    fileType,
+                    filename,
+                    fileSize,
+                    dek,
+                    iv,
+                    authTag
+                  )
+                  return {
+                    id,
+                    fileType,
+                    filename,
+                    location: Location,
+                    key: Key,
+                    iv,
+                  }
+                } catch (error) {
+                  console.error('>>> error when Busboy finish:', error)
+                  return {
+                    error: error.message,
+                  }
+                }
+              }
+            )
+          ),
+        })
+      )
+    })
+    req.pipe(busboy)
+  }
+
+  async createThumbnailForVideoFile(
+    fileUrl: string,
+    fileKey: string,
+    messageId: number
+  ): Promise<string> {
+    try {
+      let thumbnailUrl: string
+      const existingThumbnail = await this.thumbnailService.checkThumbnailExists(fileKey)
+      if (existingThumbnail) {
+        thumbnailUrl = existingThumbnail
+      } else {
+        thumbnailUrl = await this.thumbnailService.generateVideoThumbnail(fileUrl, fileKey)
+      }
+      await this.messageMediaService.updateThumbnailUrl(thumbnailUrl, messageId)
+      return thumbnailUrl
+    } catch (error) {
+      // Rollback video nếu lỗi
+      await this.rollbackFileUpload(fileKey)
+      throw new Error(`Failed to create thumbnail: ${error.message}`)
+    }
+  }
+
+  async uploadFileNonEncrypted(file: Express.Multer.File): Promise<TUploadResult> {
     // Kiểm tra loại file
     const fileType = this.allowedMimeTypes[file.mimetype]
     if (!fileType) {
@@ -255,25 +336,16 @@ export class UploadService {
 
     let uploadedFileUrl: string | null = null
 
-    const dek = this.fileEncryptionService.generateEncryptionKey()
-    const encryptedBuffer = this.fileEncryptionService.encryptBuffer(file.buffer, dek)
     try {
-      await this.s3FileService.saveFile(
-        fileKey,
-        encryptedBuffer,
-        decodedOriginalName,
-        file.mimetype,
-        file.size.toString()
-      )
+      await this.s3FileService.saveFile(fileKey, file.buffer, decodedOriginalName, file.mimetype)
 
       // Tự build URL thay vì `data.Location` như v2
-      uploadedFileUrl = `https://${process.env.AWS_S3_BUCKET}.s3.${process.env.AWS_REGION}.amazonaws.com/${fileKey}`
+      uploadedFileUrl = this.s3FileService.createS3FileURL(fileKey)
 
-      const messageMedia = await this.createMessageMedia(
+      const messageMedia = await this.createMessageMediaNonEncrypted(
         uploadedFileUrl,
         file,
-        decodedOriginalName,
-        dek
+        decodedOriginalName
       )
 
       const result: TUploadResult = {
@@ -286,27 +358,11 @@ export class UploadService {
 
       // Nếu là video → tạo thumbnail
       if (fileType === 'video') {
-        try {
-          let thumbnailUrl: string
-          const existingThumbnail = await this.thumbnailService.checkThumbnailExists(fileKey)
-
-          if (existingThumbnail) {
-            thumbnailUrl = existingThumbnail
-          } else {
-            thumbnailUrl = await this.thumbnailService.generateVideoThumbnail(
-              uploadedFileUrl,
-              fileKey
-            )
-          }
-
-          await this.updateMessageMediaThumbnail(messageMedia.id, thumbnailUrl)
-
-          result.thumbnailUrl = thumbnailUrl
-        } catch (error) {
-          // Rollback video nếu lỗi
-          await this.rollbackFileUpload(fileKey)
-          throw new Error(`Failed to create thumbnail: ${error.message}`)
-        }
+        result.thumbnailUrl = await this.createThumbnailForVideoFile(
+          uploadedFileUrl,
+          fileKey,
+          messageMedia.id
+        )
       }
 
       return result
@@ -346,7 +402,7 @@ export class UploadService {
   /**
    * Upload report image to S3
    */
-  async uploadReportImage(file: Express.Multer.File): Promise<{ url: string }> {
+  async uploadReportImage(file: Express.Multer.File): Promise<TUploadReportImageRes> {
     // Create fileKey with report-image folder
     const originalName = file.originalname
     const timestamp = Date.now()
@@ -358,7 +414,7 @@ export class UploadService {
       originalname: fileKey, // Override originalname to use our custom key
     }
 
-    const result = await this.uploadFile(modifiedFile)
+    const result = await this.uploadFileNonEncrypted(modifiedFile)
     return { url: result.url }
   }
 
@@ -369,7 +425,7 @@ export class UploadService {
     filePath: string,
     messageId: number,
     contentType: string
-  ): Promise<{ url: string }> {
+  ): Promise<TUploadReportImageRes> {
     const fileBuffer = await readFile(filePath)
 
     // Extract file extension from file path
@@ -384,12 +440,11 @@ export class UploadService {
       fileKey,
       fileBuffer,
       `message-${messageId}`,
-      properContentType,
-      fileBuffer.length.toString()
+      properContentType
     )
 
     // Trả về URL public (nếu bucket public) hoặc URL dạng S3
-    const fileUrl = `https://${process.env.AWS_S3_BUCKET}.s3.${process.env.AWS_REGION}.amazonaws.com/${fileKey}`
+    const fileUrl = `https://${this.s3FileService.getS3BucketName()}.s3.${this.s3FileService.getS3Region()}.amazonaws.com/${fileKey}`
 
     return { url: fileUrl }
   }
@@ -402,7 +457,7 @@ export class UploadService {
     messageId: number,
     contentType: string,
     retryCount: number = 0
-  ): Promise<{ url: string }> {
+  ): Promise<TUploadReportMessageFromUrl> {
     const maxRetries = 3
     const timeout = 30000 // 30s
 
@@ -443,20 +498,12 @@ export class UploadService {
             const fileKey = `report-message/${Date.now()}_message-${messageId}.${fileExtension}`
             const properContentType = this.getContentTypeFromExtension(fileExtension) || contentType
 
-            const command = new PutObjectCommand({
-              Bucket: process.env.AWS_S3_BUCKET!,
-              Key: fileKey,
-              Body: fileBuffer,
-              ContentType: properContentType,
-            })
-
             try {
               await this.s3FileService.saveFile(
                 fileKey,
                 fileBuffer,
                 `message-${messageId}`,
-                properContentType,
-                fileBuffer.length.toString()
+                properContentType
               )
             } catch (s3Error) {
               if (retryCount < maxRetries) {
@@ -472,8 +519,7 @@ export class UploadService {
               throw s3Error
             }
 
-            const fileUrlResult = `https://${process.env.AWS_S3_BUCKET}.s3.${process.env.AWS_REGION}.amazonaws.com/${fileKey}`
-            console.log('✅ Downloaded and uploaded report message media:', fileUrlResult)
+            const fileUrlResult = `https://${this.s3FileService.getS3BucketName()}.s3.${this.s3FileService.getS3Region()}.amazonaws.com/${fileKey}`
             resolve({ url: fileUrlResult })
           } catch (error) {
             reject(error)
@@ -544,7 +590,7 @@ export class UploadService {
    * Get content type from file extension
    */
   private getContentTypeFromExtension(extension: string): string {
-    const contentType = this.extensionToContentType[extension.toLowerCase()]
+    const contentType = this.uploadConfig.getFileExtToMimeTypeMappings()[extension.toLowerCase()]
     // Verify that the content type is in allowedMimeTypes
     if (contentType && this.allowedMimeTypes[contentType]) {
       return contentType
@@ -552,22 +598,16 @@ export class UploadService {
     return 'application/octet-stream'
   }
 
-  async uploadGroupChatAvatar(file: Express.Multer.File): Promise<{ url: string }> {
+  async uploadGroupChatAvatar(file: Express.Multer.File): Promise<TUploadGroupChatAvatar> {
     const fileBuffer = await readFile(file.path)
-    const uploadKey = `${this.groupChatAvatarFolder}/${Date.now()}-${S3FileService.hashFileName(file.originalname)}`
-    await this.s3FileService.saveFile(
-      uploadKey,
-      fileBuffer,
-      file.originalname,
-      file.mimetype,
-      file.size.toString()
-    )
+    const uploadKey = this.s3FileService.createS3FileKey(file.originalname)
+    await this.s3FileService.saveFile(uploadKey, fileBuffer, file.originalname, file.mimetype)
     return {
-      url: `https://${this.awsBucketName}.s3.${process.env.AWS_REGION}.amazonaws.com/${uploadKey}`,
+      url: `https://${this.s3FileService.getS3BucketName()}.s3.${this.s3FileService.getS3Region()}.amazonaws.com/${uploadKey}`,
     }
   }
 
   async deleteGroupChatAvatar(avatarUrl: string): Promise<void> {
-    await this.s3FileService.deleteFileByKey(S3FileService.extractObjectKeyFromUrl(avatarUrl))
+    await this.s3FileService.deleteFileByKey(this.s3FileService.extractObjectKeyFromUrl(avatarUrl))
   }
 }

@@ -11,11 +11,12 @@ import {
   UploadReportMessageMediaResponse,
 } from 'protos/generated/media'
 import type { TUploadResult } from './upload.type'
-import type { Express } from 'express'
+import type { Express, Request, Response } from 'express'
 
 export interface IUploadController {
   uploadFile: (file: Express.Multer.File) => Promise<TUploadResult>
   getHello: () => Promise<string>
+  uploadMultipleFiles: (req: Request, res: Response) => Promise<void>
 }
 
 export interface IUploadGrpcController {

@@ -32,7 +32,7 @@ export class UploadGrpcController implements IUploadGrpcController {
   async UploadFile(data: UploadFileRequest): Promise<UploadFileResponse> {
     return {
       fileInfoJson: JSON.stringify(
-        await this.uploadService.uploadFile(
+        await this.uploadService.uploadFileNonEncrypted(
           convertUint8ArrayToMulterFile(data.content, data.filename)
         )
       ),

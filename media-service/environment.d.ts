@@ -16,8 +16,15 @@ declare global {
       AWS_S3_BUCKET: string
       CLIENT_HOST: string
       CLIENT_HOST_DEV: string
+      SERVER_ENDPOINT: string
       MESSAGES_ENCRYPTION_SECRET_KEY: string
       MESSAGES_ENCRYPTION_VERSION_CODE: string
+      SERVER_ENDPOINT_DEV: string
+    }
+  }
+  namespace Express {
+    interface Request {
+      files?: TUploadedFile[]
     }
   }
 }

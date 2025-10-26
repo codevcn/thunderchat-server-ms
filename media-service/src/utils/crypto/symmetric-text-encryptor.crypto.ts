@@ -24,7 +24,7 @@ export class SymmetricTextEncryptor {
    * Mã hóa với AES-256-GCM (authenticated encryption)
    * Format: [IV(12) + AuthTag(16) + Ciphertext]
    */
-  encrypt(text: string, encryptionKey: string): string {
+  encrypt(text: string, encryptionKey: string, iv?: Buffer): string {
     // Decode base64 key
     const key = Buffer.from(encryptionKey, 'base64')
 
@@ -33,10 +33,10 @@ export class SymmetricTextEncryptor {
     }
 
     // Tạo IV ngẫu nhiên cho mỗi lần mã hóa
-    const iv = crypto.randomBytes(this.IV_LENGTH)
+    const initialVector = iv || crypto.randomBytes(this.IV_LENGTH)
 
     // Tạo cipher với GCM mode
-    const cipher = crypto.createCipheriv(this.ALGORITHM, key, iv)
+    const cipher = crypto.createCipheriv(this.ALGORITHM, key, initialVector)
 
     // Mã hóa
     const encrypted = Buffer.concat([cipher.update(text, 'utf8'), cipher.final()])
@@ -45,7 +45,7 @@ export class SymmetricTextEncryptor {
     const authTag = cipher.getAuthTag()
 
     // Ghép: IV + AuthTag + Ciphertext
-    const result = Buffer.concat([iv, authTag, encrypted])
+    const result = Buffer.concat([initialVector, authTag, encrypted])
 
     return result.toString('base64')
   }
