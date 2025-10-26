@@ -90,32 +90,33 @@ export class MessageService {
     directChatId?: number,
     groupChatId?: number
   ): Promise<TGetDirectMessagesMessage> {
-    const { encryptedContent, encryptedDek } = this.encryptMessageService.encryptMessageContent(
+    const { encryptedContent, encryptedDek } = this.encryptMessageService.encryptText(
       this.createMessageContentForMedia(originalContent, stickerId, mediaId)
     )
-    const message = await this.PrismaService.message.create({
-      data: {
-        content: encryptedContent,
-        authorId,
-        createdAt: timestamp,
-        status: EMessageStatus.SENT,
-        type,
-        stickerId,
-        recipientId,
-        mediaId,
-        replyToId,
-        groupChatId,
-        directChatId,
-        dek: encryptedDek,
-        dekVersionCode: process.env.MESSAGES_ENCRYPTION_VERSION_CODE,
-      },
-      include: this.messageFullInfo,
-    })
-    const originalMessage = { ...message, content: originalContent }
-    this.syncDataToESService.syncDataToES({
-      type: ESyncDataToESWorkerType.CREATE_MESSAGE,
-      message: originalMessage,
-    })
+    const originalMessage = this.encryptMessageService.decryptMessage(
+      await this.PrismaService.message.create({
+        data: {
+          content: encryptedContent,
+          authorId,
+          createdAt: timestamp,
+          status: EMessageStatus.SENT,
+          type,
+          stickerId,
+          recipientId,
+          mediaId,
+          replyToId,
+          groupChatId,
+          directChatId,
+          dek: encryptedDek,
+          dekVersionCode: process.env.MESSAGES_ENCRYPTION_VERSION_CODE,
+        },
+        include: this.messageFullInfo,
+      })
+    )
+    // this.syncDataToESService.syncDataToES({
+    //   type: ESyncDataToESWorkerType.CREATE_MESSAGE,
+    //   message: originalMessage,
+    // })
     return originalMessage
   }
 

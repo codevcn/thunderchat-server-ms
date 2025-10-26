@@ -1,4 +1,4 @@
-export type TEncryptMessageContentRes = {
+export type TEncryptTextRes = {
   encryptedContent: string
   encryptedDek: string
 }

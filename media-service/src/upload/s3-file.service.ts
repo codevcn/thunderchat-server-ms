@@ -116,7 +116,6 @@ export class S3FileService {
   async saveFile(
     fileKey: string,
     fileBuffer: Buffer,
-    originalFileName: string,
     fileMimeType: string
   ): Promise<PutObjectCommandOutput> {
     return await this.s3Client.send(
@@ -126,8 +125,6 @@ export class S3FileService {
         Body: fileBuffer,
         ContentType: fileMimeType,
         Metadata: typeToObject<TFileMetadata>({
-          'original-filename': originalFileName,
-          'original-mimetype': fileMimeType,
           encrypted: 'true',
         }),
       })
@@ -225,7 +222,7 @@ export class S3FileService {
       metadata = s3Response.Metadata as TFileMetadata
     } catch (error) {
       console.error('>>> S3 error:', error)
-      res.status(500).json({ error: error.message })
+      res.status(HttpStatus.INTERNAL_SERVER_ERROR).send('Get file from S3 failed')
       return
     }
     // Ensure s3Stream is a Node.js Readable stream

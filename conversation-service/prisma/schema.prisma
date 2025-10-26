@@ -13,7 +13,7 @@ model MessageMapping {
     mappings    String
     key         String   @db.VarChar(255)
     dek         String   @db.VarChar(128)
-    versionCode String   @unique @map("version_code") @db.VarChar(128)
+    versionCode String   @unique @map("version_code") @db.VarChar(128) // dek version code
     createdAt   DateTime @default(now()) @map("created_at") @db.Timestamptz(3)
 
     @@index([versionCode], type: BTree)
@@ -151,16 +151,22 @@ model Message {
 }
 
 model MessageMedia {
-    id           Int              @id @default(autoincrement())
-    url          String           @unique @map("url")
-    fileSize     Int              @map("file_size")
-    fileName     String           @map("file_name")
-    thumbnailUrl String           @map("thumbnail_url")
-    type         MessageMediaType
-    createdAt    DateTime         @default(now()) @map("created_at") @db.Timestamptz(3)
+    id             Int              @id @default(autoincrement())
+    url            String           @unique @map("url")
+    fileSize       Int              @map("file_size")
+    fileName       String           @map("file_name")
+    fileType       String           @map("file_type")
+    thumbnailUrl   String           @map("thumbnail_url")
+    type           MessageMediaType
+    createdAt      DateTime         @default(now()) @map("created_at") @db.Timestamptz(3)
+    dek            String           @db.VarChar(128) // base64
+    iv             String           @db.VarChar(128) // base64
+    authTag        String           @map("auth_tag") @db.VarChar(128) // base64
+    dekVersionCode String           @map("dek_version_code") @db.VarChar(128)
 
     Message Message[] @relation("MessageMediaOnMessage")
 
+    @@index([url], type: BTree)
     @@map("message_medias")
 }
 

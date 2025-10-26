@@ -10,8 +10,6 @@ export type TUploadResult = {
 }
 
 export type TFileMetadata = {
-  'original-filename': string
-  'original-mimetype': string
   encrypted: string
 }
 

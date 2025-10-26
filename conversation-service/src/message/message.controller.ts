@@ -40,6 +40,7 @@ export class MessageController implements IMessageController {
       sortType as ESortTypes
     )
   }
+
   @Get('context/:messageId')
   async getMessageContext(@Param('messageId') messageId: string) {
     return this.MessageService.getMessageContext(Number(messageId))

@@ -12,7 +12,7 @@ import type {
 import {
   detectFileType,
   formatBytes,
-  decodeMulterFileName,
+  decodeFileName,
   typeToObject,
   convertFileMimeTypeToMessageMediaType,
   getMaxIdFromObjectArray,
@@ -31,7 +31,6 @@ import { SymmetricFileEncryptor } from '@/utils/crypto/symmetric-file-encryptor.
 import type { MessageMediaType } from '@prisma/client'
 import { MessageMediaService } from './message-media.service'
 import { UploadConfig } from './upload.config'
-import { ERoutes } from '@/utils/enums'
 
 @Injectable()
 export class UploadService {
@@ -161,34 +160,7 @@ export class UploadService {
       iv,
       authTag
     )
-    console.log('>>> msg media:', messageMedia)
-    return messageMedia
-  }
-
-  async createMessageMediaNonEncrypted(
-    uploadedFileUrl: string,
-    file: Express.Multer.File,
-    originalFilename: string,
-    originalDek?: string,
-    iv?: string
-  ): Promise<TMessageMedia> {
-    const messageMedia = await this.messageMediaService.createMessageMedia(
-      uploadedFileUrl,
-      detectFileType(file),
-      file.mimetype,
-      originalDek
-        ? this.symmetricTextEncryptor.encrypt(originalFilename, originalDek)
-        : originalFilename,
-      file.size,
-      undefined,
-      originalDek
-        ? this.symmetricTextEncryptor.encrypt(
-            originalDek,
-            process.env.MESSAGES_ENCRYPTION_SECRET_KEY
-          )
-        : undefined,
-      iv
-    )
+    console.log('>>> msg media created:', messageMedia)
     return messageMedia
   }
 
@@ -198,7 +170,7 @@ export class UploadService {
     busboy.on('file', (fieldname, fileStream, fileInfo) => {
       const { mimeType } = fileInfo
       if (!this.allowedMimeTypes[mimeType]) return
-      const { filename } = fileInfo
+      const filename = decodeFileName(fileInfo.filename)
       const fileKey = this.s3FileService.createS3FileKey(filename)
       const iv = this.symmetricFileEncryptor.generateRandomIV()
       const dek = this.symmetricFileEncryptor.generateEncryptionKey()
@@ -223,8 +195,6 @@ export class UploadService {
         fileKey,
         passThrough,
         {
-          'original-filename': filename,
-          'original-mimetype': mimeType,
           encrypted: 'true',
         },
         abortController
@@ -294,6 +264,33 @@ export class UploadService {
     req.pipe(busboy)
   }
 
+  async createMessageMediaNonEncrypted(
+    uploadedFileUrl: string,
+    file: Express.Multer.File,
+    originalFilename: string,
+    originalDek?: string,
+    iv?: string
+  ): Promise<TMessageMedia> {
+    const messageMedia = await this.messageMediaService.createMessageMedia(
+      uploadedFileUrl,
+      detectFileType(file),
+      file.mimetype,
+      originalDek
+        ? this.symmetricTextEncryptor.encrypt(originalFilename, originalDek)
+        : originalFilename,
+      file.size,
+      undefined,
+      originalDek
+        ? this.symmetricTextEncryptor.encrypt(
+            originalDek,
+            process.env.MESSAGES_ENCRYPTION_SECRET_KEY
+          )
+        : undefined,
+      iv
+    )
+    return messageMedia
+  }
+
   async createThumbnailForVideoFile(
     fileUrl: string,
     fileKey: string,
@@ -329,7 +326,7 @@ export class UploadService {
     }
 
     // Chuẩn hóa tên file
-    const decodedOriginalName = decodeMulterFileName(file.originalname)
+    const decodedOriginalName = decodeFileName(file.originalname)
     const fileKey = decodedOriginalName.includes('/')
       ? decodedOriginalName
       : `${Date.now()}_${decodedOriginalName}`
@@ -337,7 +334,7 @@ export class UploadService {
     let uploadedFileUrl: string | null = null
 
     try {
-      await this.s3FileService.saveFile(fileKey, file.buffer, decodedOriginalName, file.mimetype)
+      await this.s3FileService.saveFile(fileKey, file.buffer, file.mimetype)
 
       // Tự build URL thay vì `data.Location` như v2
       uploadedFileUrl = this.s3FileService.createS3FileURL(fileKey)
@@ -436,12 +433,7 @@ export class UploadService {
     // Get proper content type based on file extension
     const properContentType = this.getContentTypeFromExtension(fileExtension) || contentType
 
-    await this.s3FileService.saveFile(
-      fileKey,
-      fileBuffer,
-      `message-${messageId}`,
-      properContentType
-    )
+    await this.s3FileService.saveFile(fileKey, fileBuffer, properContentType)
 
     // Trả về URL public (nếu bucket public) hoặc URL dạng S3
     const fileUrl = `https://${this.s3FileService.getS3BucketName()}.s3.${this.s3FileService.getS3Region()}.amazonaws.com/${fileKey}`
@@ -499,12 +491,7 @@ export class UploadService {
             const properContentType = this.getContentTypeFromExtension(fileExtension) || contentType
 
             try {
-              await this.s3FileService.saveFile(
-                fileKey,
-                fileBuffer,
-                `message-${messageId}`,
-                properContentType
-              )
+              await this.s3FileService.saveFile(fileKey, fileBuffer, properContentType)
             } catch (s3Error) {
               if (retryCount < maxRetries) {
                 setTimeout(
@@ -601,7 +588,7 @@ export class UploadService {
   async uploadGroupChatAvatar(file: Express.Multer.File): Promise<TUploadGroupChatAvatar> {
     const fileBuffer = await readFile(file.path)
     const uploadKey = this.s3FileService.createS3FileKey(file.originalname)
-    await this.s3FileService.saveFile(uploadKey, fileBuffer, file.originalname, file.mimetype)
+    await this.s3FileService.saveFile(uploadKey, fileBuffer, file.mimetype)
     return {
       url: `https://${this.s3FileService.getS3BucketName()}.s3.${this.s3FileService.getS3Region()}.amazonaws.com/${uploadKey}`,
     }

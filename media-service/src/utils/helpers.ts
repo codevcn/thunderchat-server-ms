@@ -27,7 +27,7 @@ export function formatBytes(bytes: number, decimals = 2): string {
 /**
  * Decode Multer's originalname (latin1) to UTF-8 so Unicode filenames display correctly
  */
-export function decodeMulterFileName(originalName: string): string {
+export function decodeFileName(originalName: string): string {
   if (!originalName) return originalName
   try {
     // Multer historically decodes headers using latin1, causing UTF-8 names to look garbled
