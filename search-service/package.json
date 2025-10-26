@@ -21,6 +21,7 @@
   },
   "dependencies": {
     "@elastic/elasticsearch": "^9.1.1",
+    "@grpc/grpc-js": "^1.14.0",
     "@nestjs/common": "^11.0.1",
     "@nestjs/config": "^4.0.2",
     "@nestjs/core": "^11.0.1",

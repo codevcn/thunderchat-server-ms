@@ -7,10 +7,10 @@ export type TVoiceCallRequestRes = {
   session?: TActiveVoiceCallSession
 }
 
-export type TVoiceCallSessionActiveId = string
+export type TCallSessionActiveId = string
 
 export type TActiveVoiceCallSession = {
-  id: TVoiceCallSessionActiveId
+  id: TCallSessionActiveId
   status: EVoiceCallStatus
   callerUserId: TUserId
   calleeUserId: TUserId
