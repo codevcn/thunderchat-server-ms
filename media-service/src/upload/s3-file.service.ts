@@ -200,11 +200,9 @@ export class S3FileService {
     reqHeaders: IncomingHttpHeaders,
     res: Response
   ): Promise<void> {
-    console.log('>>> fileKey:', fileKey)
     const msgMedia = await this.messageMediaService.findMessageMediaByURL(
       this.createMessageMediaUrl(fileKey)
     )
-    console.log('>>> msg Media:', msgMedia)
     if (!msgMedia) {
       throw new NotFoundException('MessageMedia not found')
     }
@@ -221,7 +219,7 @@ export class S3FileService {
       s3Stream = s3Response.Body as NodeJS.ReadableStream
       metadata = s3Response.Metadata as TFileMetadata
     } catch (error) {
-      console.error('>>> S3 error:', error)
+      console.error('>>> S3 fetch file error:', error)
       res.status(HttpStatus.INTERNAL_SERVER_ERROR).send('Get file from S3 failed')
       return
     }
@@ -248,7 +246,7 @@ export class S3FileService {
     // Pipeline: S3 Stream -> Decipher -> Response
     stream.pipeline(s3Stream as NodeJS.ReadableStream, decipher, res, (error) => {
       if (error) {
-        console.error('>>> Pipeline error:', error)
+        console.error('>>> stream pipeline error:', error)
         if (!res.headersSent) {
           res.status(HttpStatus.INTERNAL_SERVER_ERROR).send('Decryption failed')
         }

@@ -160,7 +160,6 @@ export class UploadService {
       iv,
       authTag
     )
-    console.log('>>> msg media created:', messageMedia)
     return messageMedia
   }
 
@@ -230,7 +229,6 @@ export class UploadService {
               async ({ promise, filename, iv, fileType, dek, fileSize, fileKey, authTag }) => {
                 try {
                   const { Key, Location } = await promise
-                  console.log('>>> info to create:', { filename, fileSize, fileType, fileKey })
                   const { id } = await this.createMessageMedia(
                     fileKey,
                     convertFileMimeTypeToMessageMediaType(fileType),
@@ -241,6 +239,13 @@ export class UploadService {
                     iv,
                     authTag
                   )
+                  if (fileType.toLowerCase() === 'video') {
+                    await this.createThumbnailForVideoFile(
+                      this.s3FileService.createS3FileURL(fileKey),
+                      fileKey,
+                      id
+                    )
+                  }
                   return {
                     id,
                     fileType,
@@ -294,7 +299,7 @@ export class UploadService {
   async createThumbnailForVideoFile(
     fileUrl: string,
     fileKey: string,
-    messageId: number
+    messageMediaId: number
   ): Promise<string> {
     try {
       let thumbnailUrl: string
@@ -304,7 +309,7 @@ export class UploadService {
       } else {
         thumbnailUrl = await this.thumbnailService.generateVideoThumbnail(fileUrl, fileKey)
       }
-      await this.messageMediaService.updateThumbnailUrl(thumbnailUrl, messageId)
+      await this.messageMediaService.updateThumbnailUrl(thumbnailUrl, messageMediaId)
       return thumbnailUrl
     } catch (error) {
       // Rollback video nếu lỗi
@@ -315,7 +320,7 @@ export class UploadService {
 
   async uploadFileNonEncrypted(file: Express.Multer.File): Promise<TUploadResult> {
     // Kiểm tra loại file
-    const fileType = this.allowedMimeTypes[file.mimetype]
+    const fileType = this.allowedMimeTypes[file.mimetype] as string | undefined
     if (!fileType) {
       throw new BadRequestException(`File type ${file.mimetype} is not allowed`)
     }
@@ -336,7 +341,6 @@ export class UploadService {
     try {
       await this.s3FileService.saveFile(fileKey, file.buffer, file.mimetype)
 
-      // Tự build URL thay vì `data.Location` như v2
       uploadedFileUrl = this.s3FileService.createS3FileURL(fileKey)
 
       const messageMedia = await this.createMessageMediaNonEncrypted(
@@ -354,7 +358,7 @@ export class UploadService {
       }
 
       // Nếu là video → tạo thumbnail
-      if (fileType === 'video') {
+      if (fileType.toLowerCase() === 'video') {
         result.thumbnailUrl = await this.createThumbnailForVideoFile(
           uploadedFileUrl,
           fileKey,

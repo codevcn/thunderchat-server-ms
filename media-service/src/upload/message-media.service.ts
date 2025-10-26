@@ -40,9 +40,9 @@ export class MessageMediaService {
     })
   }
 
-  async updateThumbnailUrl(thumbnailUrl: string, id?: number, url?: string) {
+  async updateThumbnailUrl(thumbnailUrl: string, msgMediaId?: number, msgMediaUrl?: string) {
     return this.prismaService.messageMedia.update({
-      where: { id, url },
+      where: { id: msgMediaId, url: msgMediaUrl },
       data: { thumbnailUrl },
     })
   }
