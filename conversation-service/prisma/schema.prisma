@@ -410,6 +410,7 @@ enum ReportedMessageType {
     VIDEO
     AUDIO
     DOCUMENT
+    CALL
 }
 
 enum FriendRequestsStatus {

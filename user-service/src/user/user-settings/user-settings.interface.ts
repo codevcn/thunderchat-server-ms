@@ -6,11 +6,6 @@ export interface IUserSettings {
   userId: number
   onlyReceiveFriendMessage: boolean
 }
-
-export interface IUserGrpcSettingController {
-  FindByUserId(data: { userId: number }): Promise<{ userSettings: IUserSettings }>
-}
-
 export interface IUserSettingsGrpcController {
-  FindByUserId: (data: FindByUserIdRequest) => Promise<TFindUserSettingsByUserIdGrpcRes>
+  FindByUserId(data: FindByUserIdRequest): Promise<TFindUserSettingsByUserIdGrpcRes>
 }

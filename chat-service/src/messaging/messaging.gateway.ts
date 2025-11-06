@@ -269,7 +269,7 @@ export class MessagingGateway
     groupChat?: TGroupChat
   ): Promise<void> {
     for (const receiverId of receiverIds) {
-      this.pushNotificationService.sendNotificationToUser(
+      await this.pushNotificationService.sendNotificationToUser(
         {
           conversation: {
             title:
@@ -322,16 +322,16 @@ export class MessagingGateway
           sender
         )
       }
-      // this.handleSendPushNotification(newMessage, EChatType.DIRECT, [receiverId])
+      this.handleSendPushNotification(newMessage, EChatType.DIRECT, [receiverId])
     } else if (groupChat) {
       this.userConnectionService.sendNewMessageToGroupChat(groupChat.id, newMessage)
       const memberIds = await this.groupMemberService.findGroupChatMemberIds(groupChat.id)
-      // this.handleSendPushNotification(
-      //   newMessage,
-      //   EChatType.GROUP,
-      //   memberIds.filter((id) => id !== sender.id),
-      //   groupChat
-      // )
+      this.handleSendPushNotification(
+        newMessage,
+        EChatType.GROUP,
+        memberIds.filter((id) => id !== sender.id),
+        groupChat
+      )
     }
   }
 

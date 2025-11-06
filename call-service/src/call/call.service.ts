@@ -7,7 +7,7 @@ import type { TActiveCallSession, TCallSessionActiveId } from './call.type'
 import type { TDirectChat } from '@/utils/entities/direct-chat.entity'
 import { v4 as uuidv4 } from 'uuid'
 import { EHangupReason, ECallStatus } from './call.enum'
-
+import { RtcTokenBuilder, RtcRole, RtmTokenBuilder, RtmRole } from 'agora-access-token'
 @Injectable()
 export class CallService {
   private readonly MAX_RETRY_COUNT_CREATE_TEMP_SESSION: number = 3
@@ -199,5 +199,58 @@ export class CallService {
 
   isUserBusy(userId: TUserId): boolean {
     return this.usersCalling.has(userId)
+  }
+  generateRtcToken(channelName: string, uid: TUserId): string {
+    const APP_ID = process.env.AGORA_APP_ID
+    const APP_CERTIFICATE = process.env.AGORA_APP_CERTIFICATE
+
+    if (!APP_ID || !APP_CERTIFICATE) {
+      // Hoặc ném lỗi 500
+      throw new BadRequestException('Agora is not configured on server.')
+    }
+
+    const role = RtcRole.PUBLISHER
+    // Set token hết hạn sau 1 giờ
+    const expirationTimeInSeconds = 3600
+    const currentTimestamp = Math.floor(Date.now() / 1000)
+    const privilegeExpiredTs = currentTimestamp + expirationTimeInSeconds
+
+    // buildTokenWithUid yêu cầu uid là SỐ (number)
+    const token = RtcTokenBuilder.buildTokenWithUid(
+      APP_ID,
+      APP_CERTIFICATE,
+      channelName,
+      Number(uid), // Đảm bảo uid là number
+      role,
+      privilegeExpiredTs
+    )
+    return token
+  }
+
+  /**
+   * Tạo RTM Token (Token để login RTM)
+   */
+  generateRtmToken(uid: TUserId): string {
+    const APP_ID = process.env.AGORA_APP_ID
+    const APP_CERTIFICATE = process.env.AGORA_APP_CERTIFICATE
+
+    if (!APP_ID || !APP_CERTIFICATE) {
+      throw new BadRequestException('Agora is not configured on server.')
+    }
+
+    const role = RtmRole.Rtm_User
+    const expirationTimeInSeconds = 3600 // 1 giờ
+    const currentTimestamp = Math.floor(Date.now() / 1000)
+    const privilegeExpiredTs = currentTimestamp + expirationTimeInSeconds
+
+    // buildTokenWithUid của RTM yêu cầu uid là STRING
+    const token = RtmTokenBuilder.buildToken(
+      APP_ID,
+      APP_CERTIFICATE,
+      String(uid), // 3. account (uid)
+      role, // 4. role (ĐÂY LÀ THAM SỐ BỊ THIẾU)
+      privilegeExpiredTs // 5. privilegeExpiredTs
+    )
+    return token
   }
 }
