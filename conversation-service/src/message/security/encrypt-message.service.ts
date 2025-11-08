@@ -36,17 +36,18 @@ export class EncryptMessageService {
   }
 
   decryptText(encryptedContent: string, dek: string): string {
-    return encryptedContent
-      ? this.symmetricTextEncryptor.decrypt(
-          encryptedContent,
-          this.symmetricTextEncryptor.decrypt(dek, process.env.MESSAGES_ENCRYPTION_SECRET_KEY)
-        )
-      : ''
+    if (!encryptedContent || !dek) {
+      return ''
+    }
+    return this.symmetricTextEncryptor.decrypt(
+      encryptedContent,
+      this.symmetricTextEncryptor.decrypt(dek, process.env.MESSAGES_ENCRYPTION_SECRET_KEY)
+    )
   }
 
   decryptMessage<Message extends TMessage>(message: Message): Message {
     let mediaData = message['Media'] as TMessageMedia | undefined
-    if (mediaData) {
+    if (mediaData && mediaData.fileName && mediaData.dek) {
       mediaData = {
         ...mediaData,
         fileName: this.decryptText(mediaData.fileName, mediaData.dek),

@@ -5,58 +5,57 @@
 // source: chat.proto
 
 /* eslint-disable */
-import { Observable } from "rxjs";
-import type { Any } from "./google/protobuf/any";
-import type { Empty } from "./google/protobuf/empty";
+import { Observable } from 'rxjs'
+import type { Empty } from './google/protobuf/empty'
 
-export const protobufPackage = "chat";
+export const protobufPackage = 'chat'
 
 export interface ConnectedClientsCountResponse {
-  count: number;
+  count: number
 }
 
 export interface EmitToDirectChatRequest {
-  event: string;
-  directChatId: number;
-  payload: Any | undefined;
+  event: string
+  directChatId: number
+  payloadJson: string
 }
 
 export interface SendNewMessageToGroupChatRequest {
-  groupChatId: number;
-  newMessageJson: string;
+  groupChatId: number
+  newMessageJson: string
 }
 
 export interface SendFriendRq {
-  senderJson: string;
-  recipientId: number;
-  requestDataJson: string;
+  senderJson: string
+  recipientId: number
+  requestDataJson: string
 }
 
 export interface RemoveConnectedClientRequest {
-  userId: number;
-  socketId?: string | undefined;
+  userId: number
+  socketId?: string | undefined
 }
 
 export interface CheckUserIsOnlineRequest {
-  userId: number;
+  userId: number
 }
 
 export interface CheckUserIsOnlineResponse {
-  isOnline: boolean;
+  isOnline: boolean
 }
 
 export interface FriendRequestActionRequest {
-  senderId: number;
-  requestId: number;
-  action: string;
+  senderId: number
+  requestId: number
+  action: string
 }
 
 export interface UserConnectionService {
-  GetConnectedClientsCountForAdmin(request: Empty): Observable<ConnectedClientsCountResponse>;
-  EmitToDirectChat(request: EmitToDirectChatRequest): Observable<Empty>;
-  SendNewMessageToGroupChat(request: SendNewMessageToGroupChatRequest): Observable<Empty>;
-  SendFriendRequest(request: SendFriendRq): Observable<Empty>;
-  RemoveConnectedClient(request: RemoveConnectedClientRequest): Observable<Empty>;
-  CheckUserIsOnline(request: CheckUserIsOnlineRequest): Observable<CheckUserIsOnlineResponse>;
-  FriendRequestAction(request: FriendRequestActionRequest): Observable<Empty>;
+  GetConnectedClientsCountForAdmin(request: Empty): Observable<ConnectedClientsCountResponse>
+  EmitToDirectChat(request: EmitToDirectChatRequest): Observable<Empty>
+  SendNewMessageToGroupChat(request: SendNewMessageToGroupChatRequest): Observable<Empty>
+  SendFriendRequest(request: SendFriendRq): Observable<Empty>
+  RemoveConnectedClient(request: RemoveConnectedClientRequest): Observable<Empty>
+  CheckUserIsOnline(request: CheckUserIsOnlineRequest): Observable<CheckUserIsOnlineResponse>
+  FriendRequestAction(request: FriendRequestActionRequest): Observable<Empty>
 }

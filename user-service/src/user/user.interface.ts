@@ -15,6 +15,7 @@ import type {
   CheckBlockedUserDTO,
   CreateUserDTO,
   GetUserByEmailDTO,
+  GetUserByIdDTO,
   SearchUsersDTO,
   UnblockUserDTO,
 } from './user.dto'
@@ -29,6 +30,7 @@ import {
 export interface IUserController {
   register: (createUserPayload: CreateUserDTO) => Promise<TRegisterRes>
   getUser: (getUserByEmailPayload: GetUserByEmailDTO) => Promise<TUserWithProfile>
+  getUserById: (getUserById: GetUserByIdDTO) => Promise<TUserWithProfile>
   searchUsers: (searchUsersPayload: SearchUsersDTO) => Promise<TSearchUsersData[]>
   changePassword: (
     user: TUserWithProfile,

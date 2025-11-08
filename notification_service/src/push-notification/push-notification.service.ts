@@ -19,18 +19,19 @@ import { ClientGrpc } from '@nestjs/microservices'
 
 @Injectable()
 export class PushNotificationService {
-  private userSettingsService: UserSettingsService
+  private userSettingService: UserSettingsService
 
   constructor(
     @Inject(EProviderTokens.PRISMA_CLIENT) private readonly prismaService: PrismaService,
-    @Inject(EGrpcPackages.USER_PACKAGE) private userClient: ClientGrpc
+    @Inject(EGrpcPackages.USER_PACKAGE)
+    private userClient: ClientGrpc
   ) {
     webPush.setVapidDetails(
       process.env.VAPID_MAILTO,
       process.env.VAPID_PUBLIC_KEY,
       process.env.VAPID_PRIVATE_KEY
     )
-    this.userSettingsService = new UserSettingsService(
+    this.userSettingService = new UserSettingsService(
       this.userClient.getService(EGrpcServices.USER_SETTINGS_SERVICE)
     )
   }
@@ -90,7 +91,8 @@ export class PushNotificationService {
   }
 
   async checkIfUserEnablePushNotification(userId: TUserId): Promise<boolean> {
-    const userSettings = await this.userSettingsService.findByUserId(userId)
+    const userSettings = await this.userSettingService.findByUserId(userId)
+
     return userSettings?.pushNotificationEnabled || false
   }
 
@@ -109,7 +111,9 @@ export class PushNotificationService {
         failure: [],
       }
     }
+
     const subscriptions = await this.findSubscriptionsByUserId(userId)
+
     const successEndpoints: TPushSubscriptionEndpoint[] = []
     const failureEndpoints: TPushSubscriptionEndpoint[] = []
     return await new Promise<TWebPushSendNotificationResult>((resolve, reject) => {

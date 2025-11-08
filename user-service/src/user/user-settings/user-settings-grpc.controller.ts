@@ -12,6 +12,8 @@ export class UserSettingsGrpcController implements IUserSettingsGrpcController {
   @GrpcMethod(EGrpcServices.USER_SETTINGS_SERVICE, 'FindByUserId')
   async FindByUserId(data: FindByUserIdRequest) {
     const userSettings = await this.userSettingsService.findByUserId(data.userId)
-    return { userSettings }
+    return {
+      userSettingsJson: userSettings ? JSON.stringify(userSettings) : null,
+    }
   }
 }

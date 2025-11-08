@@ -3,7 +3,6 @@ syntax = "proto3";
 package chat;
 
 import "google/protobuf/empty.proto";
-import "google/protobuf/any.proto";
 
 service UserConnectionService {
   rpc GetConnectedClientsCountForAdmin(google.protobuf.Empty)
@@ -27,7 +26,7 @@ message ConnectedClientsCountResponse {
 message EmitToDirectChatRequest {
   string event = 1;
   int32 direct_chat_id = 2;
-  google.protobuf.Any payload = 3;
+  string payload_json = 3;
 }
 
 message SendNewMessageToGroupChatRequest {

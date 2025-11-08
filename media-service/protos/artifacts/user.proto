@@ -12,14 +12,6 @@ service UserService {
   rpc Test(TestRequest) returns (TestResponse);
 }
 
-message TestRequest {
-  string message_vcn_req = 1;
-}
-
-message TestResponse {
-  string message_vcn_res = 1;
-}
-
 service UserSettingsService {
   rpc FindByUserId(FindByUserIdRequest) returns (FindByUserIdResponse);
 }
@@ -27,6 +19,14 @@ service UserSettingsService {
 service BlockUserService {
   rpc CheckBlockedUser(CheckBlockedUserRequest)
       returns (CheckBlockedUserResponse);
+}
+
+message TestRequest {
+  string message_vcn_req = 1;
+}
+
+message TestResponse {
+  string message_vcn_res = 1;
 }
 
 message FindUserWithProfileByIdRequest {

@@ -6,7 +6,7 @@ import {
   EProviderTokens,
   ESyncDataToESWorkerType,
 } from '@/utils/enums'
-import { EMessageMediaTypes, EMessageStatus, EMessageTypes } from '../message.enum'
+import { EMessageMediaTypes, EMessageTypes } from '../message.enum'
 import type { TMessageWithMedia } from '@/utils/entities/message.entity'
 import { EPinMessages } from './pin.message'
 import { GroupMemberService } from '@/group-member/group-member.service'
@@ -15,44 +15,28 @@ import { EGroupChatPermissions, EGroupChatRoles } from '@/group-chat/group-chat.
 import { EGroupMemberMessages } from '@/group-member/group-member.message'
 import { ClientGrpc } from '@nestjs/microservices'
 import { EMessagingEmitSocketEvents } from '@/utils/events/socket.event'
-import { createAnyFromObject } from '@/configs/communication/grpc/grpc-client.helper'
 import { ElasticSearchService } from '@/configs/communication/grpc/services/es.service'
 import { UserConnectionService } from '@/configs/communication/grpc/services/user-connection.service'
-
-// Helper mô tả nội dung tin nhắn
-function getMessageDescription(message: TMessageWithMedia): string {
-  switch (message.Media?.type) {
-    case EMessageMediaTypes.IMAGE:
-      return 'hình ảnh'
-    case EMessageMediaTypes.VIDEO:
-      return 'video'
-    case EMessageMediaTypes.DOCUMENT:
-      return message.Media?.fileName ? `file: ${message.Media.fileName}` : 'file'
-    case EMessageMediaTypes.AUDIO:
-      return 'audio'
-  }
-  switch (message.type) {
-    case EMessageTypes.STICKER:
-      return 'sticker'
-    case EMessageTypes.TEXT:
-      return message.content
-  }
-  return message.content
-}
+import { EncryptMessageService } from '../security/encrypt-message.service'
+import { MessageService } from '../message.service'
 
 @Injectable()
 export class PinService {
   private syncDataToESService: ElasticSearchService
   private userConnectionService: UserConnectionService
+  private pinMessageDescText: string = ' has pinned the message: '
+  private unpinMessageDescText: string = ' has unpinned the message: '
 
   constructor(
     @Inject(EProviderTokens.PRISMA_CLIENT) private prismaService: PrismaService,
     private groupChatService: GroupChatService,
     private groupMemberService: GroupMemberService,
+    private encryptMessageService: EncryptMessageService,
     @Inject(EGrpcPackages.SEARCH_PACKAGE)
     private readonly elasticSearchClient: ClientGrpc,
     @Inject(EGrpcPackages.CHAT_PACKAGE)
-    private readonly userConnectionGrpcClient: ClientGrpc
+    private readonly userConnectionGrpcClient: ClientGrpc,
+    private messageService: MessageService
   ) {
     this.syncDataToESService = new ElasticSearchService(
       this.elasticSearchClient.getService(EGrpcServices.ELASTIC_SEARCH_SERVICE)
@@ -60,6 +44,27 @@ export class PinService {
     this.userConnectionService = new UserConnectionService(
       this.userConnectionGrpcClient.getService(EGrpcServices.USER_CONNECTION)
     )
+  }
+
+  // Helper mô tả nội dung tin nhắn
+  getMessageDescription(message: TMessageWithMedia): string {
+    switch (message.Media?.type) {
+      case EMessageMediaTypes.IMAGE:
+        return 'hình ảnh'
+      case EMessageMediaTypes.VIDEO:
+        return 'video'
+      case EMessageMediaTypes.DOCUMENT:
+        return message.Media?.fileName ? `file: ${message.Media.fileName}` : 'file'
+      case EMessageMediaTypes.AUDIO:
+        return 'audio'
+    }
+    switch (message.type) {
+      case EMessageTypes.STICKER:
+        return 'sticker'
+      case EMessageTypes.TEXT:
+        return message.content
+    }
+    return message.content
   }
 
   /**
@@ -76,199 +81,141 @@ export class PinService {
     isPinned: boolean
   ) {
     if (isPinned) {
-      // Kiểm tra xem tin nhắn đã được ghim chưa (cho bất kỳ ai trong cuộc trò chuyện)
+      // Kiểm tra tin nhắn đã được ghim chưa
       const existingPin = await this.prismaService.pinnedMessage.findFirst({
-        where: {
-          messageId,
-          directChatId,
-        },
+        where: { messageId, directChatId },
       })
-
       if (existingPin) {
         throw new BadRequestException(EPinMessages.MESSAGE_ALREADY_PINNED)
       }
 
-      // Đếm số lượng tin nhắn đã ghim trong directChatId (tổng cộng cho tất cả user)
+      // Kiểm tra giới hạn 5 tin nhắn ghim
       const count = await this.prismaService.pinnedMessage.count({
-        where: {
-          directChatId,
-        },
+        where: { directChatId },
       })
-
       if (count >= 5) {
         throw new BadRequestException(EPinMessages.CANNOT_PIN_MORE_THAN_5_MESSAGES)
       }
 
-      // Tạo pin mới (ghi nhận người đầu tiên ghim)
+      // Tạo pin mới
       const pinnedMessage = await this.prismaService.pinnedMessage.create({
-        data: {
-          messageId,
-          directChatId,
-          pinnedBy: userId,
-        },
+        data: { messageId, directChatId, pinnedBy: userId },
         include: {
           Message: {
             include: {
-              Author: {
-                include: {
-                  Profile: true,
-                },
-              },
+              Author: { include: { Profile: true } },
             },
           },
         },
       })
 
-      // Lấy tên người thực hiện
-      const userProfile = await this.prismaService.profile.findUnique({
-        where: { userId },
-      })
-      const fullName = userProfile?.fullName || 'Người dùng'
-
-      // Lấy nội dung tin nhắn gốc
-      const originalMessage = await this.prismaService.message.findUnique({
-        where: { id: messageId },
-        include: {
-          Media: true,
-        },
-      })
-      const originalMessageDescription = originalMessage
-        ? getMessageDescription(originalMessage)
-        : ''
-
-      // Lấy thông tin direct chat để xác định recipientId đúng
-      const directChat = await this.prismaService.directChat.findUnique({
-        where: { id: directChatId },
-      })
-      let recipientId = userId
-      if (directChat) {
-        recipientId =
-          directChat.creatorId === userId ? directChat.recipientId : directChat.creatorId
-      }
-
       // Tạo message thông báo
-      const pinNoticeMessage = await this.prismaService.message.create({
-        data: {
-          content: `${fullName} has pinned the message: ${originalMessageDescription}`,
-          authorId: userId,
-          recipientId,
-          directChatId,
-          type: EMessageTypes.PIN_NOTICE,
-          status: EMessageStatus.SENT,
-          replyToId: messageId, // Liên kết tới tin nhắn gốc
-          dek: '',
-          dekVersionCode: '',
-        },
-        include: {
-          Author: { include: { Profile: true } },
-          ReplyTo: { include: { Author: { include: { Profile: true } } } },
-          Media: true,
-        },
-      })
+      const [userProfile, originalMessage, directChat] = await Promise.all([
+        this.prismaService.profile.findUnique({ where: { userId } }),
+        this.prismaService.message.findUnique({
+          where: { id: messageId },
+          include: { Media: true },
+        }),
+        this.prismaService.directChat.findUnique({ where: { id: directChatId } }),
+      ])
+
+      const fullName = userProfile?.fullName || 'Người dùng'
+      const decryptedOriginalMessage = originalMessage
+        ? this.encryptMessageService.decryptMessage(originalMessage)
+        : null
+      const messageDesc = decryptedOriginalMessage
+        ? this.getMessageDescription(decryptedOriginalMessage)
+        : ''
+      const recipientId =
+        directChat?.creatorId === userId ? directChat.recipientId : directChat?.creatorId || userId
+
+      const pinNoticeMessage = await this.messageService.createNewMessage(
+        `${fullName} ${this.pinMessageDescText} ${messageDesc}`,
+        userId,
+        new Date(),
+        EMessageTypes.PIN_NOTICE,
+        recipientId,
+        undefined,
+        undefined,
+        messageId,
+        directChatId,
+        undefined
+      )
 
       this.syncDataToESService.syncDataToES({
         type: ESyncDataToESWorkerType.CREATE_MESSAGE,
         message: pinNoticeMessage,
       })
 
-      // Emit socket event gửi message mới cho cả 2 user
+      //>>> websocket - Emit socket events
       this.userConnectionService.emitToDirectChat(
         directChatId,
         EMessagingEmitSocketEvents.send_message_direct,
         pinNoticeMessage
       )
 
-      // PHÁT SOCKET EVENT ĐẾN TẤT CẢ CLIENT CÙNG PHÒNG
       this.userConnectionService.emitToDirectChat(
         directChatId,
         EMessagingEmitSocketEvents.pin_message,
-        {
-          messageId,
-          directChatId,
-          isPinned: true,
-          userId,
-          pinnedMessage,
-        }
+        { messageId, directChatId, isPinned: true, userId, pinnedMessage }
       )
 
       return pinnedMessage
     } else {
-      // Bỏ ghim - xóa record trong PinnedDirectMessage (cho tất cả user)
+      // Bỏ ghim
       const deletedPin = await this.prismaService.pinnedMessage.deleteMany({
-        where: {
-          messageId,
-          directChatId,
-        },
+        where: { messageId, directChatId },
       })
-
-      // Lấy tên người thực hiện
-      const userProfile = await this.prismaService.profile.findUnique({
-        where: { userId },
-      })
-      const fullName = userProfile?.fullName || 'Người dùng'
-
-      // Lấy nội dung tin nhắn gốc
-      const originalMessage = await this.prismaService.message.findUnique({
-        where: { id: messageId },
-        include: {
-          Media: true,
-        },
-      })
-      const originalMessageDescription = originalMessage
-        ? getMessageDescription(originalMessage)
-        : ''
-
-      // Lấy thông tin direct chat để xác định recipientId đúng
-      const directChat = await this.prismaService.directChat.findUnique({
-        where: { id: directChatId },
-      })
-      let recipientId = userId
-      if (directChat) {
-        recipientId =
-          directChat.creatorId === userId ? directChat.recipientId : directChat.creatorId
-      }
 
       // Tạo message thông báo
-      const pinNoticeMessage = await this.prismaService.message.create({
-        data: {
-          content: `${fullName} has unpinned the message: ${originalMessageDescription}`,
-          authorId: userId,
-          recipientId,
-          directChatId,
-          type: EMessageTypes.PIN_NOTICE,
-          status: EMessageStatus.SENT,
-          dek: '',
-          dekVersionCode: '',
-        },
-        include: {
-          Author: { include: { Profile: true } },
-          ReplyTo: { include: { Author: { include: { Profile: true } } } },
-          Media: true,
-        },
-      })
+      const [userProfile, originalMessage, directChat] = await Promise.all([
+        this.prismaService.profile.findUnique({ where: { userId } }),
+        this.prismaService.message.findUnique({
+          where: { id: messageId },
+          include: { Media: true },
+        }),
+        this.prismaService.directChat.findUnique({ where: { id: directChatId } }),
+      ])
+
+      const fullName = userProfile?.fullName || 'Người dùng'
+      const decryptedOriginalMessage = originalMessage
+        ? this.encryptMessageService.decryptMessage(originalMessage)
+        : null
+      const messageDesc = decryptedOriginalMessage
+        ? this.getMessageDescription(decryptedOriginalMessage)
+        : ''
+      const recipientId =
+        directChat?.creatorId === userId ? directChat.recipientId : directChat?.creatorId || userId
+
+      const pinNoticeMessage = await this.messageService.createNewMessage(
+        `${fullName} ${this.unpinMessageDescText} ${messageDesc}`,
+        userId,
+        new Date(),
+        EMessageTypes.PIN_NOTICE,
+        recipientId,
+        undefined,
+        undefined,
+        undefined,
+        directChatId,
+        undefined
+      )
 
       this.syncDataToESService.syncDataToES({
         type: ESyncDataToESWorkerType.CREATE_MESSAGE,
         message: pinNoticeMessage,
       })
 
-      // Emit socket event gửi message mới cho cả 2 user
+      //>>> websocket - Emit socket events
       this.userConnectionService.emitToDirectChat(
         directChatId,
         EMessagingEmitSocketEvents.send_message_direct,
         pinNoticeMessage
       )
 
-      // PHÁT SOCKET EVENT ĐẾN TẤT CẢ CLIENT CÙNG PHÒNG
       this.userConnectionService.emitToDirectChat(
         directChatId,
         EMessagingEmitSocketEvents.pin_message,
-        {
-          messageId,
-          directChatId,
-          isPinned: false,
-          userId,
-        }
+        { messageId, directChatId, isPinned: false, userId }
       )
 
       return { success: true, deletedCount: deletedPin.count }
@@ -287,7 +234,7 @@ export class PinService {
     if (!directChatId && !groupChatId) {
       throw new BadRequestException(EPinMessages.INVALID_PARAMS)
     }
-    return this.prismaService.pinnedMessage.findMany({
+    const pinnedMessages = await this.prismaService.pinnedMessage.findMany({
       where: {
         directChatId,
         groupChatId,
@@ -317,6 +264,12 @@ export class PinService {
       orderBy: { pinnedAt: 'desc' },
       take: 5,
     })
+
+    // Giải mã messages
+    return pinnedMessages.map((pinnedMsg) => ({
+      ...pinnedMsg,
+      Message: this.encryptMessageService.decryptMessage(pinnedMsg.Message),
+    }))
   }
 
   /**
@@ -368,6 +321,7 @@ export class PinService {
     userId: number,
     isPinned: boolean
   ) {
+    // Kiểm tra quyền
     const member = await this.groupMemberService.findMemberInGroupChat(groupChatId, userId)
     if (!member) {
       throw new BadRequestException(EGroupMemberMessages.USER_NOT_IN_GROUP_CHAT)
@@ -381,101 +335,75 @@ export class PinService {
         throw new BadRequestException(EGroupMemberMessages.USER_HAS_NO_PERMISSION_PIN_MESSAGE)
       }
     }
+
     if (isPinned) {
-      // Kiểm tra xem tin nhắn đã được ghim chưa (cho bất kỳ ai trong cuộc trò chuyện)
+      // Kiểm tra tin nhắn đã được ghim chưa
       const existingPin = await this.prismaService.pinnedMessage.findFirst({
-        where: {
-          messageId,
-          groupChatId,
-        },
+        where: { messageId, groupChatId },
       })
       if (existingPin) {
         throw new BadRequestException(EPinMessages.MESSAGE_ALREADY_PINNED)
       }
 
-      // Đếm số lượng tin nhắn đã ghim trong directChatId (tổng cộng cho tất cả user)
+      // Kiểm tra giới hạn 5 tin nhắn ghim
       const count = await this.prismaService.pinnedMessage.count({
-        where: {
-          groupChatId,
-        },
+        where: { groupChatId },
       })
-
       if (count >= 5) {
         throw new BadRequestException(EPinMessages.CANNOT_PIN_MORE_THAN_5_MESSAGES)
       }
 
-      // Tạo pin mới (ghi nhận người đầu tiên ghim)
+      // Tạo pin mới
       const pinnedMessage = await this.prismaService.pinnedMessage.create({
-        data: {
-          messageId,
-          groupChatId,
-          pinnedBy: userId,
-        },
+        data: { messageId, groupChatId, pinnedBy: userId },
         include: {
           Message: {
             include: {
-              Author: {
-                include: {
-                  Profile: true,
-                },
-              },
+              Author: { include: { Profile: true } },
             },
           },
         },
       })
-
-      // Lấy tên người thực hiện
-      const userProfile = await this.prismaService.profile.findUnique({
-        where: { userId },
-      })
-      const fullName = userProfile?.fullName || 'Người dùng'
-
-      // Lấy nội dung tin nhắn gốc
-      const originalMessage = await this.prismaService.message.findUnique({
-        where: { id: messageId },
-        include: {
-          Media: true,
-        },
-      })
-      const originalMessageDescription = originalMessage
-        ? getMessageDescription(originalMessage)
-        : ''
 
       // Tạo message thông báo
-      const pinNoticeMessage = await this.prismaService.message.create({
-        data: {
-          content: `${fullName} has pinned the message: ${originalMessageDescription}`,
-          authorId: userId,
-          groupChatId,
-          type: EMessageTypes.PIN_NOTICE,
-          status: EMessageStatus.SENT,
-          replyToId: messageId, // Liên kết tới tin nhắn gốc
-          dek: '',
-          dekVersionCode: '',
-        },
-        include: {
-          Author: { include: { Profile: true } },
-          ReplyTo: {
-            include: {
-              Author: { include: { Profile: true } },
-              Media: true,
-              Sticker: true,
-            },
-          },
-          Media: true,
-          Sticker: true,
-        },
-      })
+      const [userProfile, originalMessage] = await Promise.all([
+        this.prismaService.profile.findUnique({ where: { userId } }),
+        this.prismaService.message.findUnique({
+          where: { id: messageId },
+          include: { Media: true },
+        }),
+      ])
+
+      const fullName = userProfile?.fullName || 'Người dùng'
+      const decryptedOriginalMessage = originalMessage
+        ? this.encryptMessageService.decryptMessage(originalMessage)
+        : null
+      const messageDesc = decryptedOriginalMessage
+        ? this.getMessageDescription(decryptedOriginalMessage)
+        : ''
+
+      const pinNoticeMessage = await this.messageService.createNewMessage(
+        `${fullName} ${this.pinMessageDescText} ${messageDesc}`,
+        userId,
+        new Date(),
+        EMessageTypes.PIN_NOTICE,
+        undefined,
+        undefined,
+        undefined,
+        messageId,
+        undefined,
+        groupChatId
+      )
 
       this.syncDataToESService.syncDataToES({
         type: ESyncDataToESWorkerType.CREATE_MESSAGE,
         message: pinNoticeMessage,
       })
 
-      // Emit socket event gửi message mới cho cả thành viên trong group
+      //>>> websocket - Emit socket events
       this.userConnectionService.sendNewMessageToGroupChat(groupChatId, pinNoticeMessage)
 
-      //>>> websocket
+      //>>> websocket (isPinned)
       // // PHÁT SOCKET EVENT ĐẾN TẤT CẢ CLIENT CÙNG PHÒNG
       // this.userConnectionService
       //   .getMessagingServer()
@@ -490,65 +418,50 @@ export class PinService {
 
       return pinnedMessage
     } else {
-      // Bỏ ghim - xóa record trong PinnedDirectMessage (cho tất cả user)
+      // Bỏ ghim
       const deletedPin = await this.prismaService.pinnedMessage.deleteMany({
-        where: {
-          messageId,
-          groupChatId,
-        },
+        where: { messageId, groupChatId },
       })
-
-      // Lấy tên người thực hiện
-      const userProfile = await this.prismaService.profile.findUnique({
-        where: { userId },
-      })
-      const fullName = userProfile?.fullName || 'Người dùng'
-
-      // Lấy nội dung tin nhắn gốc
-      const originalMessage = await this.prismaService.message.findUnique({
-        where: { id: messageId },
-        include: {
-          Media: true,
-        },
-      })
-      const originalMessageDescription = originalMessage
-        ? getMessageDescription(originalMessage)
-        : ''
 
       // Tạo message thông báo
-      const pinNoticeMessage = await this.prismaService.message.create({
-        data: {
-          content: `${fullName} has unpinned the message: ${originalMessageDescription}`,
-          authorId: userId,
-          groupChatId,
-          type: EMessageTypes.PIN_NOTICE,
-          status: EMessageStatus.SENT,
-          dek: '',
-          dekVersionCode: '',
-        },
-        include: {
-          Author: { include: { Profile: true } },
-          ReplyTo: {
-            include: {
-              Author: { include: { Profile: true } },
-              Media: true,
-              Sticker: true,
-            },
-          },
-          Media: true,
-          Sticker: true,
-        },
-      })
+      const [userProfile, originalMessage] = await Promise.all([
+        this.prismaService.profile.findUnique({ where: { userId } }),
+        this.prismaService.message.findUnique({
+          where: { id: messageId },
+          include: { Media: true },
+        }),
+      ])
+
+      const fullName = userProfile?.fullName || 'Người dùng'
+      const decryptedOriginalMessage = originalMessage
+        ? this.encryptMessageService.decryptMessage(originalMessage)
+        : null
+      const messageDesc = decryptedOriginalMessage
+        ? this.getMessageDescription(decryptedOriginalMessage)
+        : ''
+
+      const pinNoticeMessage = await this.messageService.createNewMessage(
+        `${fullName} ${this.unpinMessageDescText} ${messageDesc}`,
+        userId,
+        new Date(),
+        EMessageTypes.PIN_NOTICE,
+        undefined,
+        undefined,
+        undefined,
+        undefined,
+        undefined,
+        groupChatId
+      )
 
       this.syncDataToESService.syncDataToES({
         type: ESyncDataToESWorkerType.CREATE_MESSAGE,
         message: pinNoticeMessage,
       })
 
-      // Emit socket event gửi message mới cho cả 2 user
+      //>>> websocket - Emit socket events
       this.userConnectionService.sendNewMessageToGroupChat(groupChatId, pinNoticeMessage)
 
-      //>>> websocket
+      //>>> websocket (not isPinned / else)
       // // PHÁT SOCKET EVENT ĐẾN TẤT CẢ CLIENT CÙNG PHÒNG
       // this.userConnectionService
       //   .getMessagingServer()

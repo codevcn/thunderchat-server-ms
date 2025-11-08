@@ -14,6 +14,7 @@ export enum ERoutes {
   PIN_CONVERSATION = 'pin-conversation',
   PUSH_NOTIFICATION = 'push-notification',
   UPLOAD = 'upload',
+  CALL = ' call',
 }
 
 export enum EGrpcPackages {

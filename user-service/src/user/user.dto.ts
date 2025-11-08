@@ -33,7 +33,12 @@ export class GetUserByEmailDTO {
   @IsNotEmpty()
   email: string
 }
-
+export class GetUserByIdDTO {
+  @IsNumber()
+  @IsNotEmpty()
+  @Type(() => Number)
+  id: number
+}
 export class SearchUsersDTO {
   @IsNotEmpty()
   keyword: string

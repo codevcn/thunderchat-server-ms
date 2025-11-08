@@ -118,7 +118,7 @@ model PinnedChat {
 
 model Message {
     id             Int               @id @default(autoincrement())
-    content        String
+    content        String // encrypted
     authorId       Int               @map("author_id")
     recipientId    Int?              @map("recipient_id")
     directChatId   Int?              @map("direct_chat_id")
@@ -131,7 +131,7 @@ model Message {
     isDeleted      Boolean           @default(false) @map("is_deleted")
     isViolated     Boolean           @default(false) @map("is_violated")
     mediaId        Int?              @map("media_id")
-    dek            String            @db.VarChar(128)
+    dek            String            @db.VarChar(128) // encrypted
     dekVersionCode String            @map("dek_version_code") @db.VarChar(128)
 
     DirectChat              DirectChat?       @relation("MessagesOnDirectChat", fields: [directChatId], references: [id])
@@ -154,12 +154,12 @@ model MessageMedia {
     id             Int              @id @default(autoincrement())
     url            String           @unique @map("url")
     fileSize       Int              @map("file_size")
-    fileName       String           @map("file_name")
+    fileName       String           @map("file_name") // encrypted
     fileType       String           @map("file_type")
     thumbnailUrl   String           @map("thumbnail_url")
     type           MessageMediaType
     createdAt      DateTime         @default(now()) @map("created_at") @db.Timestamptz(3)
-    dek            String           @db.VarChar(128) // base64
+    dek            String           @db.VarChar(128) // base64, encrypted
     iv             String           @db.VarChar(128) // base64
     authTag        String           @map("auth_tag") @db.VarChar(128) // base64
     dekVersionCode String           @map("dek_version_code") @db.VarChar(128)

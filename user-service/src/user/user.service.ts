@@ -317,7 +317,21 @@ export class UserService {
 
     return user
   }
+  async getUserById(id: number): Promise<TUserWithProfile> {
+    const user = await this.PrismaService.user.findUnique({
+      where: {
+        id: id,
+      },
+      include: {
+        Profile: true,
+      },
+    })
+    if (!user) {
+      throw new NotFoundException(EUserMessages.USER_NOT_FOUND)
+    }
 
+    return user
+  }
   mergeSimilarUsers(profles: TSearchProfilesData[]): TSearchUsersData[] {
     const users: TSearchUsersData[] = []
     for (const profile of profles) {

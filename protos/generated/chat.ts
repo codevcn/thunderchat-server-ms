@@ -6,7 +6,6 @@
 
 /* eslint-disable */
 import { Observable } from "rxjs";
-import type { Any } from "./google/protobuf/any";
 import type { Empty } from "./google/protobuf/empty";
 
 export const protobufPackage = "chat";
@@ -18,7 +17,7 @@ export interface ConnectedClientsCountResponse {
 export interface EmitToDirectChatRequest {
   event: string;
   directChatId: number;
-  payload: Any | undefined;
+  payloadJson: string;
 }
 
 export interface SendNewMessageToGroupChatRequest {
@@ -52,11 +51,19 @@ export interface FriendRequestActionRequest {
 }
 
 export interface UserConnectionService {
-  GetConnectedClientsCountForAdmin(request: Empty): Observable<ConnectedClientsCountResponse>;
+  GetConnectedClientsCountForAdmin(
+    request: Empty,
+  ): Observable<ConnectedClientsCountResponse>;
   EmitToDirectChat(request: EmitToDirectChatRequest): Observable<Empty>;
-  SendNewMessageToGroupChat(request: SendNewMessageToGroupChatRequest): Observable<Empty>;
+  SendNewMessageToGroupChat(
+    request: SendNewMessageToGroupChatRequest,
+  ): Observable<Empty>;
   SendFriendRequest(request: SendFriendRq): Observable<Empty>;
-  RemoveConnectedClient(request: RemoveConnectedClientRequest): Observable<Empty>;
-  CheckUserIsOnline(request: CheckUserIsOnlineRequest): Observable<CheckUserIsOnlineResponse>;
+  RemoveConnectedClient(
+    request: RemoveConnectedClientRequest,
+  ): Observable<Empty>;
+  CheckUserIsOnline(
+    request: CheckUserIsOnlineRequest,
+  ): Observable<CheckUserIsOnlineResponse>;
   FriendRequestAction(request: FriendRequestActionRequest): Observable<Empty>;
 }

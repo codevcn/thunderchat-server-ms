@@ -58,7 +58,7 @@ export class UserConnectionGrpcController implements IUserConnectionGrpcControll
     await this.userConnectionService.emitToDirectChat(
       data.directChatId,
       data.event as EMessagingEmitSocketEvents,
-      data.payload
+      data.payloadJson ? JSON.parse(data.payloadJson) : null
     )
   }
 

@@ -8,7 +8,7 @@ import { DevLogger } from '@/dev/dev-logger'
 @Catch(HttpException)
 export class BaseHttpExceptionFilter implements ExceptionFilter<HttpException> {
   catch(exception: HttpException, host: ArgumentsHost) {
-    DevLogger.logError('http exception:', exception)
+    console.log('>>>http exception:', exception)
     const ctx = host.switchToHttp()
     const response = ctx.getResponse<Response<THttpErrorResBody>>()
 
