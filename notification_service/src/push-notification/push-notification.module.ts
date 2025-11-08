@@ -1,12 +1,11 @@
 import { Module } from '@nestjs/common'
 import { PushNotificationController } from './push-notification.controller'
 import { PushNotificationService } from './push-notification.service'
-import { UserModule } from '@/user/user.module'
-import { UserSettingsModule } from '@/user/user-settings/user-settings.module'
 import { PushNotificationGrpcController } from './push-notification-grpc.controller'
+import { GrpcClientModule } from '@/configs/communication/grpc/grpc-client.module'
 
 @Module({
-  imports: [UserModule, UserSettingsModule],
+  imports: [GrpcClientModule],
   controllers: [PushNotificationController, PushNotificationGrpcController],
   providers: [PushNotificationService],
   exports: [PushNotificationService],
