@@ -1,11 +1,11 @@
 import type { VoiceCallSession } from '@prisma/client'
 import type { TUserWithProfile } from './user.entity'
 
-export type TVoiceCallSession = VoiceCallSession
+export type TCallSession = VoiceCallSession
 
-export type TVoiceCallSessionWithUsers = VoiceCallSession & {
+export type TCallSessionWithUsers = VoiceCallSession & {
   caller: TUserWithProfile
   callee: TUserWithProfile
 }
 
-export type TVoiceCallSessionId = TVoiceCallSession['id']
+export type TCallSessionId = TCallSession['id']

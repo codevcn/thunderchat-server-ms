@@ -64,7 +64,7 @@ export class CallService {
   //   callerUserId: TUserId,
   //   calleeUserId: TUserId,
   //   directChatId?: number
-  // ): Promise<TVoiceCallSession> {
+  // ): Promise<TCallSession> {
   //   // nếu callee đang bận
   //   if (this.usersCalling.has(calleeUserId)) {
   //     throw new BadRequestException(EVoiceCallMessage.CALLEE_BUSY)
@@ -156,7 +156,7 @@ export class CallService {
     return session
   }
 
-  // connectCall(sessionId: TVoiceCallSessionId): TVoiceCallSession {
+  // connectCall(sessionId: TCallSessionId): TCallSession {
   //   const session = this.callSessions.get(sessionId)
   //   if (!session) {
   //     throw new NotFoundException(EVoiceCallMessage.SESSION_NOT_FOUND)
