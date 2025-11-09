@@ -48,9 +48,11 @@ export enum EGrpcServices {
   BLOCK_USER_SERVICE = 'BlockUserService',
   JWT_SERVICE = 'JWTService',
   SEARCH_SERVICE = 'ElasticSearchService',
+  ELASTIC_SEARCH_SERVICE = 'ElasticSearchService',
   UPLOAD_SERVICE = 'UploadService',
   CREDENTIALS_SERVICE = 'CredentialsService',
   MESSAGE_MAPPINGS_SERVICE = 'MessageMappingsService',
+  USER_CONNECTION_SERVICE = 'UserConnectionService',
 }
 
 export enum EClientCookieNames {

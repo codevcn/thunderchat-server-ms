@@ -30,7 +30,7 @@ export enum EGrpcPackages {
 export enum EGrpcServices {
   ELASTIC_SEARCH_SERVICE = 'ElasticSearchService',
   UPLOAD_SERVICE = 'UploadService',
-  USER_CONNECTION = 'UserConnectionService',
+  USER_CONNECTION_SERVICE = 'UserConnectionService',
   DIRECT_CHAT_SERVICE = 'DirectChatService',
   GROUP_CHAT_SERVICE = 'GroupChatService',
   MESSAGE_SERVICE = 'MessageService',

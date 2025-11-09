@@ -34,6 +34,7 @@ import { GroupMemberService } from '@/group-member/group-member.service'
 import { UploadService } from '@/configs/communication/grpc/services/upload.service'
 import { ElasticSearchService } from '@/configs/communication/grpc/services/es.service'
 import { EncryptMessageService } from '@/message/security/encrypt-message.service'
+import { UserConnectionService } from '@/configs/communication/grpc/services/user-connection.service'
 
 @Injectable()
 export class GroupChatService {
@@ -41,6 +42,7 @@ export class GroupChatService {
   private readonly MIN_GROUP_CHAT_MEMBERS_COUNT: number = 2
   private s3UploadService: UploadService
   private syncDataToESService: ElasticSearchService
+  private userConnectionService: UserConnectionService
 
   constructor(
     @Inject(EProviderTokens.PRISMA_CLIENT) private prismaService: PrismaService,
@@ -48,13 +50,17 @@ export class GroupChatService {
     @Inject(EGrpcPackages.MEDIA_PACKAGE) private mediaClient: ClientGrpc,
     @Inject(EGrpcPackages.SEARCH_PACKAGE) private searchClient: ClientGrpc,
     private readonly groupMemberService: GroupMemberService,
-    private readonly encryptMessageService: EncryptMessageService
+    private readonly encryptMessageService: EncryptMessageService,
+    @Inject(EGrpcPackages.CHAT_PACKAGE) private chatClient: ClientGrpc
   ) {
     this.s3UploadService = new UploadService(
       this.mediaClient.getService(EGrpcServices.UPLOAD_SERVICE)
     )
     this.syncDataToESService = new ElasticSearchService(
       this.searchClient.getService(EGrpcServices.ELASTIC_SEARCH_SERVICE)
+    )
+    this.userConnectionService = new UserConnectionService(
+      this.chatClient.getService(EGrpcServices.USER_CONNECTION_SERVICE)
     )
   }
 
@@ -114,7 +120,7 @@ export class GroupChatService {
         },
       },
     })
-    this.eventEmitter.emit(EInternalEvents.CREATE_GROUP_CHAT, groupChat, allMemberIds, creator)
+    this.userConnectionService.createGroupChat(groupChat, allMemberIds, creator)
     return groupChat
   }
 
@@ -210,14 +216,7 @@ export class GroupChatService {
       where: { id: groupChatId },
       data: { avatarUrl, name: groupName },
     })
-    this.eventEmitter.emit(
-      EInternalEvents.UPDATE_GROUP_CHAT_INFO,
-      groupChatId,
-      typeToRawObject<Partial<TGroupChat>>({
-        avatarUrl,
-        name: groupName,
-      })
-    )
+    this.userConnectionService.updateGroupChatInfo(groupChatId, groupName, avatarUrl)
     return groupChat
   }
 
@@ -313,6 +312,6 @@ export class GroupChatService {
         where: { id: groupChatId },
       })
     })
-    this.eventEmitter.emit(EInternalEvents.DELETE_GROUP_CHAT, groupChatId)
+    this.userConnectionService.deleteGroupChat(groupChatId)
   }
 }

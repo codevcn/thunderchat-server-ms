@@ -42,7 +42,7 @@ export class PinService {
       this.elasticSearchClient.getService(EGrpcServices.ELASTIC_SEARCH_SERVICE)
     )
     this.userConnectionService = new UserConnectionService(
-      this.userConnectionGrpcClient.getService(EGrpcServices.USER_CONNECTION)
+      this.userConnectionGrpcClient.getService(EGrpcServices.USER_CONNECTION_SERVICE)
     )
   }
 

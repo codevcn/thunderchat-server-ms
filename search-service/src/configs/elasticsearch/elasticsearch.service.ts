@@ -94,7 +94,9 @@ export class ElasticsearchService implements OnModuleInit {
     limit: number,
     searchOffset?: TMessageSearchOffset
   ): Promise<TESSearchGeneralResult<TMessageESMapping>[]> {
+    console.log('>>> searchMessages:', { keyword, userId, limit, searchOffset })
     const encryptedKeyword = await this.messageEncryptionService.encryptTextByESEncryptor(keyword)
+    console.log('>>> encryptedKeyword:', encryptedKeyword)
     const result = await ESClient.search<TMessageESMapping>({
       index: EESIndexes.MESSAGES,
       query: {

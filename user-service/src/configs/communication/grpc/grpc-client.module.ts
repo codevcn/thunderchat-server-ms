@@ -9,6 +9,7 @@ import { GrpcClientConfig } from './grpc-client.config'
       GrpcClientConfig.getSearchClient(),
       GrpcClientConfig.getMediaClient(),
       GrpcClientConfig.getConversationClient(),
+      GrpcClientConfig.getChatClient(),
     ]),
   ],
   exports: [ClientsModule],

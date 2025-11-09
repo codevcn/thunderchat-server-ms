@@ -50,6 +50,43 @@ export interface FriendRequestActionRequest {
   action: string
 }
 
+export interface UpdateGroupChatInfoRequest {
+  groupChatId: number
+  groupName: string
+  groupAvatarUrl: string
+}
+
+export interface CreateGroupChatRequest {
+  groupChatJson: string
+  memberIds: number[]
+  creatorJson: string
+}
+
+export interface AddMembersToGroupChatRequest {
+  groupChatJson: string
+  memberIds: number[]
+  executorJson: string
+}
+
+export interface RemoveGroupChatMembersRequest {
+  groupChatJson: string
+  memberIds: number[]
+}
+
+export interface DeleteGroupChatRequest {
+  groupChatId: number
+}
+
+export interface MemberLeaveGroupChatRequest {
+  groupChatId: number
+  userId: number
+}
+
+export interface UpdateUserInfoRequest {
+  userId: number
+  updatesJson: string
+}
+
 export interface UserConnectionService {
   GetConnectedClientsCountForAdmin(request: Empty): Observable<ConnectedClientsCountResponse>
   EmitToDirectChat(request: EmitToDirectChatRequest): Observable<Empty>
@@ -58,4 +95,12 @@ export interface UserConnectionService {
   RemoveConnectedClient(request: RemoveConnectedClientRequest): Observable<Empty>
   CheckUserIsOnline(request: CheckUserIsOnlineRequest): Observable<CheckUserIsOnlineResponse>
   FriendRequestAction(request: FriendRequestActionRequest): Observable<Empty>
+  /** --- Event Emitter --- */
+  UpdateGroupChatInfo(request: UpdateGroupChatInfoRequest): Observable<Empty>
+  CreateGroupChat(request: CreateGroupChatRequest): Observable<Empty>
+  AddMembersToGroupChat(request: AddMembersToGroupChatRequest): Observable<Empty>
+  RemoveGroupChatMembers(request: RemoveGroupChatMembersRequest): Observable<Empty>
+  DeleteGroupChat(request: DeleteGroupChatRequest): Observable<Empty>
+  MemberLeaveGroupChat(request: MemberLeaveGroupChatRequest): Observable<Empty>
+  UpdateUserInfo(request: UpdateUserInfoRequest): Observable<Empty>
 }

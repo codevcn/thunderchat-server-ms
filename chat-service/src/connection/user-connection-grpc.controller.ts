@@ -8,6 +8,13 @@ import type {
   TRemoveConnectedClientRequest,
   TSendFriendRequestPayload,
   TSendNewMessageToGroupChatPayload,
+  TUpdateGroupChatInfoPayload,
+  TCreateGroupChatPayload,
+  TAddMembersToGroupChatPayload,
+  TRemoveGroupChatMembersPayload,
+  TDeleteGroupChatPayload,
+  TMemberLeaveGroupChatPayload,
+  TUpdateUserInfoPayload,
 } from './user-connection.type'
 import type { IUserConnectionGrpcController } from './user-connection.interface'
 import { UserConnectionService } from './user-connection.service'
@@ -68,5 +75,54 @@ export class UserConnectionGrpcController implements IUserConnectionGrpcControll
       data.groupChatId,
       JSON.parse(data.newMessageJson)
     )
+  }
+
+  @GrpcMethod(EGrpcServices.USER_CONNECTION_SERVICE, 'UpdateGroupChatInfo')
+  async updateGroupChatInfo(data: TUpdateGroupChatInfoPayload) {
+    this.userConnectionService.broadcastUpdateGroupChat(data.groupChatId, {
+      name: data.groupName || undefined,
+      avatarUrl: data.groupAvatarUrl || undefined,
+    })
+  }
+
+  @GrpcMethod(EGrpcServices.USER_CONNECTION_SERVICE, 'CreateGroupChat')
+  async createGroupChat(data: TCreateGroupChatPayload) {
+    this.userConnectionService.broadcastCreateGroupChat(
+      JSON.parse(data.groupChatJson),
+      data.memberIds,
+      JSON.parse(data.creatorJson)
+    )
+  }
+
+  @GrpcMethod(EGrpcServices.USER_CONNECTION_SERVICE, 'AddMembersToGroupChat')
+  async addMembersToGroupChat(data: TAddMembersToGroupChatPayload) {
+    this.userConnectionService.broadcastAddMembersToGroupChat(
+      JSON.parse(data.groupChatJson),
+      data.memberIds,
+      JSON.parse(data.executorJson)
+    )
+  }
+
+  @GrpcMethod(EGrpcServices.USER_CONNECTION_SERVICE, 'RemoveGroupChatMembers')
+  async removeGroupChatMembers(data: TRemoveGroupChatMembersPayload) {
+    this.userConnectionService.broadcastRemoveGroupChatMembers(
+      JSON.parse(data.groupChatJson),
+      data.memberIds
+    )
+  }
+
+  @GrpcMethod(EGrpcServices.USER_CONNECTION_SERVICE, 'DeleteGroupChat')
+  async deleteGroupChat(data: TDeleteGroupChatPayload) {
+    this.userConnectionService.broadcastDeleteGroupChat(data.groupChatId)
+  }
+
+  @GrpcMethod(EGrpcServices.USER_CONNECTION_SERVICE, 'MemberLeaveGroupChat')
+  async memberLeaveGroupChat(data: TMemberLeaveGroupChatPayload) {
+    this.userConnectionService.broadcastMemberLeaveGroupChat(data.groupChatId, data.userId)
+  }
+
+  @GrpcMethod(EGrpcServices.USER_CONNECTION_SERVICE, 'UpdateUserInfo')
+  async updateUserInfo(data: TUpdateUserInfoPayload) {
+    this.userConnectionService.broadcastUpdateUserInfo(data.userId, JSON.parse(data.updatesJson))
   }
 }
