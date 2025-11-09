@@ -27,14 +27,15 @@ if __name__ == '__main__':
   # Ví dụ danh sách thư mục đích
   dest_dirs = [
     'admin-service',
-    'auth_service',
+    # 'auth_service',
     'call-service',
     'chat-service',
     'conversation-service',
-    'friendship-service',
+    # 'friendship-service',
     'media-service',
     'notification_service',
     'search-service',
-    'user-service',
+    # 'user-service',
+    'user-auth-service',
   ]
   copy_protos(dest_dirs)
