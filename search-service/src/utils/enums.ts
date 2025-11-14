@@ -14,6 +14,7 @@ export enum ERoutes {
   PIN_CONVERSATION = 'pin-conversation',
   PUSH_NOTIFICATION = 'push-notification',
   UPLOAD = 'upload',
+  SMART_SEARCH = 'smart-search',
 }
 
 export enum EGrpcPackages {
@@ -48,6 +49,7 @@ export enum EGrpcServices {
   USER_CONNECTION_SERVICE = 'UserConnectionService',
   ELASTICSEARCH_SERVICE = 'ElasticSearchService',
   MESSAGE_MAPPINGS_SERVICE = 'MessageMappingsService',
+  SMART_SEARCH_SERVICE = 'MessageEmbeddingService',
 }
 
 export enum EClientCookieNames {

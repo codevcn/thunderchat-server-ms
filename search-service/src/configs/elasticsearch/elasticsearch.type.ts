@@ -1,5 +1,5 @@
 import type { EMessageTypes } from '@/message/message.enum'
-import type { SearchHit } from '@elastic/elasticsearch/lib/api/types'
+import type { estypes } from '@elastic/elasticsearch'
 
 export type TUserESMapping = {
   doc_id: number
@@ -17,4 +17,4 @@ export type TMessageESMapping = {
   created_at: string
 }
 
-export type TESSearchGeneralResult<T> = SearchHit<T>
+export type TESSearchGeneralResult<T> = estypes.SearchHit<T>

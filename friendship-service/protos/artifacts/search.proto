@@ -15,6 +15,15 @@ service MessageMappingsService {
       returns (GetMessageMappingsResponse);
   rpc UpdateMessageMappings(UpdateMessageMappingsRequest)
       returns (UpdateMessageMappingsResponse);
+  
+}
+
+service MessageEmbeddingService {
+
+  rpc CreateEmbedding (CreateEmbeddingRequest) returns (CreateEmbeddingResponse);
+
+ 
+  rpc SaveMessageEmbedding (SaveMessageEmbeddingRequest) returns (SaveMessageEmbeddingResponse);
 }
 
 message DataToSync {
@@ -41,4 +50,23 @@ message UpdateMessageMappingsRequest {
 
 message UpdateMessageMappingsResponse {
   string message_mappings_json = 1;
+}
+
+
+message CreateEmbeddingRequest {
+  string text = 1; 
+}
+
+message CreateEmbeddingResponse {
+  repeated float embedding = 1; 
+}
+
+message SaveMessageEmbeddingRequest {
+  int64 message_id = 1; 
+  repeated float embedding = 2;
+  string meta_data = 3;
+}
+
+message SaveMessageEmbeddingResponse {
+  bool success = 1;
 }

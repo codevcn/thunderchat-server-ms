@@ -31,6 +31,8 @@ export enum EGrpcPackages {
   FRIEND_PACKAGE = 'FRIEND_PACKAGE',
   SEARCH = 'search',
   SEARCH_PACKAGE = 'SEARCH_PACKAGE',
+  AI_PACKAGE = 'AI_PACKAGE',
+  AI = 'AI',
 }
 
 export enum EGrpcServices {
@@ -46,6 +48,7 @@ export enum EGrpcServices {
   BLOCK_USER_SERVICE = 'BlockUserService',
   USER_CONNECTION_SERVICE = 'UserConnectionService',
   ELASTIC_SEARCH_SERVICE = 'ElasticSearchService',
+  AI_SERVICE = 'MessageEmbeddingService',
 }
 
 export enum EClientCookieNames {

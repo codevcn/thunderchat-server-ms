@@ -1,12 +1,11 @@
 import { Injectable, OnModuleInit } from '@nestjs/common'
-import { Client } from '@elastic/elasticsearch'
+import { Client, estypes } from '@elastic/elasticsearch'
 import type {
   TESSearchGeneralResult,
   TMessageESMapping,
   TUserESMapping,
 } from './elasticsearch.type'
 import { EESIndexes } from './elasticsearch.enum'
-import type { SearchHit, SearchResponse } from '@elastic/elasticsearch/lib/api/types'
 import type { TMessageSearchOffset, TUserSearchOffset } from '@/search/search.type'
 import { DevLogger } from '@/dev/dev-logger'
 import { ESMessageEncryptionService } from './es-message-encryption.service'
@@ -28,7 +27,7 @@ export class ElasticsearchService implements OnModuleInit {
     await this.pingToESServer()
   }
 
-  extractESHits<T>(searchResult: SearchResponse<T>): SearchHit<T>[] {
+  extractESHits<T>(searchResult: estypes.SearchResponse<T>): estypes.SearchHit<T>[] {
     return searchResult.hits.hits
   }
 

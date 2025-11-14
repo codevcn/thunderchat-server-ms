@@ -146,7 +146,7 @@ model Message {
     Media                   MessageMedia?     @relation("MessageMediaOnMessage", fields: [mediaId], references: [id])
     GroupChat               GroupChat?        @relation("MessagesOnGroupChat", fields: [groupChatId], references: [id])
     GroupChatOfLastSentMsg  GroupChat?        @relation("LastSentMessageOnGroupChat")
-
+    MessageEmbedding        MessageEmbedding? @relation("MessageEmbeddingOnMessage")
     @@map("messages")
 }
 
@@ -401,6 +401,18 @@ model CallSession {
     @@index([callerUserId])
     @@index([calleeUserId])
     @@map("call_sessions")
+}
+
+model MessageEmbedding {
+    id          Int      @id @default(autoincrement())
+    messageId   Int      @unique @map("message_id")
+    embedding   Unsupported("vector(768)")
+    metadata    Json
+    createdAt   DateTime @default(now()) @map("created_at")
+    
+    Message Message @relation("MessageEmbeddingOnMessage",fields: [messageId], references: [id])
+    
+    @@map("message_embeddings")
 }
 
 enum ReportedMessageType {

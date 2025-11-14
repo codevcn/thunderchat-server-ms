@@ -18,7 +18,7 @@ const beforeLaunch = async () => {
 }
 
 const getAppModule = async () => {
-  const { AppModule } = await import('./app.module')
+  const { AppModule } = await import('./app.module.js')
   return AppModule
 }
 

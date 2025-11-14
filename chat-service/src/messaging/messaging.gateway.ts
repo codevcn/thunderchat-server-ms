@@ -82,6 +82,7 @@ import { UserService } from '@/configs/communication/grpc/services/user.service'
 import { UserSettingsService } from '@/configs/communication/grpc/services/user-settings.service'
 import { BlockUserService } from '@/configs/communication/grpc/services/block-user.service'
 import { FriendService } from '@/configs/communication/grpc/services/friend.service'
+import { SmartSearchService } from '@/configs/communication/grpc/services/smart-search.service'
 
 @WebSocketGateway({
   cors: {
@@ -112,7 +113,7 @@ export class MessagingGateway
   private userSettingsService: UserSettingsService
   private blockUserService: BlockUserService
   private pushNotificationService: PushNotificationService
-
+  private smartSearch: SmartSearchService
   constructor(
     private userConnectionService: UserConnectionService,
     @Inject(EGrpcPackages.FRIEND_PACKAGE) private friendClient: ClientGrpc,
@@ -124,7 +125,8 @@ export class MessagingGateway
     @Inject(EGrpcPackages.CONVERSATION_PACKAGE) private groupMemberClient: ClientGrpc,
     @Inject(EGrpcPackages.USER_PACKAGE) private userSettingsClient: ClientGrpc,
     @Inject(EGrpcPackages.USER_PACKAGE) private blockUserClient: ClientGrpc,
-    @Inject(EGrpcPackages.NOTIFICATION_PACKAGE) private pushNotificationClient: ClientGrpc
+    @Inject(EGrpcPackages.NOTIFICATION_PACKAGE) private pushNotificationClient: ClientGrpc,
+    @Inject(EGrpcPackages.SEARCH_PACKAGE) private AIClient: ClientGrpc
   ) {
     // Initialize all gRPC services
     this.friendService = new FriendService(
@@ -153,6 +155,8 @@ export class MessagingGateway
     this.pushNotificationService = new PushNotificationService(
       this.pushNotificationClient.getService(EGrpcServices.NOTIFICATION_SERVICE)
     )
+
+    this.smartSearch = new SmartSearchService(this.AIClient.getService(EGrpcServices.AI_SERVICE))
   }
 
   /**
@@ -363,7 +367,18 @@ export class MessagingGateway
         replyToId,
         directChatId
       )
+      const metadata = {
+        messageId: newMessage.id,
+        authorId: id,
+        groupId: groupId || null,
+        directChatId: directChatId || null,
+        createdAt: new Date().toISOString(),
+      }
       await this.directChatService.updateLastSentMessage(directChatId, newMessage.id)
+      const embedding = await this.smartSearch.createEmbedding(content)
+
+      await this.smartSearch.saveMessageEmbedding(newMessage.id, embedding, metadata)
+
       return newMessage
     } else if (groupId) {
       const newMessage = await this.messageService.createNewMessage(
@@ -378,7 +393,6 @@ export class MessagingGateway
         undefined,
         groupId
       )
-      return newMessage
     }
     throw new BaseWsException(EGatewayMessages.INVALID_MESSAGE_TYPE)
   }

@@ -36,6 +36,24 @@ export interface UpdateMessageMappingsResponse {
   messageMappingsJson: string;
 }
 
+export interface CreateEmbeddingRequest {
+  text: string;
+}
+
+export interface CreateEmbeddingResponse {
+  embedding: number[];
+}
+
+export interface SaveMessageEmbeddingRequest {
+  messageId: number;
+  embedding: number[];
+  metaData: string;
+}
+
+export interface SaveMessageEmbeddingResponse {
+  success: boolean;
+}
+
 export interface ElasticSearchService {
   SyncDataToES(request: DataToSync): Observable<Empty>;
 }
@@ -44,4 +62,9 @@ export interface MessageMappingsService {
   CreateMessageMappings(request: CreateMessageMappingsRequest): Observable<CreateMessageMappingsResponse>;
   GetMessageMappings(request: Empty): Observable<GetMessageMappingsResponse>;
   UpdateMessageMappings(request: UpdateMessageMappingsRequest): Observable<UpdateMessageMappingsResponse>;
+}
+
+export interface MessageEmbeddingService {
+  CreateEmbedding(request: CreateEmbeddingRequest): Observable<CreateEmbeddingResponse>;
+  SaveMessageEmbedding(request: SaveMessageEmbeddingRequest): Observable<SaveMessageEmbeddingResponse>;
 }

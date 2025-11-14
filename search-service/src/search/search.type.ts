@@ -1,6 +1,6 @@
 import type { EChatType } from '@/utils/enums'
 import type { TUserWithProfile } from '@/utils/entities/user.entity'
-import type { SortResults } from '@elastic/elasticsearch/lib/api/types'
+import type { estypes } from '@elastic/elasticsearch'
 
 export type TGlobalSearchData = {
   users: (TUserWithProfile & {
@@ -23,9 +23,9 @@ export type TGlobalSearchData = {
   }
 }
 
-export type TMessageSearchOffset = SortResults
+export type TMessageSearchOffset = estypes.SortResults
 
-export type TUserSearchOffset = SortResults
+export type TUserSearchOffset = estypes.SortResults
 
 export type TConversationSearchResult = {
   id: number

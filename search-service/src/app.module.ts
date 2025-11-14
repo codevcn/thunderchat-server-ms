@@ -13,9 +13,10 @@ const globalConfigModules = [
 
 import { SearchModule } from './search/search.module'
 import { RequestLoggerMiddleware } from './app.middleware'
+import { SmartSearchModule } from './smart-search/ai-search.module'
 
 @Module({
-  imports: [...globalConfigModules, SearchModule],
+  imports: [...globalConfigModules, SearchModule, SmartSearchModule],
 })
 export class AppModule implements NestModule {
   configure(consumer: MiddlewareConsumer) {

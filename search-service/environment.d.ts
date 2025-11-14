@@ -15,6 +15,7 @@ declare global {
       ELASTICSEARCH_URL: string
       MESSAGE_MAPPINGS_VERSION_CODE: string
       MESSAGE_MAPPINGS_SECRET_KEY: string
+      MESSAGES_ENCRYPTION_SECRET_KEY: string
     }
   }
 }
