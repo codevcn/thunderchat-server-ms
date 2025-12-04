@@ -52,11 +52,11 @@ export class GroupChatController implements IGroupChatsController {
   ) {}
 
   @Post('upload-group-avatar')
-  @UseInterceptors(FileInterceptor('avatar', { dest: GroupChatController.tempImagesDir }))
+  @UseInterceptors(FileInterceptor('avatar'))
   async uploadGroupChatAvatar(
     @UploadedFile(
       new ParseFilePipe({
-        validators: [new FileTypeValidator({ fileType: 'image/*' })],
+        validators: [new FileTypeValidator({ fileType: /(jpg|jpeg|png|gif|webp)$/ })],
       })
     )
     avatar: Express.Multer.File

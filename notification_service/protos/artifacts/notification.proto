@@ -7,6 +7,11 @@ service NotificationService {
       returns (SendNotificationToUserResponse);
 }
 
+service VoiceAssistantService {
+  rpc ProcessCommand(ProcessCommandRequest) returns (ProcessCommandResponse);
+  rpc GetUserVoiceSettings(GetUserVoiceSettingsRequest) returns (GetUserVoiceSettingsResponse);
+}
+
 message SendNotificationToUserRequest {
   int32 user_id = 1;
   string payload_json = 2;
@@ -14,4 +19,24 @@ message SendNotificationToUserRequest {
 
 message SendNotificationToUserResponse {
   string result_json = 1;
+}
+
+message ProcessCommandRequest {
+  int32 user_id = 1;
+  string audio_base64 = 2;
+}
+
+message ProcessCommandResponse {
+  string transcript = 1;
+  string response = 2;
+  string audio_base64 = 3;
+  bool needs_confirmation = 4;
+}
+
+message GetUserVoiceSettingsRequest {
+  int32 user_id = 1;
+}
+
+message GetUserVoiceSettingsResponse {
+  string settings_json = 1;
 }

@@ -1,11 +1,4 @@
-import {
-  CanActivate,
-  ExecutionContext,
-  HttpStatus,
-  Inject,
-  Injectable,
-  InternalServerErrorException,
-} from '@nestjs/common'
+import { CanActivate, ExecutionContext, HttpStatus, Inject, Injectable } from '@nestjs/common'
 import { Reflector } from '@nestjs/core'
 import { GROUP_CHAT_ROLE_KEY } from './group-chat-role.decorator'
 import { EGroupChatRoleMessages } from './group-chat-role.message'
@@ -14,6 +7,9 @@ import { EGroupChatMessages } from '@/group-chat/group-chat.message'
 import { EGroupChatRoles } from '@/group-chat/group-chat.enum'
 import { BaseHttpException } from '@/utils/exceptions/base-http.exception'
 import { GroupMemberService } from '@/group-member/group-member.service'
+import { ERequestXHeaders } from '@/utils/enums'
+import { extractStringXHeader } from '@/utils/helpers'
+import { EUserMessages } from '@/user/user.message'
 
 @Injectable()
 export class GroupChatRoleGuard implements CanActivate {
@@ -51,8 +47,19 @@ export class GroupChatRoleGuard implements CanActivate {
         HttpStatus.BAD_REQUEST
       )
 
-    const user = request['user'] as TUserWithProfile
-    if (!user) throw new InternalServerErrorException()
+    // Prefer middleware-populated `request.user` when available
+    let user: TUserWithProfile | null = request['user'] as TUserWithProfile
+    if (!user) {
+      // Fallback to the X header used by `@User()` decorator
+      const userString = extractStringXHeader(request, ERequestXHeaders.X_USER_DATA)
+      if (!userString)
+        throw new BaseHttpException(EUserMessages.USER_DATA_REQUIRED, HttpStatus.BAD_REQUEST)
+      try {
+        user = JSON.parse(userString) as TUserWithProfile
+      } catch (err) {
+        throw new BaseHttpException(EUserMessages.USER_DATA_REQUIRED, HttpStatus.BAD_REQUEST)
+      }
+    }
 
     const member = await this.groupMemberService.getGroupChatMember(groupChatIdNumber, user.id)
     if (!member)

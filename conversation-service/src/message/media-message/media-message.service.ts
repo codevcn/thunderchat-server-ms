@@ -11,11 +11,14 @@ import type {
 } from '@/message/media-message/media-message.type'
 import dayjs from 'dayjs'
 import { Prisma } from '@prisma/client'
-import { DevLogger } from '@/dev/dev-logger'
+import { EncryptMessageService } from '../security/encrypt-message.service'
 
 @Injectable()
 export class MediaMessageService {
-  constructor(@Inject(EProviderTokens.PRISMA_CLIENT) private PrismaService: PrismaService) {}
+  constructor(
+    @Inject(EProviderTokens.PRISMA_CLIENT) private PrismaService: PrismaService,
+    private encryptMessageService: EncryptMessageService
+  ) {}
 
   private readonly messageIncludeAuthor = {
     Author: {
@@ -74,7 +77,7 @@ export class MediaMessageService {
       const result: TGetMediaMessagesResponse = {
         success: true,
         data: {
-          items: items as TMediaItem[],
+          items: this.encryptMessageService.decryptMessages(items) as TMediaItem[],
           pagination,
         },
       }
@@ -256,33 +259,35 @@ export class MediaMessageService {
   async getMediaStatistics(directChatId: number) {
     try {
       // Get all media messages for this chat
-      const messages = await this.PrismaService.message.findMany({
-        where: {
-          directChatId,
-          isDeleted: false,
-          OR: [
-            {
-              type: EMessageTypes.MEDIA,
-              Media: {
-                type: {
-                  in: [
-                    EMessageMediaTypes.IMAGE,
-                    EMessageMediaTypes.VIDEO,
-                    EMessageMediaTypes.DOCUMENT,
-                    EMessageMediaTypes.AUDIO,
-                  ],
+      const messages = this.encryptMessageService.decryptMessages(
+        await this.PrismaService.message.findMany({
+          where: {
+            directChatId,
+            isDeleted: false,
+            OR: [
+              {
+                type: EMessageTypes.MEDIA,
+                Media: {
+                  type: {
+                    in: [
+                      EMessageMediaTypes.IMAGE,
+                      EMessageMediaTypes.VIDEO,
+                      EMessageMediaTypes.DOCUMENT,
+                      EMessageMediaTypes.AUDIO,
+                    ],
+                  },
                 },
               },
-            },
-            {
-              type: EMessageTypes.TEXT,
-            },
-          ],
-        },
-        include: {
-          Media: true,
-        },
-      })
+              {
+                type: EMessageTypes.TEXT,
+              },
+            ],
+          },
+          include: {
+            Media: true,
+          },
+        })
+      )
 
       const result = {
         total: 0,
@@ -319,7 +324,7 @@ export class MediaMessageService {
 
       return response
     } catch (error) {
-      DevLogger.logError('[MediaMessageService] Error getting media statistics:', error)
+      console.error('>>> [MediaMessageService] Error getting media statistics:', error)
       return {
         success: false,
         data: null,

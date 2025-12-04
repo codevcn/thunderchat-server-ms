@@ -20,6 +20,7 @@ import { ClientGrpc } from '@nestjs/microservices'
 @Injectable()
 export class PushNotificationService {
   private userSettingService: UserSettingsService
+
   constructor(
     @Inject(EProviderTokens.PRISMA_CLIENT) private readonly prismaService: PrismaService,
     @Inject(EGrpcPackages.USER_PACKAGE)

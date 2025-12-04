@@ -4,7 +4,7 @@ import type {
   TGroupChatMemberWithUser,
   TGroupChatMemberWithUserAndGroupChat,
 } from '@/utils/entities/group-chat-member.entity'
-import { EInternalEvents, EProviderTokens } from '@/utils/enums'
+import { EGrpcPackages, EGrpcServices, EProviderTokens } from '@/utils/enums'
 import {
   BadRequestException,
   Inject,
@@ -12,19 +12,25 @@ import {
   InternalServerErrorException,
 } from '@nestjs/common'
 import { EGroupMemberMessages } from './group-member.message'
-import { EventEmitter2 } from '@nestjs/event-emitter'
 import { TUserWithProfile } from '@/utils/entities/user.entity'
+import { ClientGrpc } from '@nestjs/microservices'
+import { UserConnectionService } from '@/configs/communication/grpc/services/user-connection.service'
 
 @Injectable()
 export class GroupMemberService {
   private readonly MAX_ADD_MEMBER_AT_ONCE: number = 10
   private readonly MAX_ADD_MEMBER_TOTAL: number = 1000
   private readonly MIN_MEMBER_IN_GROUP_CHAT: number = 2
+  private userConnectionService: UserConnectionService
 
   constructor(
     @Inject(EProviderTokens.PRISMA_CLIENT) private prismaService: PrismaService,
-    private readonly eventEmitter: EventEmitter2
-  ) {}
+    @Inject(EGrpcPackages.CHAT_PACKAGE) private chatClient: ClientGrpc
+  ) {
+    this.userConnectionService = new UserConnectionService(
+      this.chatClient.getService(EGrpcServices.USER_CONNECTION_SERVICE)
+    )
+  }
 
   async findGroupChatMemberIds(groupChatId: number): Promise<number[]> {
     const members = await this.prismaService.groupChatMember.findMany({
@@ -102,7 +108,9 @@ export class GroupMemberService {
     const groupChat = await this.prismaService.groupChat.findUnique({
       where: { id: groupChatId },
     })
-    this.eventEmitter.emit(EInternalEvents.REMOVE_GROUP_CHAT_MEMBERS, groupChat, [memberId])
+    if (groupChat) {
+      this.userConnectionService.removeGroupChatMembers(groupChat, [memberId])
+    }
   }
 
   async getGroupChatMember(groupChatId: number, userId: number): Promise<TGroupChatMember | null> {
@@ -148,12 +156,7 @@ export class GroupMemberService {
       where: { groupChatId, userId: { in: memberIds } },
       include: { User: { include: { Profile: true } } },
     })
-    this.eventEmitter.emit(
-      EInternalEvents.ADD_MEMBERS_TO_GROUP_CHAT,
-      groupChat,
-      memberIds,
-      executor
-    )
+    this.userConnectionService.addMembersToGroupChat(groupChat, memberIds, executor)
     return addedMembers
   }
 
@@ -171,6 +174,6 @@ export class GroupMemberService {
     await this.prismaService.groupChatMember.delete({
       where: { groupChatId_userId: { groupChatId, userId } },
     })
-    this.eventEmitter.emit(EInternalEvents.MEMBER_LEAVE_GROUP_CHAT, groupChatId, userId)
+    this.userConnectionService.memberLeaveGroupChat(groupChatId, userId)
   }
 }

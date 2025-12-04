@@ -1,17 +1,17 @@
-import { Injectable, Logger } from '@nestjs/common';
-import { OpenAIEmbeddings } from '@langchain/openai';
-import { PrismaService } from '@/configs/db/prisma.service';
+import { Injectable, Logger } from '@nestjs/common'
+import { OpenAIEmbeddings } from '@langchain/openai'
+import { PrismaService } from '@/configs/db/prisma.service'
 
 @Injectable()
 export class EmbeddingsService {
-  private readonly logger = new Logger(EmbeddingsService.name);
-  private embeddings: OpenAIEmbeddings;
+  private readonly logger = new Logger(EmbeddingsService.name)
+  private embeddings: OpenAIEmbeddings
 
   constructor(private prisma: PrismaService) {
     this.embeddings = new OpenAIEmbeddings({
       openAIApiKey: process.env.OPENAI_API_KEY,
       modelName: 'text-embedding-3-small', // hoặc text-embedding-ada-002
-    });
+    })
   }
 
   async embedMessage(messageId: number) {
@@ -28,28 +28,15 @@ export class EmbeddingsService {
           DirectChat: true,
           GroupChat: true,
         },
-      });
-
+      })
       if (!message || message.isDeleted) {
-        return null;
+        return null
       }
+      const decryptedContent = await this.decryptContent(message.content, message.dek)
+      const textToEmbed = this.prepareTextForEmbedding(message, decryptedContent)
 
-      // Giải mã content nếu cần (vì có encryption)
-      const decryptedContent = await this.decryptContent(
-        message.content,
-        message.dek,
-      );
+      const embedding = await this.embeddings.embedQuery(textToEmbed)
 
-      // Tạo text để embed (bao gồm context)
-      const textToEmbed = this.prepareTextForEmbedding(
-        message,
-        decryptedContent,
-      );
-
-      // Tạo embedding
-      const embedding = await this.embeddings.embedQuery(textToEmbed);
-
-      // Lưu metadata
       const metadata = {
         messageId: message.id,
         authorId: message.authorId,
@@ -58,7 +45,7 @@ export class EmbeddingsService {
         chatId: message.directChatId || message.groupChatId,
         createdAt: message.createdAt.toISOString(),
         messageType: message.type,
-      };
+      }
 
       // Lưu vào database (sử dụng raw query cho pgvector)
       await this.prisma.$executeRaw`
@@ -66,38 +53,32 @@ export class EmbeddingsService {
         VALUES (${messageId}, ${embedding}::vector, ${JSON.stringify(metadata)}::jsonb, NOW())
         ON CONFLICT (message_id) DO UPDATE 
         SET embedding = EXCLUDED.embedding, metadata = EXCLUDED.metadata
-      `;
+      `
 
-      return { messageId, success: true };
+      return { messageId, success: true }
     } catch (error) {
-      this.logger.error(`Failed to embed message ${messageId}:`, error);
-      throw error;
+      this.logger.error(`Failed to embed message ${messageId}:`, error)
+      throw error
     }
   }
 
   private prepareTextForEmbedding(message: any, content: string): string {
-    const authorName = message.Author.Profile?.fullName || 'Unknown';
-    const date = message.createdAt.toLocaleDateString('vi-VN');
-    const time = message.createdAt.toLocaleTimeString('vi-VN');
+    const authorName = message.Author.Profile?.fullName || 'Unknown'
+    const date = message.createdAt.toLocaleDateString('vi-VN')
+    const time = message.createdAt.toLocaleTimeString('vi-VN')
 
     return `
       Người gửi: ${authorName}
       Ngày: ${date}
       Giờ: ${time}
       Nội dung: ${content}
-    `.trim();
+    `.trim()
   }
 
-  private async decryptContent(
-    encryptedContent: string,
-    dek: string,
-  ): Promise<string> {
-    // Implement decryption logic theo encryption scheme của bạn
-    // Tạm thời return content gốc
-    return encryptedContent;
+  private async decryptContent(encryptedContent: string, dek: string): Promise<string> {
+    return encryptedContent
   }
 
-  // Background job để embed tất cả messages
   async embedAllMessages(userId: number) {
     const messages = await this.prisma.message.findMany({
       where: {
@@ -115,10 +96,10 @@ export class EmbeddingsService {
         isDeleted: false,
       },
       select: { id: true },
-    });
+    })
 
     for (const message of messages) {
-      await this.embedMessage(message.id);
+      await this.embedMessage(message.id)
     }
   }
 }

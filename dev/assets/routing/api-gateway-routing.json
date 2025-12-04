@@ -13,7 +13,7 @@
       ]
     },
     "user": {
-      "target": "http://localhost:4002",
+      "target": "http://localhost:4001",
       "healthCheck": "/health",
       "timeout": 10000,
       "routes": [
@@ -40,7 +40,7 @@
       ]
     },
     "friendship": {
-      "target": "http://localhost:4003",
+      "target": "http://localhost:4001",
       "healthCheck": "/health",
       "timeout": 10000,
       "routes": [
@@ -172,7 +172,11 @@
   "middleware": {
     "cors": {
       "enabled": true,
-      "origins": ["http://localhost:3000", "http://localhost:3001", "https://yourdomain.com"],
+      "origins": [
+        "http://localhost:3000",
+        "http://localhost:3001",
+        "https://yourdomain.com"
+      ],
       "credentials": true,
       "methods": ["GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"],
       "allowedHeaders": ["Content-Type", "Authorization", "X-Requested-With"]

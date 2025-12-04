@@ -118,7 +118,7 @@ model PinnedChat {
 
 model Message {
     id             Int               @id @default(autoincrement())
-    content        String
+    content        String // encrypted
     authorId       Int               @map("author_id")
     recipientId    Int?              @map("recipient_id")
     directChatId   Int?              @map("direct_chat_id")
@@ -131,7 +131,7 @@ model Message {
     isDeleted      Boolean           @default(false) @map("is_deleted")
     isViolated     Boolean           @default(false) @map("is_violated")
     mediaId        Int?              @map("media_id")
-    dek            String            @db.VarChar(128)
+    dek            String            @db.VarChar(128) // encrypted
     dekVersionCode String            @map("dek_version_code") @db.VarChar(128)
 
     DirectChat              DirectChat?       @relation("MessagesOnDirectChat", fields: [directChatId], references: [id])
@@ -154,15 +154,26 @@ model MessageMedia {
     id             Int              @id @default(autoincrement())
     url            String           @unique @map("url")
     fileSize       Int              @map("file_size")
-    fileName       String           @map("file_name")
+    fileName       String           @map("file_name") // encrypted
     fileType       String           @map("file_type")
     thumbnailUrl   String           @map("thumbnail_url")
     type           MessageMediaType
     createdAt      DateTime         @default(now()) @map("created_at") @db.Timestamptz(3)
-    dek            String           @db.VarChar(128) // base64
+    dek            String           @db.VarChar(128) // base64, encrypted
     iv             String           @db.VarChar(128) // base64
     authTag        String           @map("auth_tag") @db.VarChar(128) // base64
     dekVersionCode String           @map("dek_version_code") @db.VarChar(128)
+
+    // Accessibility fields for images/media
+    altText            String? @map("alt_text") @db.Text // User-provided alt text (plain text)
+    aiGeneratedAltText String? @map("ai_generated_alt_text") @db.Text // AI-generated description
+    aiConfidenceScore  Float?  @map("ai_confidence_score") // 0.0 - 1.0
+    detectedObjects    String? @map("detected_objects") @db.Text // JSON array of detected objects
+    isAltTextValidated Boolean @default(false) @map("is_alt_text_validated") // User confirmed alt-text
+
+    // Accessibility fields for voice messages & transcripts
+    transcript    String? @db.Text // Transcript của voice message hoặc audio (plain text, not encrypted)
+    audioDuration Int?    @map("audio_duration") // Duration in seconds for audio messages
 
     Message Message[] @relation("MessageMediaOnMessage")
 
@@ -307,6 +318,12 @@ model UserSettings {
     userId                   Int     @unique @map("user_id")
     onlyReceiveFriendMessage Boolean @default(false) @map("only_receive_friend_message")
     pushNotificationEnabled  Boolean @default(false) @map("push_notification_enabled")
+
+    // Accessibility - Simplified (chỉ giữ cái cần thiết nhất)
+    ttsEnabled       Boolean @default(false) @map("tts_enabled")
+    autoReadMessages Boolean @default(false) @map("auto_read_messages")
+    speechRate       Float   @default(1.0) @map("speech_rate") // 0.5 - 2.0
+    sttEnabled       Boolean @default(false) @map("stt_enabled")
 
     User User @relation("UserToUserSettings", fields: [userId], references: [id])
 

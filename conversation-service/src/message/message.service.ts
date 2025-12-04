@@ -113,10 +113,10 @@ export class MessageService {
         include: this.messageFullInfo,
       })
     )
-    // this.syncDataToESService.syncDataToES({
-    //   type: ESyncDataToESWorkerType.CREATE_MESSAGE,
-    //   message: originalMessage,
-    // })
+    this.syncDataToESService.syncDataToES({
+      type: ESyncDataToESWorkerType.CREATE_MESSAGE,
+      message: originalMessage,
+    })
     return originalMessage
   }
 

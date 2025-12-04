@@ -47,17 +47,21 @@ export class SyncDataToESService {
     const message = data.message
     if (message) {
       const { content } = message
-      if (content) {
-        const esMsgEncryptor = await this.messageEncryptionService.getESMessageEncryptor()
-        const { type, Media } = message
-        const convertedContent =
-          type === EMessageTypes.MEDIA && Media && Media.type === EMessageMediaTypes.DOCUMENT
-            ? Media.fileName || replaceHTMLTagInMessageContent(content)
-            : replaceHTMLTagInMessageContent(content)
-        message.content = esMsgEncryptor.encrypt(convertedContent)
-        await this.messageEncryptionService.updateMessageMappings()
+      const esMsgEncryptor = await this.messageEncryptionService.getESMessageEncryptor()
+      const { type, Media } = message
+      let convertedContent: string
+      if (type === EMessageTypes.MEDIA && Media && Media.type === EMessageMediaTypes.DOCUMENT) {
+        convertedContent =
+          Media.fileName || (content ? replaceHTMLTagInMessageContent(content) : 'File')
+      } else {
+        convertedContent = replaceHTMLTagInMessageContent(content)
       }
+      console.log('>>> convertedContent:', convertedContent)
+      message.content = esMsgEncryptor.encrypt(convertedContent)
+      console.log('>>> message.content after encryption:', message.content)
+      await this.messageEncryptionService.updateMessageMappings()
     }
+    console.log('>>> syncDataToES data:', data)
     this.syncDataToESWorker.postMessage(data)
   }
 

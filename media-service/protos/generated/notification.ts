@@ -18,6 +18,31 @@ export interface SendNotificationToUserResponse {
   resultJson: string;
 }
 
+export interface ProcessCommandRequest {
+  userId: number;
+  audioBase64: string;
+}
+
+export interface ProcessCommandResponse {
+  transcript: string;
+  response: string;
+  audioBase64: string;
+  needsConfirmation: boolean;
+}
+
+export interface GetUserVoiceSettingsRequest {
+  userId: number;
+}
+
+export interface GetUserVoiceSettingsResponse {
+  settingsJson: string;
+}
+
 export interface NotificationService {
   SendNotificationToUser(request: SendNotificationToUserRequest): Observable<SendNotificationToUserResponse>;
+}
+
+export interface VoiceAssistantService {
+  ProcessCommand(request: ProcessCommandRequest): Observable<ProcessCommandResponse>;
+  GetUserVoiceSettings(request: GetUserVoiceSettingsRequest): Observable<GetUserVoiceSettingsResponse>;
 }

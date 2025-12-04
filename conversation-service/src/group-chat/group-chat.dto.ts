@@ -7,6 +7,7 @@ import {
   IsOptional,
   IsString,
   ValidateNested,
+  ArrayUnique,
 } from 'class-validator'
 import { EJoinRequestStatus } from './group-chat.enum'
 
@@ -20,6 +21,7 @@ export class CreateGroupChatDTO {
   groupName: string
 
   @IsArray()
+  @ArrayUnique()
   @IsNumber({}, { each: true })
   memberIds: number[]
 

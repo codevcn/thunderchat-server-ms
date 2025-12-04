@@ -1,6 +1,6 @@
 import { Injectable, BadRequestException, HttpStatus } from '@nestjs/common'
 import { ThumbnailService } from './thumbnail.service'
-import type { Express, Request, Response } from 'express'
+import type { Request, Response } from 'express'
 import type {
   TUploadedPromise,
   TUploadMultipleFilesResult,
@@ -590,7 +590,7 @@ export class UploadService {
   }
 
   async uploadGroupChatAvatar(file: Express.Multer.File): Promise<TUploadGroupChatAvatar> {
-    const fileBuffer = await readFile(file.path)
+    const fileBuffer = file.buffer
     const uploadKey = this.s3FileService.createS3FileKey(file.originalname)
     await this.s3FileService.saveFile(uploadKey, fileBuffer, file.mimetype)
     return {

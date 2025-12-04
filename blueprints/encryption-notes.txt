@@ -1,0 +1,3 @@
+* Những thứ được mã hóa trong các dịch vụ MS hiện tại:
+  - Tin nhắn văn bản trong dịch vụ hội thoại (conversation-service)
+  - Tên tệp đa phương tiện trong dịch vụ hội thoại (conversation-service)

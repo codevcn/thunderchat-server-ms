@@ -12,12 +12,12 @@ import { isMainThread, parentPort } from 'worker_threads'
 import { SyncDataToESWorkerMessageDTO } from './sync-data-to-ES.dto'
 import { validate } from 'class-validator'
 import { plainToInstance } from 'class-transformer'
-import { EMessageTypes } from '@/message/message.enum'
+import { EMessageTypes, EMessageMediaTypes } from '@/message/message.enum'
 import { ESyncDataToESWorkerType } from '@/utils/enums'
 import { Client } from '@elastic/elasticsearch'
 import { EESIndexes } from '@/configs/elasticsearch/elasticsearch.enum'
 import { ESyncDataToESMessages } from './sync-data-to-ES.message'
-import { retryAsyncRequest, typeToRawObject } from '@/utils/helpers'
+import { retryAsyncRequest, typeToRawObject, replaceHTMLTagInMessageContent } from '@/utils/helpers'
 import type { TMessageESMapping, TUserESMapping } from '@/configs/elasticsearch/elasticsearch.type'
 import { NotFoundException } from '@nestjs/common'
 import {
@@ -25,17 +25,25 @@ import {
   TCastedMessageWithMedia,
   TCastedUserWithProfile,
 } from './sync-data-to-ES.type'
+import ESMessageEncryptor from '@/message/security/es-message-encryptor'
+import { SymmetricTextEncryptor } from '@/utils/crypto/symmetric-text-encryptor.crypto'
 
 type TCheckInputDataResult = {
   messageData: SyncDataToESWorkerMessageDTO
   prismaClient: PrismaClient
   syncDataToESHandler: SyncDataToESHandler
+  esMsgEncryptor?: ESMessageEncryptor
 }
 
 class SyncDataToESHandler {
   private readonly MAX_RETRIES: number = 3
+  private ESClient: Client
+  private esMsgEncryptor?: ESMessageEncryptor
 
-  constructor(private ESClient: Client) {}
+  constructor(ESClient: Client, esMsgEncryptor?: ESMessageEncryptor) {
+    this.ESClient = ESClient
+    this.esMsgEncryptor = esMsgEncryptor
+  }
 
   recursiveCreateUpdateMessage = async (
     message: TCastedMessageWithMedia,
@@ -218,22 +226,54 @@ const checkInputData = async (
   } catch (error) {
     throw new ConnectionException(ESyncDataToESMessages.SYNC_ES_CONNECTION_ERROR, error)
   }
-  const syncDataToESHandler = new SyncDataToESHandler(ESClient)
+
+  let syncDataToESHandler: SyncDataToESHandler | undefined = undefined
+  let esMsgEncryptor: ESMessageEncryptor | undefined = undefined
+  if (!workerData.message && !workerData.user) {
+    // Khởi tạo ESMessageEncryptor
+    const symmetricTextEncryptor = new SymmetricTextEncryptor()
+    const messageMappings = await prismaClient.messageMapping.findUnique({
+      where: { versionCode: process.env.MESSAGE_MAPPINGS_VERSION_CODE },
+    })
+    if (messageMappings) {
+      const { mappings, key, dek } = messageMappings
+      const decryptedDek = symmetricTextEncryptor.decrypt(
+        dek,
+        process.env.MESSAGE_MAPPINGS_SECRET_KEY
+      )
+      esMsgEncryptor = new ESMessageEncryptor(
+        symmetricTextEncryptor.decrypt(key, decryptedDek),
+        symmetricTextEncryptor.decrypt(mappings, decryptedDek),
+        decryptedDek
+      )
+    } else {
+      esMsgEncryptor = new ESMessageEncryptor(
+        ESMessageEncryptor.generateESMessageSecretKey(),
+        null,
+        symmetricTextEncryptor.generateEncryptionKey()
+      )
+    }
+  }
+  syncDataToESHandler = new SyncDataToESHandler(ESClient, esMsgEncryptor)
+
   return {
     messageData: workerDataInstance,
     prismaClient,
     syncDataToESHandler,
+    esMsgEncryptor,
   }
 }
 
 const runWorker = async (workerData: SyncDataToESWorkerMessageDTO): Promise<void> => {
-  console.log('launch worker 1: ', workerData)
   if (isMainThread) return
-  console.log('launch worker 2')
+  console.log('>>> launch worker 2')
 
-  const { messageData, prismaClient, syncDataToESHandler } = await checkInputData(workerData)
+  const { messageData, prismaClient, syncDataToESHandler, esMsgEncryptor } =
+    await checkInputData(workerData)
   const { type, message, messageIds, user } = messageData
-  console.log('>>> message 236:', { message, type })
+  console.log('>>> type after checkInputData:', type)
+  console.log('>>> message after checkInputData:', message)
+  console.log('>>> user after checkInputData:', user)
 
   switch (type) {
     case ESyncDataToESWorkerType.CREATE_MESSAGE:
@@ -253,6 +293,35 @@ const runWorker = async (workerData: SyncDataToESWorkerMessageDTO): Promise<void
       break
     case ESyncDataToESWorkerType.ALL_USERS_AND_MESSAGES:
       await syncDataToESHandler.recursiveSyncAllUsersAndMessages(prismaClient)
+
+      // Update message mappings sau khi sync
+      const symmetricTextEncryptor = new SymmetricTextEncryptor()
+      if (!esMsgEncryptor) break
+      const messageMappings = esMsgEncryptor.getMappings()
+      const secretKey = esMsgEncryptor.getSecretKey()
+      const dek = esMsgEncryptor.getDek()
+
+      const encryptedMappings = symmetricTextEncryptor.encrypt(messageMappings, dek)
+      const existing = await prismaClient.messageMapping.findUnique({
+        where: { versionCode: process.env.MESSAGE_MAPPINGS_VERSION_CODE },
+      })
+
+      if (existing) {
+        await prismaClient.messageMapping.update({
+          where: { id: existing.id },
+          data: { mappings: encryptedMappings },
+        })
+      } else {
+        await prismaClient.messageMapping.create({
+          data: {
+            mappings: encryptedMappings,
+            key: symmetricTextEncryptor.encrypt(secretKey, dek),
+            dek: symmetricTextEncryptor.encrypt(dek, process.env.MESSAGE_MAPPINGS_SECRET_KEY),
+            versionCode: process.env.MESSAGE_MAPPINGS_VERSION_CODE,
+          },
+        })
+      }
+
       break
     case ESyncDataToESWorkerType.DELETE_MESSAGES_IN_BULK:
       await syncDataToESHandler.recursiveDeleteMessagesInBulk(messageIds!)

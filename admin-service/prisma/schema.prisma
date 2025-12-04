@@ -9,15 +9,14 @@ datasource db {
 }
 
 model MessageMapping {
-    id        Int      @id @default(autoincrement())
-    userId    Int      @unique @map("user_id")
-    mappings  String?
-    key       String   @db.VarChar(255)
-    createdAt DateTime @default(now()) @map("created_at") @db.Timestamptz(3)
+    id          Int      @id @default(autoincrement())
+    mappings    String
+    key         String   @db.VarChar(255)
+    dek         String   @db.VarChar(128)
+    versionCode String   @unique @map("version_code") @db.VarChar(128) // dek version code
+    createdAt   DateTime @default(now()) @map("created_at") @db.Timestamptz(3)
 
-    User User @relation("MessageMappings", fields: [userId], references: [id])
-
-    @@index([userId], type: BTree)
+    @@index([versionCode], type: BTree)
     @@map("message_mappings")
 }
 
@@ -51,7 +50,6 @@ model User {
     FriendRequestsSent            FriendRequest[]                @relation("FriendRequestsSent")
     FriendRequestsReceived        FriendRequest[]                @relation("FriendRequestsReceived")
     DirectMessagesAsRecipient     Message[]                      @relation("DirectMessagesAsRecipient")
-    MessageMappings               MessageMapping[]               @relation("MessageMappings")
     GroupChatCreator              GroupChat[]                    @relation("GroupChatCreator")
     GroupChatMembers              GroupChatMember[]              @relation("GroupChatMembers")
     PinnedMessages                PinnedMessage[]                @relation("PinnedMessagesByUser")
@@ -64,8 +62,8 @@ model User {
     GroupChatMembersJoinedBy      GroupChatMember[]              @relation("GroupChatMembersJoinedBy")
     GroupJoinRequest              GroupJoinRequest[]             @relation("UserRequests")
     PushNotificationSubscriptions PushNotificationSubscription[] @relation("PushNotificationSubscriptions")
-    CallSessionsAsCaller          VoiceCallSession[]             @relation("CallSessionsAsCaller")
-    CallSessionsAsCallee          VoiceCallSession[]             @relation("CallSessionsAsCallee")
+    CallSessionsAsCaller          CallSession[]                  @relation("CallSessionsAsCaller")
+    CallSessionsAsCallee          CallSession[]                  @relation("CallSessionsAsCallee")
 
     @@index([email], type: BTree)
     @@map("users")
@@ -92,13 +90,13 @@ model DirectChat {
     createdAt         DateTime @default(now()) @map("created_at") @db.Timestamptz(3)
     lastSentMessageId Int?     @unique @map("last_sent_message_id")
 
-    Recipient       User               @relation("DirectChatsAsRecipient", fields: [recipientId], references: [id])
-    Creator         User               @relation("DirectChatsAsSender", fields: [creatorId], references: [id])
-    Messages        Message[]          @relation("MessagesOnDirectChat")
-    LastSentMessage Message?           @relation("LastSentMessageOnDirectChat", fields: [lastSentMessageId], references: [id])
-    PinnedMessages  PinnedMessage[]    @relation("PinnedMessagesOnDirectChat")
-    PinnedChats     PinnedChat[]       @relation("PinnedChatsOnDirectChat")
-    CallSessions    VoiceCallSession[] @relation("CallSessionsOnDirectChat")
+    Recipient       User            @relation("DirectChatsAsRecipient", fields: [recipientId], references: [id])
+    Creator         User            @relation("DirectChatsAsSender", fields: [creatorId], references: [id])
+    Messages        Message[]       @relation("MessagesOnDirectChat")
+    LastSentMessage Message?        @relation("LastSentMessageOnDirectChat", fields: [lastSentMessageId], references: [id])
+    PinnedMessages  PinnedMessage[] @relation("PinnedMessagesOnDirectChat")
+    PinnedChats     PinnedChat[]    @relation("PinnedChatsOnDirectChat")
+    CallSessions    CallSession[]   @relation("CallSessionsOnDirectChat")
 
     @@unique([creatorId, recipientId])
     @@map("direct_chats")
@@ -119,20 +117,22 @@ model PinnedChat {
 }
 
 model Message {
-    id           Int               @id @default(autoincrement())
-    content      String
-    authorId     Int               @map("author_id")
-    recipientId  Int?              @map("recipient_id")
-    directChatId Int?              @map("direct_chat_id")
-    groupChatId  Int?              @map("group_chat_id")
-    type         MessageType       @default(TEXT)
-    status       MessageStatusEnum
-    stickerId    Int?              @map("sticker_id")
-    createdAt    DateTime          @default(now()) @map("created_at") @db.Timestamptz(3)
-    replyToId    Int?              @map("reply_to_id")
-    isDeleted    Boolean           @default(false) @map("is_deleted")
-    isViolated   Boolean           @default(false) @map("is_violated")
-    mediaId      Int?              @map("media_id")
+    id             Int               @id @default(autoincrement())
+    content        String // encrypted
+    authorId       Int               @map("author_id")
+    recipientId    Int?              @map("recipient_id")
+    directChatId   Int?              @map("direct_chat_id")
+    groupChatId    Int?              @map("group_chat_id")
+    type           MessageType       @default(TEXT)
+    status         MessageStatusEnum
+    stickerId      Int?              @map("sticker_id")
+    createdAt      DateTime          @default(now()) @map("created_at") @db.Timestamptz(3)
+    replyToId      Int?              @map("reply_to_id")
+    isDeleted      Boolean           @default(false) @map("is_deleted")
+    isViolated     Boolean           @default(false) @map("is_violated")
+    mediaId        Int?              @map("media_id")
+    dek            String            @db.VarChar(128) // encrypted
+    dekVersionCode String            @map("dek_version_code") @db.VarChar(128)
 
     DirectChat              DirectChat?       @relation("MessagesOnDirectChat", fields: [directChatId], references: [id])
     Author                  User              @relation("DirectMessagesAsSender", fields: [authorId], references: [id])
@@ -151,16 +151,33 @@ model Message {
 }
 
 model MessageMedia {
-    id           Int              @id @default(autoincrement())
-    url          String           @unique @map("url")
-    fileSize     Int              @map("file_size")
-    fileName     String           @map("file_name")
-    thumbnailUrl String           @map("thumbnail_url")
-    type         MessageMediaType
-    createdAt    DateTime         @default(now()) @map("created_at") @db.Timestamptz(3)
+    id             Int              @id @default(autoincrement())
+    url            String           @unique @map("url")
+    fileSize       Int              @map("file_size")
+    fileName       String           @map("file_name") // encrypted
+    fileType       String           @map("file_type")
+    thumbnailUrl   String           @map("thumbnail_url")
+    type           MessageMediaType
+    createdAt      DateTime         @default(now()) @map("created_at") @db.Timestamptz(3)
+    dek            String           @db.VarChar(128) // base64, encrypted
+    iv             String           @db.VarChar(128) // base64
+    authTag        String           @map("auth_tag") @db.VarChar(128) // base64
+    dekVersionCode String           @map("dek_version_code") @db.VarChar(128)
+
+    // Accessibility fields for images/media
+    altText            String? @map("alt_text") @db.Text // User-provided alt text (plain text)
+    aiGeneratedAltText String? @map("ai_generated_alt_text") @db.Text // AI-generated description
+    aiConfidenceScore  Float?  @map("ai_confidence_score") // 0.0 - 1.0
+    detectedObjects    String? @map("detected_objects") @db.Text // JSON array of detected objects
+    isAltTextValidated Boolean @default(false) @map("is_alt_text_validated") // User confirmed alt-text
+
+    // Accessibility fields for voice messages & transcripts
+    transcript    String? @db.Text // Transcript của voice message hoặc audio (plain text, not encrypted)
+    audioDuration Int?    @map("audio_duration") // Duration in seconds for audio messages
 
     Message Message[] @relation("MessageMediaOnMessage")
 
+    @@index([url], type: BTree)
     @@map("message_medias")
 }
 
@@ -302,6 +319,12 @@ model UserSettings {
     onlyReceiveFriendMessage Boolean @default(false) @map("only_receive_friend_message")
     pushNotificationEnabled  Boolean @default(false) @map("push_notification_enabled")
 
+    // Accessibility - Simplified (chỉ giữ cái cần thiết nhất)
+    ttsEnabled       Boolean @default(false) @map("tts_enabled")
+    autoReadMessages Boolean @default(false) @map("auto_read_messages")
+    speechRate       Float   @default(1.0) @map("speech_rate") // 0.5 - 2.0
+    sttEnabled       Boolean @default(false) @map("stt_enabled")
+
     User User @relation("UserToUserSettings", fields: [userId], references: [id])
 
     @@map("user_settings")
@@ -377,11 +400,13 @@ model PushNotificationSubscription {
     @@map("push_notification_subscriptions")
 }
 
-model VoiceCallSession {
-    id           Int       @id @default(autoincrement())
+model CallSession {
+    id           String    @id @default(uuid()) @db.Uuid
     directChatId Int?      @map("direct_chat_id")
     callerUserId Int       @map("caller_user_id")
     calleeUserId Int       @map("callee_user_id")
+    status       String?   @default("REQUESTING")
+    isVideoCall  Boolean   @default(false)
     createdAt    DateTime  @default(now()) @map("created_at") @db.Timestamptz(3)
     endedAt      DateTime? @map("ended_at") @db.Timestamptz(3)
     hangupReason String?   @map("hangup_reason")
@@ -392,7 +417,7 @@ model VoiceCallSession {
 
     @@index([callerUserId])
     @@index([calleeUserId])
-    @@map("voice_call_sessions")
+    @@map("call_sessions")
 }
 
 enum ReportedMessageType {

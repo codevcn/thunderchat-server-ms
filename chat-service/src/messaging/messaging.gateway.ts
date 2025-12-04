@@ -393,6 +393,7 @@ export class MessagingGateway
         undefined,
         groupId
       )
+      return newMessage
     }
     throw new BaseWsException(EGatewayMessages.INVALID_MESSAGE_TYPE)
   }
@@ -726,6 +727,19 @@ export class MessagingGateway
         throw new BaseWsException(EGatewayMessages.INVALID_MESSAGE_FORMAT)
     }
 
+    // Create embedding for group chat messages with text content
+    if (content && content.trim()) {
+      const metadata = {
+        messageId: newMessage.id,
+        authorId: clientId,
+        groupId: groupChatId,
+        directChatId: null,
+        createdAt: new Date().toISOString(),
+      }
+      const embedding = await this.smartSearch.createEmbedding(content)
+      await this.smartSearch.saveMessageEmbedding(newMessage.id, embedding, metadata)
+    }
+
     await this.handleEmitNewMessage({
       client: { id: clientId, socket: client },
       newMessage,
@@ -800,12 +814,7 @@ export class MessagingGateway
 
   @OnEvent(EInternalEvents.UPDATE_USER_INFO)
   async broadcastUpdateUserInfo(userId: number, updates: UpdateProfileDto) {
-    const directChatIds = this.userConnectionService.getUserChattingConnection(userId)
-    if (directChatIds) {
-      for (const directChatId of directChatIds) {
-        this.userConnectionService.broadcastUpdateUserInfo(directChatId, userId, updates)
-      }
-    }
+    this.userConnectionService.broadcastUpdateUserInfo(userId, updates)
   }
 
   @OnEvent(EInternalEvents.DELETE_DIRECT_CHAT)

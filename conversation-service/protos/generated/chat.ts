@@ -6,7 +6,6 @@
 
 /* eslint-disable */
 import { Observable } from "rxjs";
-import type { Any } from "./google/protobuf/any";
 import type { Empty } from "./google/protobuf/empty";
 
 export const protobufPackage = "chat";
@@ -18,7 +17,7 @@ export interface ConnectedClientsCountResponse {
 export interface EmitToDirectChatRequest {
   event: string;
   directChatId: number;
-  payload: Any | undefined;
+  payloadJson: string;
 }
 
 export interface SendNewMessageToGroupChatRequest {
@@ -51,6 +50,43 @@ export interface FriendRequestActionRequest {
   action: string;
 }
 
+export interface UpdateGroupChatInfoRequest {
+  groupChatId: number;
+  groupName: string;
+  groupAvatarUrl: string;
+}
+
+export interface CreateGroupChatRequest {
+  groupChatJson: string;
+  memberIds: number[];
+  creatorJson: string;
+}
+
+export interface AddMembersToGroupChatRequest {
+  groupChatJson: string;
+  memberIds: number[];
+  executorJson: string;
+}
+
+export interface RemoveGroupChatMembersRequest {
+  groupChatJson: string;
+  memberIds: number[];
+}
+
+export interface DeleteGroupChatRequest {
+  groupChatId: number;
+}
+
+export interface MemberLeaveGroupChatRequest {
+  groupChatId: number;
+  userId: number;
+}
+
+export interface UpdateUserInfoRequest {
+  userId: number;
+  updatesJson: string;
+}
+
 export interface UserConnectionService {
   GetConnectedClientsCountForAdmin(request: Empty): Observable<ConnectedClientsCountResponse>;
   EmitToDirectChat(request: EmitToDirectChatRequest): Observable<Empty>;
@@ -59,4 +95,12 @@ export interface UserConnectionService {
   RemoveConnectedClient(request: RemoveConnectedClientRequest): Observable<Empty>;
   CheckUserIsOnline(request: CheckUserIsOnlineRequest): Observable<CheckUserIsOnlineResponse>;
   FriendRequestAction(request: FriendRequestActionRequest): Observable<Empty>;
+  /** --- Event Emitter --- */
+  UpdateGroupChatInfo(request: UpdateGroupChatInfoRequest): Observable<Empty>;
+  CreateGroupChat(request: CreateGroupChatRequest): Observable<Empty>;
+  AddMembersToGroupChat(request: AddMembersToGroupChatRequest): Observable<Empty>;
+  RemoveGroupChatMembers(request: RemoveGroupChatMembersRequest): Observable<Empty>;
+  DeleteGroupChat(request: DeleteGroupChatRequest): Observable<Empty>;
+  MemberLeaveGroupChat(request: MemberLeaveGroupChatRequest): Observable<Empty>;
+  UpdateUserInfo(request: UpdateUserInfoRequest): Observable<Empty>;
 }

@@ -237,10 +237,15 @@ export class UserConnectionService {
       .emit(EMessagingEmitSocketEvents.update_group_chat_info, groupChatId, groupChat)
   }
 
-  broadcastUpdateUserInfo(directChatId: number, updatedUserId: TUserId, updates: UpdateProfileDto) {
-    this.messagingServer
-      .to(createDirectChatRoomName(directChatId))
-      .emit(EMessagingEmitSocketEvents.update_user_info, directChatId, updatedUserId, updates)
+  broadcastUpdateUserInfo(updatedUserId: TUserId, updates: UpdateProfileDto) {
+    const directChatIds = this.getUserChattingConnection(updatedUserId)
+    if (directChatIds) {
+      for (const directChatId of directChatIds) {
+        this.messagingServer
+          .to(createDirectChatRoomName(directChatId))
+          .emit(EMessagingEmitSocketEvents.update_user_info, directChatId, updatedUserId, updates)
+      }
+    }
   }
 
   broadcastDeleteDirectChat(directChatId: number, deleter: TUserWithProfile) {
