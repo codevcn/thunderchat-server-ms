@@ -199,7 +199,11 @@ Example response: "2, 5, 7"`;
 
   async prepareSendSticker(
     userId: number,
-    params: { contactId?: string; stickerEmotion: string },
+    params: {
+      contactId?: string;
+      contactType?: string;
+      stickerEmotion: string;
+    },
   ): Promise<ExecutionResult> {
     this.logger.log(
       `[prepareSendSticker] user=${userId}, emotion=${params.stickerEmotion}`,
@@ -233,66 +237,132 @@ Example response: "2, 5, 7"`;
     const bestSticker = stickers[0];
     const contactId = parseInt(params.contactId);
 
-    const directChat = await this.prisma.directChat.findUnique({
-      where: { id: contactId },
-      include: {
-        Creator: { select: { Profile: { select: { fullName: true } } } },
-        Recipient: { select: { Profile: { select: { fullName: true } } } },
-      },
-    });
+    // Check based on contactType if provided
+    if (params.contactType === 'group') {
+      const groupChat = await this.prisma.groupChat.findUnique({
+        where: { id: contactId },
+      });
 
-    if (directChat) {
-      const otherUser =
-        directChat.creatorId === userId
-          ? directChat.Recipient
-          : directChat.Creator;
-      const otherUserId =
-        directChat.creatorId === userId
-          ? directChat.recipientId
-          : directChat.creatorId;
-      const targetName = otherUser?.Profile?.fullName || 'Unknown';
-      const stickerDescription = bestSticker.stickerName || 'sticker';
+      if (groupChat) {
+        const stickerDescription = bestSticker.stickerName || 'sticker';
+        const confirmationMessage = `Gửi sticker ${stickerDescription} vào group ${groupChat.name}. Xác nhận không? Nói "có" để gửi.`;
 
-      const confirmationMessage = `Gửi sticker ${stickerDescription} cho ${targetName}. Xác nhận không? Nói "có" để gửi.`;
+        return {
+          response: confirmationMessage,
+          pending: {
+            type: 'send_sticker',
+            targetId: groupChat.id,
+            targetName: groupChat.name,
+            content: 'sticker',
+            lastBotMessage: confirmationMessage,
+            stickerId: bestSticker.id,
+            stickerDescription,
+            chatType: 'group',
+            groupId: groupChat.id,
+          } as any,
+        };
+      }
+    } else if (params.contactType === 'direct') {
+      const directChat = await this.prisma.directChat.findUnique({
+        where: { id: contactId },
+        include: {
+          Creator: { select: { Profile: { select: { fullName: true } } } },
+          Recipient: { select: { Profile: { select: { fullName: true } } } },
+        },
+      });
 
-      return {
-        response: confirmationMessage,
-        pending: {
-          type: 'send_sticker',
-          targetId: directChat.id,
-          targetName,
-          content: 'sticker',
-          lastBotMessage: confirmationMessage,
-          stickerId: bestSticker.id,
-          stickerDescription,
-          chatType: 'direct',
-          recipientUserId: otherUserId,
-        } as any,
-      };
-    }
+      if (directChat) {
+        const otherUser =
+          directChat.creatorId === userId
+            ? directChat.Recipient
+            : directChat.Creator;
+        const otherUserId =
+          directChat.creatorId === userId
+            ? directChat.recipientId
+            : directChat.creatorId;
+        const targetName = otherUser?.Profile?.fullName || 'Unknown';
+        const stickerDescription = bestSticker.stickerName || 'sticker';
+        const confirmationMessage = `Gửi sticker ${stickerDescription} cho ${targetName}. Xác nhận không? Nói "có" để gửi.`;
 
-    const groupChat = await this.prisma.groupChat.findUnique({
-      where: { id: contactId },
-    });
+        return {
+          response: confirmationMessage,
+          pending: {
+            type: 'send_sticker',
+            targetId: directChat.id,
+            targetName,
+            content: 'sticker',
+            lastBotMessage: confirmationMessage,
+            stickerId: bestSticker.id,
+            stickerDescription,
+            chatType: 'direct',
+            directChatId: directChat.id,
+            recipientUserId: otherUserId,
+          } as any,
+        };
+      }
+    } else {
+      // Fallback: Try direct chat first (more common), then group chat
+      const directChat = await this.prisma.directChat.findUnique({
+        where: { id: contactId },
+        include: {
+          Creator: { select: { Profile: { select: { fullName: true } } } },
+          Recipient: { select: { Profile: { select: { fullName: true } } } },
+        },
+      });
 
-    if (groupChat) {
-      const stickerDescription = bestSticker.stickerName || 'sticker';
+      if (directChat) {
+        const otherUser =
+          directChat.creatorId === userId
+            ? directChat.Recipient
+            : directChat.Creator;
+        const otherUserId =
+          directChat.creatorId === userId
+            ? directChat.recipientId
+            : directChat.creatorId;
+        const targetName = otherUser?.Profile?.fullName || 'Unknown';
+        const stickerDescription = bestSticker.stickerName || 'sticker';
+        const confirmationMessage = `Gửi sticker ${stickerDescription} cho ${targetName}. Xác nhận không? Nói "có" để gửi.`;
 
-      const confirmationMessage = `Gửi sticker ${stickerDescription} vào group ${groupChat.name}. Xác nhận không? Nói "có" để gửi.`;
+        return {
+          response: confirmationMessage,
+          pending: {
+            type: 'send_sticker',
+            targetId: directChat.id,
+            targetName,
+            content: 'sticker',
+            lastBotMessage: confirmationMessage,
+            stickerId: bestSticker.id,
+            stickerDescription,
+            chatType: 'direct',
+            directChatId: directChat.id,
+            recipientUserId: otherUserId,
+          } as any,
+        };
+      }
 
-      return {
-        response: confirmationMessage,
-        pending: {
-          type: 'send_sticker',
-          targetId: groupChat.id,
-          targetName: groupChat.name,
-          content: 'sticker',
-          lastBotMessage: confirmationMessage,
-          stickerId: bestSticker.id,
-          stickerDescription,
-          chatType: 'group',
-        } as any,
-      };
+      const groupChat = await this.prisma.groupChat.findUnique({
+        where: { id: contactId },
+      });
+
+      if (groupChat) {
+        const stickerDescription = bestSticker.stickerName || 'sticker';
+        const confirmationMessage = `Gửi sticker ${stickerDescription} vào group ${groupChat.name}. Xác nhận không? Nói "có" để gửi.`;
+
+        return {
+          response: confirmationMessage,
+          pending: {
+            type: 'send_sticker',
+            targetId: groupChat.id,
+            targetName: groupChat.name,
+            content: 'sticker',
+            lastBotMessage: confirmationMessage,
+            stickerId: bestSticker.id,
+            stickerDescription,
+            chatType: 'group',
+            groupId: groupChat.id,
+          } as any,
+        };
+      }
     }
 
     return {

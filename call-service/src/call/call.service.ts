@@ -14,40 +14,46 @@ export class CallService {
   private readonly activeCallSessions = new Map<TCallSessionActiveId, TActiveCallSession>()
   private readonly usersCalling = new Map<TUserId, TCallSessionActiveId>() // để tra cứu các user nào đang gọi
   constructor(@Inject(EProviderTokens.PRISMA_CLIENT) private prismaService: PrismaService) {}
+
   getActiveCallSession(sessionId: TCallSessionActiveId): TActiveCallSession | undefined {
     return this.activeCallSessions.get(sessionId)
   }
-  async initActiveCallSession(
-    callerUserId: TUserId,
-    calleeUserId: TUserId,
-    directChatId: TDirectChat['id'],
-    isVideoCall: boolean = false
-  ): Promise<TActiveCallSession> {
-    let tempSessionId = uuidv4()
-    let retryCount: number = 0
-    while (this.activeCallSessions.has(tempSessionId)) {
-      retryCount++
-      if (retryCount === this.MAX_RETRY_COUNT_CREATE_TEMP_SESSION) {
-        throw new BadRequestException(ECallMessages.SOMETHING_WENT_WRONG)
-      }
-      tempSessionId = uuidv4()
-    }
-    const session: TActiveCallSession = {
-      id: tempSessionId,
-      status: ECallStatus.REQUESTING,
-      callerUserId,
-      calleeUserId,
-      directChatId,
-      isVideoCall,
-    }
+
+  async initActiveCallSession(session: TActiveCallSession): Promise<TActiveCallSession> {
+    console.log(`📝 initActiveCallSession called with:`, {
+      id: session.id,
+      caller: session.callerUserId,
+      callee: session.calleeUserId,
+      status: session.status,
+    })
+
+    // Lưu vào DB (lấy từ frontend)
     try {
-      await this.createDbSession(session)
+      await this.prismaService.callSession.create({
+        data: {
+          id: session.id,
+          directChatId: session.directChatId,
+          callerUserId: session.callerUserId,
+          calleeUserId: session.calleeUserId,
+          status: session.status,
+          isVideoCall: session.isVideoCall,
+        },
+      })
+      console.log(`✅ DB session created: ${session.id}`)
     } catch (error) {
-      // Xử lý lỗi DB mà không break signaling (log và tiếp tục)
-      console.error('Failed to create DB session:', error)
-      // Optional: Throw nếu muốn fail fast, nhưng giữ in-memory
+      console.error(`❌ DB session creation failed: ${session.id}`, error)
+      // Tiếp tục, không throw - vẫn track in-memory
     }
-    this.activeCallSessions.set(tempSessionId, session)
+
+    // Lưu vào in-memory map
+    this.activeCallSessions.set(session.id, session)
+    this.usersCalling.set(session.callerUserId, session.id)
+    this.usersCalling.set(session.calleeUserId, session.id)
+
+    console.log(`✅ Session stored in memory: ${session.id}`)
+    console.log(`   Active sessions count: ${this.activeCallSessions.size}`)
+    console.log(`   All session IDs:`, Array.from(this.activeCallSessions.keys()))
+
     return session
   }
 
@@ -86,54 +92,79 @@ export class CallService {
   //   return session
   // }
 
-  async createDbSession(session: TActiveCallSession): Promise<void> {
-    await this.prismaService.callSession.create({
-      data: {
-        id: session.id,
-        directChatId: session.directChatId,
-        callerUserId: session.callerUserId,
-        calleeUserId: session.calleeUserId,
-        status: session.status,
-        isVideoCall: session.isVideoCall || false,
-      },
-    })
-  }
+  // Deprecated - createDbSession logic moved to initActiveCallSession
 
-  async updateDbSessionStatus(
+  async saveCallStatusToDb(
     sessionId: TCallSessionActiveId,
     status: ECallStatus,
-    hangupReason?: EHangupReason
+    reason?: EHangupReason
   ): Promise<void> {
-    const updateData: any = { status }
-    if (
-      status === ECallStatus.ENDED ||
-      status === ECallStatus.REJECTED ||
-      status === ECallStatus.TIMEOUT
-    ) {
-      updateData.endedAt = new Date()
-      updateData.hangupReason = hangupReason || EHangupReason.NORMAL
+    try {
+      const updateData: any = { status }
+
+      if (
+        status === ECallStatus.ENDED ||
+        status === ECallStatus.REJECTED ||
+        status === ECallStatus.TIMEOUT
+      ) {
+        updateData.endedAt = new Date()
+        updateData.hangupReason = reason || EHangupReason.NORMAL
+      }
+
+      await this.prismaService.callSession.update({
+        where: { id: sessionId },
+        data: updateData,
+      })
+      console.log(`✅ DB status updated: ${sessionId} → ${status}`)
+    } catch (error) {
+      console.error(`❌ DB status update failed: ${sessionId} → ${status}`, error)
+      // Không throw - để call tiếp tục ngay cả khi DB fail
     }
-    await this.prismaService.callSession.update({
-      where: { id: sessionId },
-      data: updateData,
-    })
   }
 
-  async acceptCall(sessionId: TCallSessionActiveId): Promise<TActiveCallSession> {
-    const session = this.getActiveCallSession(sessionId)
+  async acceptCall(
+    sessionId: TCallSessionActiveId,
+    sessionPayload?: TActiveCallSession
+  ): Promise<TActiveCallSession> {
+    let session = this.getActiveCallSession(sessionId)
+
+    // Nếu in-memory không có, lấy từ payload (frontend gửi)
+    if (!session && sessionPayload) {
+      console.log(`📨 Session not in memory, using payload for: ${sessionId}`)
+      session = sessionPayload
+      // Lưu vào in-memory + DB
+      this.activeCallSessions.set(sessionId, session)
+      this.usersCalling.set(session.callerUserId, sessionId)
+      this.usersCalling.set(session.calleeUserId, sessionId)
+      // Cũng insert vào DB
+      try {
+        await this.prismaService.callSession.create({
+          data: {
+            id: session.id,
+            directChatId: session.directChatId,
+            callerUserId: session.callerUserId,
+            calleeUserId: session.calleeUserId,
+            status: session.status,
+            isVideoCall: session.isVideoCall,
+          },
+        })
+        console.log(`✅ DB session created from payload: ${sessionId}`)
+      } catch (error) {
+        console.error(`❌ DB session creation failed: ${sessionId}`, error)
+      }
+    }
+
     if (!session) {
+      console.error(`❌ acceptCall: Session not found! sessionId: ${sessionId}`)
       throw new NotFoundException(ECallMessages.SESSION_NOT_FOUND)
     }
-    if (session.status !== ECallStatus.REQUESTING && session.status !== ECallStatus.RINGING) {
-      throw new BadRequestException(ECallMessages.INVALID_STATUS)
-    }
+
+    // Update in-memory
     session.status = ECallStatus.ACCEPTED
 
-    try {
-      await this.updateDbSessionStatus(sessionId, ECallStatus.ACCEPTED)
-    } catch (error) {
-      console.error('Failed to update DB on accept:', error)
-    }
+    // Save to DB
+    await this.saveCallStatusToDb(sessionId, ECallStatus.ACCEPTED)
+
     return session
   }
 
@@ -146,13 +177,7 @@ export class CallService {
       throw new NotFoundException(ECallMessages.SESSION_NOT_FOUND)
     }
     session.status = status
-    if (status === ECallStatus.CONNECTED || status === ECallStatus.ENDED) {
-      try {
-        await this.updateDbSessionStatus(sessionId, status)
-      } catch (error) {
-        console.error('Failed to update DB status:', error)
-      }
-    }
+    await this.saveCallStatusToDb(sessionId, status)
     return session
   }
 
@@ -176,24 +201,56 @@ export class CallService {
 
   async endCall(
     sessionId: TCallSessionActiveId,
-    reason: EHangupReason = EHangupReason.NORMAL
+    reason: EHangupReason = EHangupReason.NORMAL,
+    sessionPayload?: TActiveCallSession
   ): Promise<TActiveCallSession> {
-    const session = this.getActiveCallSession(sessionId)
+    let session = this.getActiveCallSession(sessionId)
+
+    // Nếu in-memory không có, lấy từ payload (frontend gửi)
+    if (!session && sessionPayload) {
+      console.log(`📥 Session not in memory, using payload for: ${sessionId}`)
+      session = sessionPayload
+      // Lưu vào in-memory + DB
+      this.activeCallSessions.set(sessionId, session)
+      this.usersCalling.set(session.callerUserId, sessionId)
+      this.usersCalling.set(session.calleeUserId, sessionId)
+      // Cũng insert vào DB
+      try {
+        await this.prismaService.callSession.create({
+          data: {
+            id: session.id,
+            directChatId: session.directChatId,
+            callerUserId: session.callerUserId,
+            calleeUserId: session.calleeUserId,
+            status: session.status,
+            isVideoCall: session.isVideoCall,
+          },
+        })
+        console.log(`✅ DB session created from payload: ${sessionId}`)
+      } catch (error) {
+        console.error(`❌ DB session creation failed: ${sessionId}`, error)
+      }
+    }
 
     if (!session) {
+      console.error(`❌ endCall: Session not found! sessionId: ${sessionId}`)
       throw new NotFoundException(ECallMessages.SESSION_NOT_FOUND)
     }
 
-    try {
-      await this.updateDbSessionStatus(sessionId, ECallStatus.ENDED, reason)
-    } catch (error) {
-      console.error('Failed to update DB on end:', error)
-    }
-    this.activeCallSessions.delete(sessionId)
-    if (this.usersCalling.get(session.callerUserId) === sessionId)
+    // Update in-memory
+    session.status = ECallStatus.ENDED
+
+    // Save to DB
+    await this.saveCallStatusToDb(sessionId, ECallStatus.ENDED, reason)
+
+    // Remove from users calling map
+    if (this.usersCalling.get(session.callerUserId) === sessionId) {
       this.usersCalling.delete(session.callerUserId)
-    if (this.usersCalling.get(session.calleeUserId) === sessionId)
+    }
+    if (this.usersCalling.get(session.calleeUserId) === sessionId) {
       this.usersCalling.delete(session.calleeUserId)
+    }
+
     return session
   }
 

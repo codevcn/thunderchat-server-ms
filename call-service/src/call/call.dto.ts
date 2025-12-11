@@ -1,9 +1,18 @@
-import { IsString, IsOptional, IsNumber, IsEnum, IsNotEmpty, IsBoolean } from 'class-validator'
-import { EHangupReason, ESDPType } from './call.enum'
+import {
+  IsString,
+  IsOptional,
+  IsNumber,
+  IsEnum,
+  IsNotEmpty,
+  IsBoolean,
+  ValidateNested,
+} from 'class-validator'
+import { EHangupReason, ESDPType, ECallStatus } from './call.enum'
 import { Type } from 'class-transformer'
 import type { TCallSessionActiveId } from './call.type'
 
 export class CallRequestDTO {
+  @IsNotEmpty() @IsString() sessionId: TCallSessionActiveId
   @IsNumber() @Type(() => Number) directChatId: number
   @IsNumber() @Type(() => Number) calleeUserId: number
   @IsBoolean()
@@ -11,17 +20,35 @@ export class CallRequestDTO {
   isVideoCall?: boolean
 }
 
+export class CallSessionPayloadDTO {
+  @IsNotEmpty() @IsString() id: TCallSessionActiveId
+  @IsNumber() @Type(() => Number) callerUserId: number
+  @IsNumber() @Type(() => Number) calleeUserId: number
+  @IsNumber() @Type(() => Number) directChatId: number
+  @IsBoolean() isVideoCall: boolean
+  @IsEnum(ECallStatus) status: ECallStatus
+  @IsBoolean()
+  @IsOptional()
+  isGroupCall?: boolean
+}
+
 export class CallAcceptDTO {
-  @IsNotEmpty() @IsString() sessionId: TCallSessionActiveId
+  @ValidateNested()
+  @Type(() => CallSessionPayloadDTO)
+  session: CallSessionPayloadDTO
 }
 
 export class CallRejectDTO {
-  @IsNotEmpty() @IsString() sessionId: TCallSessionActiveId
+  @ValidateNested()
+  @Type(() => CallSessionPayloadDTO)
+  session: CallSessionPayloadDTO
   @IsOptional() @IsString() reason?: string
 }
 
 export class CallHangupDTO {
-  @IsNotEmpty() @IsString() sessionId: TCallSessionActiveId
+  @ValidateNested()
+  @Type(() => CallSessionPayloadDTO)
+  session: CallSessionPayloadDTO
   @IsOptional() @IsEnum(EHangupReason) reason?: EHangupReason
 }
 

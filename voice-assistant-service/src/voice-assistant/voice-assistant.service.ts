@@ -2,8 +2,6 @@
 import { Injectable, Inject, Logger } from '@nestjs/common';
 import { PrismaService } from '@/configs/db/prisma.service';
 import { EProviderTokens } from '@/utils/enums';
-import { Redis } from 'ioredis';
-import { InjectRedis } from '@nestjs-modules/ioredis';
 import {
   ExecutionResult,
   LlmResult,
@@ -34,12 +32,15 @@ interface IVoiceSettings {
 @Injectable()
 export class VoiceAssistantService {
   private readonly logger = new Logger(VoiceAssistantService.name);
-  private readonly PENDING_KEY = (userId: number) => `voice:pending:${userId}`;
+  // In-Memory Map to store pending actions: userId -> {action, expiresAt}
+  private pendingActions: Map<
+    number,
+    { action: PendingAction; expiresAt: number }
+  > = new Map();
   private readonly symmetricTextEncryptor = new SymmetricTextEncryptor();
 
   constructor(
     @Inject(EProviderTokens.PRISMA_CLIENT) private prisma: PrismaService,
-    @InjectRedis() private readonly redis: Redis,
     private readonly sttService: SttService,
     private readonly ttsService: TtsService,
     private readonly llmService: LlmService,
@@ -50,6 +51,50 @@ export class VoiceAssistantService {
     private readonly groupHandler: GroupHandlerService,
     private readonly userHandler: UserHandlerService,
   ) {}
+
+  /**
+   * Get pending action from in-memory map (with expiration check)
+   */
+  private getPendingAction(userId: number): PendingAction | null {
+    const pending = this.pendingActions.get(userId);
+    if (!pending) return null;
+
+    // Check if expired
+    if (Date.now() > pending.expiresAt) {
+      this.pendingActions.delete(userId);
+      return null;
+    }
+
+    return pending.action;
+  }
+
+  /**
+   * Save pending action to in-memory map with TTL (seconds)
+   */
+  private setPendingAction(
+    userId: number,
+    action: PendingAction,
+    ttlSeconds: number,
+  ): void {
+    this.pendingActions.set(userId, {
+      action,
+      expiresAt: Date.now() + ttlSeconds * 1000,
+    });
+  }
+
+  /**
+   * Delete pending action from in-memory map
+   */
+  private deletePendingAction(userId: number): void {
+    this.pendingActions.delete(userId);
+  }
+
+  /**
+   * Public method to reset pending action (for controller)
+   */
+  resetPendingAction(userId: number): void {
+    this.deletePendingAction(userId);
+  }
 
   async processCommand(userId: number, audioBase64: string) {
     this.logger.log(`\n=== VOICE ASSISTANT START ===`);
@@ -75,15 +120,12 @@ export class VoiceAssistantService {
       this.logger.warn(`[ERROR] - Background noise is too high`);
 
       // Check if there's a pending action to cancel
-      const pendingStr = await this.redis.get(this.PENDING_KEY(userId));
-      const pending: PendingAction | null = pendingStr
-        ? JSON.parse(pendingStr)
-        : null;
+      const pending = this.getPendingAction(userId);
 
       // If there's a pending action, cancel it
       if (pending) {
         this.logger.log(`[STEP 2] Cancelling pending action: ${pending.type}`);
-        await this.redis.del(this.PENDING_KEY(userId));
+        this.deletePendingAction(userId);
 
         const audio = await this.ttsService.speak(
           'Đã hủy thao tác trước đó.',
@@ -107,23 +149,19 @@ export class VoiceAssistantService {
 
       // No pending action, just ask user to speak again
       const audio = await this.ttsService.speak(
-        'Tôi không nghe rõ, bạn nói to và rõ hơn nhé. Nói "Hey Chat" rồi đợi tiếng bíp xong mới nói tiếp.',
+        'Tôi không nghe rõ, bạn nói to và rõ hơn nhé.',
         settings.speechRate,
       );
       return {
-        response:
-          'Không nghe rõ. Vui lòng nói to và rõ hơn. Đợi tiếng bíp sau "Hey Chat" rồi mới nói tiếp.',
+        response: 'Không nghe rõ. Vui lòng nói to và rõ hơn.',
         audioBase64: audio,
         transcript: '',
       };
     }
 
-    // 2. Check Redis pending state
-    this.logger.log(`[STEP 2] Checking Redis pending action...`);
-    const pendingStr = await this.redis.get(this.PENDING_KEY(userId));
-    const pending: PendingAction | null = pendingStr
-      ? JSON.parse(pendingStr)
-      : null;
+    // 2. Check in-memory pending state
+    this.logger.log(`[STEP 2] Checking pending action...`);
+    const pending = this.getPendingAction(userId);
     if (pending) {
       this.logger.log(`[STEP 2] Found pending action: ${pending.type}`);
     } else {
@@ -154,7 +192,7 @@ export class VoiceAssistantService {
     this.logger.log(`[STEP 4] Response: "${execResult.response}"`);
 
     // 5. Lưu/Xóa context — HOÀN TOÀN TYPE-SAFE
-    this.logger.log(`[STEP 5] Managing Redis state...`);
+    this.logger.log(`[STEP 5] Managing pending action state...`);
     if (execResult.pending) {
       this.logger.log(`[STEP 5] Saving pending action for 300s`);
       this.logger.log(
@@ -165,14 +203,10 @@ export class VoiceAssistantService {
           `[STEP 5] Pending stickerId: ${(execResult.pending as any).stickerId}`,
         );
       }
-      await this.redis.setex(
-        this.PENDING_KEY(userId),
-        300,
-        JSON.stringify(execResult.pending),
-      );
+      this.setPendingAction(userId, execResult.pending, 300);
     } else if (pending) {
       this.logger.log(`[STEP 5] Clearing previous pending action`);
-      await this.redis.del(this.PENDING_KEY(userId));
+      this.deletePendingAction(userId);
     }
 
     // 6. TTS
@@ -289,7 +323,7 @@ export class VoiceAssistantService {
       case 'send_voice_message':
         return await this.messageHandler.prepareSendVoiceMessageById(
           userId,
-          result.parameters as { contactId?: string },
+          result.parameters as { contactId?: string; contactType?: string },
           audioBase64,
         );
 
@@ -333,7 +367,11 @@ export class VoiceAssistantService {
       case 'send_sticker':
         return await this.stickerHandler.prepareSendSticker(
           userId,
-          result.parameters as { contactId?: string; stickerEmotion: string },
+          result.parameters as {
+            contactId?: string;
+            contactType?: string;
+            stickerEmotion: string;
+          },
         );
 
       case 'create_group':
@@ -449,8 +487,8 @@ export class VoiceAssistantService {
             }
           } else {
             this.logger.log(`[executeFunction] User cancelled sending message`);
-            await this.redis.del(this.PENDING_KEY(userId));
-            this.logger.log(`[executeFunction] ✅ Reset Redis pending state`);
+            this.deletePendingAction(userId);
+            this.logger.log(`[executeFunction] ✅ Reset pending action state`);
             return {
               response: 'Đã hủy gửi tin nhắn.',
               clientAction: {
@@ -551,8 +589,8 @@ export class VoiceAssistantService {
             this.logger.log(
               `[executeFunction] User cancelled sending voice message`,
             );
-            await this.redis.del(this.PENDING_KEY(userId));
-            this.logger.log(`[executeFunction] ✅ Reset Redis pending state`);
+            this.deletePendingAction(userId);
+            this.logger.log(`[executeFunction] ✅ Reset pending state`);
             return {
               response: 'Đã hủy gửi tin nhắn voice.',
               clientAction: {
@@ -591,8 +629,8 @@ export class VoiceAssistantService {
             }
           } else {
             this.logger.log(`[executeFunction] User cancelled making call`);
-            await this.redis.del(this.PENDING_KEY(userId));
-            this.logger.log(`[executeFunction] ✅ Reset Redis pending state`);
+            this.deletePendingAction(userId);
+            this.logger.log(`[executeFunction] ✅ Reset pending state`);
             return {
               response: 'Đã hủy cuộc gọi.',
               clientAction: {
@@ -630,8 +668,8 @@ export class VoiceAssistantService {
             }
           } else {
             this.logger.log(`[executeFunction] User cancelled changing name`);
-            await this.redis.del(this.PENDING_KEY(userId));
-            this.logger.log(`[executeFunction] ✅ Reset Redis pending state`);
+            this.deletePendingAction(userId);
+            this.logger.log(`[executeFunction] ✅ Reset pending state`);
             return {
               response: 'Đã hủy đổi tên.',
               clientAction: {
@@ -669,8 +707,8 @@ export class VoiceAssistantService {
             }
           } else {
             this.logger.log(`[executeFunction] User cancelled searching`);
-            await this.redis.del(this.PENDING_KEY(userId));
-            this.logger.log(`[executeFunction] ✅ Reset Redis pending state`);
+            this.deletePendingAction(userId);
+            this.logger.log(`[executeFunction] ✅ Reset pending state`);
             return {
               response: 'Đã hủy tìm kiếm.',
               clientAction: {
@@ -708,8 +746,8 @@ export class VoiceAssistantService {
             };
           } else {
             this.logger.log(`[executeFunction] User cancelled smart search`);
-            await this.redis.del(this.PENDING_KEY(userId));
-            this.logger.log(`[executeFunction] ✅ Reset Redis pending state`);
+            this.deletePendingAction(userId);
+            this.logger.log(`[executeFunction] ✅ Reset pending state`);
             return {
               response: 'Đã hủy tìm kiếm thông minh.',
               clientAction: {
@@ -750,8 +788,8 @@ export class VoiceAssistantService {
             }
           } else {
             this.logger.log(`[executeFunction] User cancelled sending sticker`);
-            await this.redis.del(this.PENDING_KEY(userId));
-            this.logger.log(`[executeFunction] ✅ Reset Redis pending state`);
+            this.deletePendingAction(userId);
+            this.logger.log(`[executeFunction] ✅ Reset pending state`);
             return {
               response: 'Đã hủy gửi sticker.',
               clientAction: {
@@ -785,8 +823,8 @@ export class VoiceAssistantService {
             };
           } else {
             this.logger.log(`[executeFunction] User cancelled sending image`);
-            await this.redis.del(this.PENDING_KEY(userId));
-            this.logger.log(`[executeFunction] ✅ Reset Redis pending state`);
+            this.deletePendingAction(userId);
+            this.logger.log(`[executeFunction] ✅ Reset pending state`);
             return {
               response: 'Đã hủy gửi ảnh.',
               clientAction: {
@@ -828,8 +866,8 @@ export class VoiceAssistantService {
             this.logger.log(
               `[executeFunction] User cancelled sending document`,
             );
-            await this.redis.del(this.PENDING_KEY(userId));
-            this.logger.log(`[executeFunction] ✅ Reset Redis pending state`);
+            this.deletePendingAction(userId);
+            this.logger.log(`[executeFunction] ✅ Reset pending state`);
             return {
               response: 'Đã hủy gửi tài liệu.',
               clientAction: {
@@ -866,8 +904,8 @@ export class VoiceAssistantService {
             };
           } else {
             this.logger.log(`[executeFunction] User cancelled joining group`);
-            await this.redis.del(this.PENDING_KEY(userId));
-            this.logger.log(`[executeFunction] ✅ Reset Redis pending state`);
+            this.deletePendingAction(userId);
+            this.logger.log(`[executeFunction] ✅ Reset pending state`);
             return {
               response: 'Đã hủy tham gia nhóm.',
               clientAction: {
@@ -887,7 +925,7 @@ export class VoiceAssistantService {
               `[executeFunction] User confirmed inviting to group`,
             );
             this.logger.log(
-              `[executeFunction] Pending from Redis: ${JSON.stringify(pending, null, 2)}`,
+              `[executeFunction] Pending action: ${JSON.stringify(pending, null, 2)}`,
             );
 
             // Actually invite members to the group
@@ -916,8 +954,8 @@ export class VoiceAssistantService {
             );
 
             // Clear pending action after successful invite
-            await this.redis.del(this.PENDING_KEY(userId));
-            this.logger.log(`[executeFunction] ✅ Reset Redis pending state`);
+            this.deletePendingAction(userId);
+            this.logger.log(`[executeFunction] ✅ Reset pending state`);
 
             return {
               response: inviteResult,
@@ -926,8 +964,8 @@ export class VoiceAssistantService {
             this.logger.log(
               `[executeFunction] User cancelled inviting to group`,
             );
-            await this.redis.del(this.PENDING_KEY(userId));
-            this.logger.log(`[executeFunction] ✅ Reset Redis pending state`);
+            this.deletePendingAction(userId);
+            this.logger.log(`[executeFunction] ✅ Reset pending state`);
             return {
               response: 'Đã hủy mời vào nhóm.',
             };
@@ -958,8 +996,8 @@ export class VoiceAssistantService {
             };
           } else {
             this.logger.log(`[executeFunction] User cancelled creating group`);
-            await this.redis.del(this.PENDING_KEY(userId));
-            this.logger.log(`[executeFunction] ✅ Reset Redis pending state`);
+            this.deletePendingAction(userId);
+            this.logger.log(`[executeFunction] ✅ Reset pending state`);
             return {
               response: 'Đã hủy tạo nhóm.',
               clientAction: {
@@ -991,8 +1029,8 @@ export class VoiceAssistantService {
         this.logger.log(
           `[executeFunction] User cancelled pending action: ${pending?.type}`,
         );
-        await this.redis.del(this.PENDING_KEY(userId));
-        this.logger.log(`[executeFunction] Reset Redis pending state`);
+        this.deletePendingAction(userId);
+        this.logger.log(`[executeFunction] Reset pending state`);
         if (pending?.type === 'incoming_call') {
           return {
             response: 'Đã từ chối cuộc gọi.',

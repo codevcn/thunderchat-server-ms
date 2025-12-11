@@ -70,6 +70,10 @@ export class CallConnectionService {
 
   announceCallRequestToCallee(activeCallSession: TActiveCallSession) {
     const calleeSockets = this.getConnectedClient(activeCallSession.calleeUserId)
+    console.log(`📞 Announcing call to callee ${activeCallSession.calleeUserId}:`, {
+      sessionId: activeCallSession.id,
+      socketsCount: calleeSockets?.length || 0,
+    })
     if (calleeSockets && calleeSockets.length > 0) {
       for (const socket of calleeSockets) {
         socket.emit(ECallEmitSocketEvents.call_request, activeCallSession)

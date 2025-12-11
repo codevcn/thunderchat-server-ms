@@ -401,7 +401,7 @@ model PushNotificationSubscription {
 }
 
 model CallSession {
-    id           String    @id @default(uuid()) @db.Uuid
+    id           String    @id @db.VarChar(255)
     directChatId Int?      @map("direct_chat_id")
     callerUserId Int       @map("caller_user_id")
     calleeUserId Int       @map("callee_user_id")

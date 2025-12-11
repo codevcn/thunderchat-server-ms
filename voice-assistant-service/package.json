@@ -28,6 +28,7 @@
     "@grpc/proto-loader": "^0.8.0",
     "@langchain/core": "^1.1.0",
     "@langchain/google-genai": "^2.0.0",
+    "@langchain/groq": "^1.0.2",
     "@nestjs-modules/ioredis": "^2.0.2",
     "@nestjs/common": "^11.0.1",
     "@nestjs/config": "^4.0.2",

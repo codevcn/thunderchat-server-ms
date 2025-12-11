@@ -58,7 +58,7 @@ export class FuzzySearchService {
         `[fuzzyFindContact] Group "${g.name}" vs "${name}": ${(similarity * 100).toFixed(1)}%`,
       );
 
-      if (similarity > 0.5) {
+      if (similarity > 0.4) {
         groupCandidates.push({
           type: 'group',
           groupId: g.id,
@@ -81,11 +81,9 @@ export class FuzzySearchService {
       };
     }
 
-    // ===== PRIORITY 2: Tìm trong Friends =====
-    this.logger.log(
-      `[fuzzyFindContact] No group found, attempting to find in Friends table...`,
-    );
-    let friends = await this.prisma.friend.findMany({
+    // ===== PRIORITY 2 & 3: Search Friends AND DirectChat =====
+    this.logger.log(`[fuzzyFindContact] Searching Friends table...`);
+    const friends = await this.prisma.friend.findMany({
       where: {
         OR: [{ senderId: userId }, { recipientId: userId }],
       },
@@ -97,71 +95,68 @@ export class FuzzySearchService {
 
     this.logger.log(`[fuzzyFindContact] Friends found: ${friends.length}`);
 
-    // ===== PRIORITY 3: Tìm trong DirectChat =====
-    if (friends.length === 0) {
-      this.logger.log(
-        `[fuzzyFindContact] No friends found, trying DirectChat table...`,
-      );
-      const directChats = await this.prisma.directChat.findMany({
+    this.logger.log(`[fuzzyFindContact] Searching DirectChat table...`);
+    const directChats = await this.prisma.directChat.findMany({
+      where: {
+        OR: [{ creatorId: userId }, { recipientId: userId }],
+      },
+      include: {
+        Creator: { include: { Profile: true } },
+        Recipient: { include: { Profile: true } },
+      },
+    });
+
+    this.logger.log(
+      `[fuzzyFindContact] DirectChats found: ${directChats.length}`,
+    );
+
+    // Combine all contacts from both Friends and DirectChat
+    const allContacts: Array<{
+      id: number;
+      directChatId: number | null;
+      fullName: string;
+    }> = [];
+
+    // Add Friends with their DirectChat ID
+    for (const f of friends) {
+      const contactId = f.senderId === userId ? f.recipientId : f.senderId;
+      const directChat = await this.prisma.directChat.findUnique({
         where: {
-          OR: [{ creatorId: userId }, { recipientId: userId }],
-        },
-        include: {
-          Creator: { include: { Profile: true } },
-          Recipient: { include: { Profile: true } },
-        },
-      });
-
-      this.logger.log(
-        `[fuzzyFindContact] DirectChats found: ${directChats.length}`,
-      );
-
-      // Chuyển DirectChat thành dạng Friend-like
-      friends = directChats.map((dc) => {
-        const friend = {
-          id: dc.id,
-          senderId: dc.creatorId,
-          recipientId: dc.recipientId,
-          createdAt: dc.createdAt,
-          Sender: dc.Creator,
-          Recipient: dc.Recipient,
-          directChatId: dc.id,
-        } as any;
-        return friend;
-      });
-    } else {
-      // Nếu là Friends, cần lấy DirectChat ID
-      const friendsWithDirectChat: Array<{
-        id: number;
-        directChatId: number | null;
-        fullName: string;
-        senderId: number;
-        recipientId: number;
-      }> = [];
-
-      for (const f of friends) {
-        const contactId = f.senderId === userId ? f.recipientId : f.senderId;
-        const directChat = await this.prisma.directChat.findUnique({
-          where: {
-            creatorId_recipientId: {
-              creatorId: Math.min(userId, contactId),
-              recipientId: Math.max(userId, contactId),
-            },
+          creatorId_recipientId: {
+            creatorId: Math.min(userId, contactId),
+            recipientId: Math.max(userId, contactId),
           },
-        });
-        const profile =
-          f.senderId === userId ? f.Recipient?.Profile : f.Sender?.Profile;
-        friendsWithDirectChat.push({
-          id: contactId,
-          directChatId: directChat?.id || null,
+        },
+      });
+      const profile =
+        f.senderId === userId ? f.Recipient?.Profile : f.Sender?.Profile;
+      allContacts.push({
+        id: contactId,
+        directChatId: directChat?.id || null,
+        fullName: profile?.fullName || 'Unknown',
+      });
+    }
+
+    // Add DirectChat contacts that are NOT already in Friends
+    for (const dc of directChats) {
+      const otherUserId =
+        dc.creatorId === userId ? dc.recipientId : dc.creatorId;
+      const profile =
+        dc.creatorId === userId ? dc.Recipient?.Profile : dc.Creator?.Profile;
+
+      const alreadyExists = allContacts.some((c) => c.id === otherUserId);
+      if (!alreadyExists) {
+        allContacts.push({
+          id: otherUserId,
+          directChatId: dc.id,
           fullName: profile?.fullName || 'Unknown',
-          senderId: f.senderId,
-          recipientId: f.recipientId,
         });
       }
-
-      friends = friendsWithDirectChat as any;
     }
+
+    this.logger.log(
+      `[fuzzyFindContact] Total contacts (Friends + DirectChat): ${allContacts.length}`,
+    );
 
     const candidates: Array<{
       id: number;
@@ -171,8 +166,8 @@ export class FuzzySearchService {
     }> = [];
 
     // Tính độ tương đồng với từng contact
-    for (const f of friends) {
-      const fullName = (f as any).fullName;
+    for (const contact of allContacts) {
+      const fullName = contact.fullName;
       if (!fullName) {
         this.logger.warn(`[fuzzyFindContact] Missing fullName for contact`);
         continue;
@@ -186,8 +181,8 @@ export class FuzzySearchService {
       );
 
       candidates.push({
-        id: (f as any).id,
-        directChatId: (f as any).directChatId,
+        id: contact.id,
+        directChatId: contact.directChatId,
         fullName: fullName,
         similarity,
       });
@@ -196,8 +191,8 @@ export class FuzzySearchService {
     // Sắp xếp theo độ tương đồng (cao nhất trước)
     candidates.sort((a, b) => b.similarity - a.similarity);
 
-    // Lấy người có độ tương đồng cao nhất (nếu > 50%)
-    if (candidates.length > 0 && candidates[0].similarity > 0.5) {
+    // Lấy người có độ tương đồng cao nhất (nếu > 40%)
+    if (candidates.length > 0 && candidates[0].similarity > 0.4) {
       this.logger.log(
         `[fuzzyFindContact] Best match: "${candidates[0].fullName}" (${(candidates[0].similarity * 100).toFixed(1)}%, directChatId=${candidates[0].directChatId})`,
       );
@@ -223,7 +218,14 @@ export class FuzzySearchService {
     const len2 = str2.length;
     const maxLen = Math.max(len1, len2);
 
+    // Remove Vietnamese particles (à, ơi, nhé, thôi, đi, luôn) from input for matching
+    const cleanStr1 = str1.replace(/\s+(à|ơi|nhé|thôi|đi|luôn)$/, '').trim();
+    const cleanStr2 = str2.replace(/\s+(à|ơi|nhé|thôi|đi|luôn)$/, '').trim();
+
     // Kiểm tra substring trước (nhanh hơn)
+    if (cleanStr1.includes(cleanStr2) || cleanStr2.includes(cleanStr1)) {
+      return 1.0;
+    }
     if (str1.includes(str2) || str2.includes(str1)) {
       return 1.0;
     }

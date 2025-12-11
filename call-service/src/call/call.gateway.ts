@@ -1,4 +1,4 @@
-import { Inject, NotFoundException, UseFilters } from '@nestjs/common'
+import { Inject, NotFoundException, UseFilters, BadRequestException } from '@nestjs/common'
 import {
   WebSocketGateway,
   SubscribeMessage,
@@ -10,20 +10,13 @@ import {
 } from '@nestjs/websockets'
 import { Server } from 'socket.io'
 import { CallService } from './call.service'
-import {
-  CallRequestDTO,
-  CallAcceptDTO,
-  CallRejectDTO,
-  SDPOfferAnswerDTO,
-  IceCandidateDTO,
-  CallHangupDTO,
-} from './call.dto'
+import { CallRequestDTO, CallAcceptDTO, CallRejectDTO, CallHangupDTO } from './call.dto'
 import { ECallMessages } from './call.message'
 import { CatchInternalSocketError } from '@/utils/exception-filters/base-ws-exception.filter'
 import type { TCallSessionActiveId } from './call.type'
 import { ECallListenSocketEvents, ECallEmitSocketEvents } from '@/utils/events/socket.event'
 import type { ICallGateway } from './call.interface'
-import { ECallStatus } from './call.enum'
+import { ECallStatus, EHangupReason } from './call.enum'
 import { DevLogger } from '@/dev/dev-logger'
 import type { TClientSocket, TCallClientSocket } from '@/utils/events/event.type'
 import { ESocketNamespaces } from '@/messaging/messaging.enum'
@@ -43,7 +36,6 @@ import { AuthService } from '@/configs/communication/grpc/services/auth.service'
   },
   namespace: ESocketNamespaces.voice_call,
 })
-@UseFilters(new BaseWsExceptionsFilter())
 @UsePipes(gatewayValidationPipe)
 @UseInterceptors(CallGatewayInterceptor)
 export class CallGateway
@@ -127,35 +119,41 @@ export class CallGateway
       }
 
       // 📴 kết thúc cuộc gọi
-      await this.callService.endCall(session.id)
+      const endedSession = await this.callService.endCall(session.id)
+      // ✅ Save status change to database (endCall already does this)
 
       // 🔔 thông báo cho phía còn lại
       const peerId = session.callerUserId === userId ? session.calleeUserId : session.callerUserId
 
-      this.callConnectionService.announceCallStatus(peerId, ECallStatus.ENDED, session)
+      this.callConnectionService.announceCallStatus(peerId, ECallStatus.ENDED, endedSession)
     } catch (error) {
       DevLogger.logForWebsocket('error at handleDisconnect:', error)
     }
   }
 
-  async autoCancelCall(sessionId: TCallSessionActiveId) {
-    setTimeout(() => {
-      const session = this.callService.getActiveCallSession(sessionId)
-      if (
-        session &&
-        (session.status === ECallStatus.REQUESTING || session.status === ECallStatus.RINGING)
-      ) {
-        this.callService.endCall(sessionId)
-        this.callConnectionService.announceCallStatus(
-          session.callerUserId,
-          ECallStatus.TIMEOUT,
-          session
-        )
-        this.callConnectionService.announceCallStatus(
-          session.calleeUserId,
-          ECallStatus.TIMEOUT,
-          session
-        )
+  autoCancelCall(sessionId: TCallSessionActiveId) {
+    setTimeout(async () => {
+      try {
+        const session = this.callService.getActiveCallSession(sessionId)
+        if (
+          session &&
+          (session.status === ECallStatus.REQUESTING || session.status === ECallStatus.RINGING)
+        ) {
+          // ✅ Save status change to database
+          await this.callService.endCall(sessionId)
+          this.callConnectionService.announceCallStatus(
+            session.callerUserId,
+            ECallStatus.TIMEOUT,
+            session
+          )
+          this.callConnectionService.announceCallStatus(
+            session.calleeUserId,
+            ECallStatus.TIMEOUT,
+            session
+          )
+        }
+      } catch (error) {
+        DevLogger.logForWebsocket('error in autoCancelCall:', error)
       }
     }, this.callTimeoutMs)
   }
@@ -168,7 +166,9 @@ export class CallGateway
   ) {
     console.log('\n>>> client hello at voice call:', payload)
     const { userId } = await this.authService.validateCallSocketAuth(client)
-    console.log('>>> client id at voice call:', userId, '\n')
+    console.log('>>> client id at voice call:', userId)
+    console.log('>>> socket id:', client.id)
+    console.log('>>> auth token:', client.handshake.auth, '\n')
     return {
       success: true,
     }
@@ -180,91 +180,115 @@ export class CallGateway
     @ConnectedSocket() client: TCallClientSocket,
     @MessageBody() payload: CallRequestDTO
   ) {
-    const { userId: callerUserId } = await this.authService.validateCallSocketAuth(client)
-    const { calleeUserId, directChatId, isVideoCall = false } = payload
-    if (!this.callConnectionService.checkUserIsConnected(calleeUserId)) {
-      return { status: ECallStatus.OFFLINE } // thông báo cho caller rằng callee đang offline
-    }
-    if (this.callService.isUserBusy(calleeUserId)) {
-      return { status: ECallStatus.BUSY } // thông báo cho caller rằng callee đang bận
-    }
-    const session = await this.callService.initActiveCallSession(
-      callerUserId,
-      calleeUserId,
-      directChatId,
-      isVideoCall
-    )
+    try {
+      const { userId: callerUserId } = await this.authService.validateCallSocketAuth(client)
+      const { sessionId, calleeUserId, directChatId, isVideoCall = false } = payload
 
-    // báo cho callee có cuộc gọi đến
-    this.callConnectionService.announceCallRequestToCallee(session)
-    // tự động hủy cuộc gọi nếu không có phản hồi
-    this.autoCancelCall(session.id)
+      if (!sessionId || !calleeUserId || !directChatId) {
+        throw new BadRequestException('Missing sessionId, calleeUserId or directChatId')
+      }
 
-    return { status: ECallStatus.REQUESTING, session }
+      if (!this.callConnectionService.checkUserIsConnected(calleeUserId)) {
+        return { status: ECallStatus.OFFLINE }
+      }
+      if (this.callService.isUserBusy(calleeUserId)) {
+        return { status: ECallStatus.BUSY }
+      }
+
+      // Tạo session object từ payload
+      const sessionObj = {
+        id: sessionId,
+        callerUserId,
+        calleeUserId,
+        directChatId,
+        isVideoCall,
+        status: ECallStatus.REQUESTING,
+      }
+
+      // initActiveCallSession sẽ lưu session vào DB và in-memory
+      const session = await this.callService.initActiveCallSession(sessionObj)
+
+      console.log(`📞 Call request initiated:`, {
+        sessionId: session.id,
+        caller: callerUserId,
+        callee: calleeUserId,
+      })
+
+      // Thông báo cho callee
+      this.callConnectionService.announceCallRequestToCallee(session)
+      // Tự động hủy nếu không có phản hồi trong 10s
+      this.autoCancelCall(session.id)
+
+      return { status: ECallStatus.REQUESTING, session }
+    } catch (error) {
+      DevLogger.logForWebsocket('Error in onCallRequest:', error)
+      throw error
+    }
   }
 
   @SubscribeMessage(ECallListenSocketEvents.call_accept)
+  @CatchInternalSocketError()
   async onAccept(@MessageBody() dto: CallAcceptDTO) {
-    const session = await this.callService.acceptCall(dto.sessionId)
-    this.callConnectionService.announceCallStatus(
-      session.callerUserId,
-      ECallStatus.ACCEPTED,
-      session
-    )
+    try {
+      const sessionId = dto.session?.id
+      if (!sessionId) {
+        throw new BadRequestException('Missing sessionId')
+      }
+      console.log(`📲 Accept call request:`, { sessionId })
+      const session = await this.callService.acceptCall(sessionId, dto.session)
+      console.log(`✓ Call accepted:`, { sessionId: session.id, status: session.status })
+      this.callConnectionService.announceCallStatus(
+        session.callerUserId,
+        ECallStatus.ACCEPTED,
+        session
+      )
+    } catch (error) {
+      DevLogger.logForWebsocket('Error in onAccept:', error)
+      throw error
+    }
   }
-
   @SubscribeMessage(ECallListenSocketEvents.call_reject)
+  @CatchInternalSocketError()
   async onReject(@MessageBody() dto: CallRejectDTO) {
-    const session = await this.callService.endCall(dto.sessionId)
-    this.callConnectionService.announceCallStatus(
-      session.callerUserId,
-      ECallStatus.REJECTED,
-      session
-    )
-  }
-
-  @SubscribeMessage(ECallListenSocketEvents.call_offer_answer)
-  async onOfferAnswer(
-    @ConnectedSocket() client: TCallClientSocket,
-    @MessageBody() payload: SDPOfferAnswerDTO
-  ) {
-    const session = this.callService.getActiveCallSession(payload.sessionId)
-    if (!session) {
-      throw new NotFoundException(ECallMessages.SESSION_NOT_FOUND)
+    try {
+      const sessionId = dto.session?.id
+      if (!sessionId) {
+        throw new BadRequestException('Missing sessionId')
+      }
+      const session = await this.callService.endCall(sessionId, EHangupReason.NORMAL, dto.session)
+      this.callConnectionService.announceCallStatus(
+        session.callerUserId,
+        ECallStatus.REJECTED,
+        session
+      )
+    } catch (error) {
+      DevLogger.logForWebsocket('Error in onReject:', error)
+      throw error
     }
-    const { userId } = await this.authService.validateCallSocketAuth(client)
-    const { callerUserId, calleeUserId } = session
-    const peerId = userId === callerUserId ? calleeUserId : callerUserId
-    this.callConnectionService.announceSDPOfferAnswer(peerId, payload.SDP, payload.type)
-  }
-
-  @SubscribeMessage(ECallListenSocketEvents.call_ice)
-  async onIce(@ConnectedSocket() client: TCallClientSocket, @MessageBody() dto: IceCandidateDTO) {
-    const session = this.callService.getActiveCallSession(dto.sessionId)
-    if (!session) {
-      throw new NotFoundException(ECallMessages.SESSION_NOT_FOUND)
-    }
-    const { userId } = await this.authService.validateCallSocketAuth(client)
-    const { callerUserId, calleeUserId } = session
-    const peerId = userId === callerUserId ? calleeUserId : callerUserId
-    this.callConnectionService.announceIceCandidate(
-      peerId,
-      dto.candidate,
-      dto.sdpMid,
-      dto.sdpMLineIndex
-    )
   }
 
   @SubscribeMessage(ECallListenSocketEvents.call_hangup)
+  @CatchInternalSocketError()
   async onHangup(@ConnectedSocket() client: TCallClientSocket, @MessageBody() dto: CallHangupDTO) {
-    const session = this.callService.getActiveCallSession(dto.sessionId)
-    if (!session) {
-      throw new NotFoundException(ECallMessages.SESSION_NOT_FOUND)
+    try {
+      const sessionId = dto.session?.id
+      if (!sessionId) {
+        throw new BadRequestException('Missing sessionId')
+      }
+      const session = this.callService.getActiveCallSession(sessionId) || dto.session
+
+      if (!session) {
+        throw new NotFoundException(ECallMessages.SESSION_NOT_FOUND)
+      }
+
+      const { userId } = await this.authService.validateCallSocketAuth(client)
+      const { callerUserId, calleeUserId } = session
+      const peerId = userId === callerUserId ? calleeUserId : callerUserId
+      await this.callService.endCall(sessionId, dto.reason, dto.session)
+      this.callConnectionService.announceCallHangup(peerId, dto.reason)
+    } catch (error) {
+      DevLogger.logForWebsocket('Error in onHangup:', error)
+      throw error
     }
-    const { userId } = await this.authService.validateCallSocketAuth(client)
-    const { callerUserId, calleeUserId } = session
-    const peerId = userId === callerUserId ? calleeUserId : callerUserId
-    this.callService.endCall(session.id)
-    this.callConnectionService.announceCallHangup(peerId, dto.reason)
   }
 }

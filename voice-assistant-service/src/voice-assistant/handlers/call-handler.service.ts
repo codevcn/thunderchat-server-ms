@@ -59,7 +59,6 @@ export class CallHandlerService {
         ? directChat.recipientId
         : directChat.creatorId;
 
-    // IMPORTANT: For consistency across handlers, pending.targetId should be the conversation id (directChat.id)
     return {
       response: confirmationMessage,
       pending: {
@@ -69,7 +68,7 @@ export class CallHandlerService {
         content: '',
         lastBotMessage: confirmationMessage,
         isVideo: params.isVideo,
-        // extra info (optional for debugging/clients)
+
         calleeUserId,
       } as any,
     };
@@ -77,10 +76,10 @@ export class CallHandlerService {
 
   async prepareMakeCallById(
     userId: number,
-    params: { contactId?: string; isVideo: boolean },
+    params: { contactId?: string; contactType?: string; isVideo: boolean },
   ): Promise<ExecutionResult> {
     this.logger.log(
-      `[prepareMakeCallById] user=${userId}, contactId=${params.contactId}`,
+      `[prepareMakeCallById] user=${userId}, contactId=${params.contactId}, contactType=${params.contactType}`,
     );
 
     if (!params.contactId) {
@@ -92,68 +91,132 @@ export class CallHandlerService {
 
     const contactId = parseInt(params.contactId);
 
-    // Try to find direct chat first
-    const directChat = await this.prisma.directChat.findUnique({
-      where: { id: contactId },
-      include: {
-        Creator: { select: { Profile: { select: { fullName: true } } } },
-        Recipient: { select: { Profile: { select: { fullName: true } } } },
-      },
-    });
+    // Check based on contactType if provided
+    if (params.contactType === 'group') {
+      const groupChat = await this.prisma.groupChat.findUnique({
+        where: { id: contactId },
+      });
 
-    if (directChat) {
-      const otherUser =
-        directChat.creatorId === userId
-          ? directChat.Recipient
-          : directChat.Creator;
-      const targetName = otherUser?.Profile?.fullName || 'Unknown';
-      const callType = params.isVideo ? 'video' : 'thoại';
+      if (groupChat) {
+        const callType = params.isVideo ? 'video' : 'thoại';
+        const confirmationMessage = `Gọi ${callType} nhóm ${groupChat.name}. Xác nhận không? Nói "có" để gọi.`;
 
-      const confirmationMessage = `Gọi ${callType} cho ${targetName}. Xác nhận không? Nói "có" để gọi.`;
+        return {
+          response: confirmationMessage,
+          pending: {
+            type: 'make_call',
+            targetId: groupChat.id,
+            targetName: groupChat.name,
+            content: '',
+            lastBotMessage: confirmationMessage,
+            isVideo: params.isVideo,
+            chatType: 'group',
+            groupId: groupChat.id,
+          } as any,
+        };
+      }
+    } else if (params.contactType === 'direct') {
+      const directChat = await this.prisma.directChat.findUnique({
+        where: { id: contactId },
+        include: {
+          Creator: { select: { Profile: { select: { fullName: true } } } },
+          Recipient: { select: { Profile: { select: { fullName: true } } } },
+        },
+      });
 
-      const calleeUserId =
-        directChat.recipientId === userId
-          ? directChat.creatorId
-          : directChat.recipientId;
+      if (directChat) {
+        const otherUser =
+          directChat.creatorId === userId
+            ? directChat.Recipient
+            : directChat.Creator;
+        const targetName = otherUser?.Profile?.fullName || 'Unknown';
+        const callType = params.isVideo ? 'video' : 'thoại';
 
-      return {
-        response: confirmationMessage,
-        pending: {
-          type: 'make_call',
-          targetId: directChat.id,
-          targetName,
-          content: '',
-          lastBotMessage: confirmationMessage,
-          isVideo: params.isVideo,
-          calleeUserId,
-          chatType: 'direct',
-          directChatId: directChat.id,
-        } as any,
-      };
-    }
+        const confirmationMessage = `Gọi ${callType} cho ${targetName}. Xác nhận không? Nói "có" để gọi.`;
 
-    // Try to find group chat if direct chat not found
-    const groupChat = await this.prisma.groupChat.findUnique({
-      where: { id: contactId },
-    });
+        const calleeUserId =
+          directChat.recipientId === userId
+            ? directChat.creatorId
+            : directChat.recipientId;
 
-    if (groupChat) {
-      const callType = params.isVideo ? 'video' : 'thoại';
-      const confirmationMessage = `Gọi ${callType} nhóm ${groupChat.name}. Xác nhận không? Nói "có" để gọi.`;
+        return {
+          response: confirmationMessage,
+          pending: {
+            type: 'make_call',
+            targetId: directChat.id,
+            targetName,
+            content: '',
+            lastBotMessage: confirmationMessage,
+            isVideo: params.isVideo,
+            calleeUserId,
+            chatType: 'direct',
+            directChatId: directChat.id,
+          } as any,
+        };
+      }
+    } else {
+      // Fallback: Try direct chat first (more common), then group chat
+      const directChat = await this.prisma.directChat.findUnique({
+        where: { id: contactId },
+        include: {
+          Creator: { select: { Profile: { select: { fullName: true } } } },
+          Recipient: { select: { Profile: { select: { fullName: true } } } },
+        },
+      });
 
-      return {
-        response: confirmationMessage,
-        pending: {
-          type: 'make_call',
-          targetId: groupChat.id,
-          targetName: groupChat.name,
-          content: '',
-          lastBotMessage: confirmationMessage,
-          isVideo: params.isVideo,
-          chatType: 'group',
-          groupId: groupChat.id,
-        } as any,
-      };
+      if (directChat) {
+        const otherUser =
+          directChat.creatorId === userId
+            ? directChat.Recipient
+            : directChat.Creator;
+        const targetName = otherUser?.Profile?.fullName || 'Unknown';
+        const callType = params.isVideo ? 'video' : 'thoại';
+
+        const confirmationMessage = `Gọi ${callType} cho ${targetName}. Xác nhận không? Nói "có" để gọi.`;
+
+        const calleeUserId =
+          directChat.recipientId === userId
+            ? directChat.creatorId
+            : directChat.recipientId;
+
+        return {
+          response: confirmationMessage,
+          pending: {
+            type: 'make_call',
+            targetId: directChat.id,
+            targetName,
+            content: '',
+            lastBotMessage: confirmationMessage,
+            isVideo: params.isVideo,
+            calleeUserId,
+            chatType: 'direct',
+            directChatId: directChat.id,
+          } as any,
+        };
+      }
+
+      const groupChat = await this.prisma.groupChat.findUnique({
+        where: { id: contactId },
+      });
+
+      if (groupChat) {
+        const callType = params.isVideo ? 'video' : 'thoại';
+        const confirmationMessage = `Gọi ${callType} nhóm ${groupChat.name}. Xác nhận không? Nói "có" để gọi.`;
+
+        return {
+          response: confirmationMessage,
+          pending: {
+            type: 'make_call',
+            targetId: groupChat.id,
+            targetName: groupChat.name,
+            content: '',
+            lastBotMessage: confirmationMessage,
+            isVideo: params.isVideo,
+            chatType: 'group',
+            groupId: groupChat.id,
+          } as any,
+        };
+      }
     }
 
     return {

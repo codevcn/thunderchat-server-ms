@@ -200,6 +200,7 @@ export class MessageHandlerService {
             },
           },
           GroupChat: { select: { name: true } },
+          Media: { select: { type: true } },
         },
         orderBy: { createdAt: 'desc' },
         take: limit,
@@ -233,6 +234,7 @@ export class MessageHandlerService {
                 },
               },
               GroupChat: { select: { name: true } },
+              Media: { select: { type: true } },
             },
             orderBy: { createdAt: 'desc' },
             take: limit,
@@ -257,20 +259,19 @@ export class MessageHandlerService {
       }
 
       let speech = '';
+
+      // Build the intro message based on parameters
       if (isMyMessages) {
         speech = `Tin nhắn bạn vừa gửi: `;
       } else if (contactName) {
         speech = `Danh sách tin nhắn từ ${contactName}. `;
       } else if (dateFilter) {
         speech = `Tin nhắn vào ${this.formatDateFilterText(dateFilter)}. `;
+      } else if (messageCount && messageCount > 0) {
+        // Show message count in intro if explicitly requested
+        speech = `${messageCount} tin nhắn mới nhất. `;
       } else {
-        speech = 'Tin nhắn mới nhất: ';
-      }
-
-      // Only show total count if NO date filter and NO specific contact
-      // When dateFilter is specified, we want to show only messages from that date
-      if (!isMyMessages && !contactName && !dateFilter && totalCount > 0) {
-        speech += `Tổng cộng ${totalCount} tin nhắn. `;
+        speech = 'Tin nhắn mới nhất. ';
       }
 
       for (const m of msgs.reverse()) {
@@ -300,20 +301,46 @@ export class MessageHandlerService {
         });
 
         try {
-          const decryptedContent = await this.decryptContent(m.content, m.dek);
-          if (isMyMessages) {
-            speech += `Vào lúc ${timeStr}${recipientInfo}: ${decryptedContent}. `;
+          // Check message type and format accordingly
+          let messageContent = '';
+
+          if (m.type === 'STICKER') {
+            messageContent = 'gửi sticker';
+          } else if (m.type === 'MEDIA') {
+            // For media, check the actual media type
+            if (m.Media?.type === 'IMAGE') {
+              messageContent = 'gửi ảnh';
+            } else if (m.Media?.type === 'VIDEO') {
+              messageContent = 'gửi video';
+            } else if (m.Media?.type === 'AUDIO') {
+              messageContent = 'gửi voice';
+            } else if (m.Media?.type === 'DOCUMENT') {
+              messageContent = 'gửi file';
+            } else {
+              messageContent = 'gửi file';
+            }
           } else {
-            speech += `${senderName} nói: ${decryptedContent}. `;
+            // TEXT or other types - decrypt and show content
+            const decryptedContent = await this.decryptContent(
+              m.content,
+              m.dek,
+            );
+            messageContent = decryptedContent;
+          }
+
+          if (isMyMessages) {
+            speech += `Vào lúc ${timeStr}${recipientInfo}: ${messageContent}. `;
+          } else {
+            speech += `${senderName} vào lúc ${timeStr}: ${messageContent}. `;
           }
         } catch (err) {
           this.logger.warn(
-            `[readLatestMessages] Failed to decrypt message ${m.id}`,
+            `[readLatestMessages] Failed to process message ${m.id}`,
           );
           if (isMyMessages) {
             speech += `Vào lúc ${timeStr}${recipientInfo}: [Không thể giải mã]. `;
           } else {
-            speech += `${senderName} nói: [Không thể giải mã]. `;
+            speech += `${senderName} vào lúc ${timeStr}: [Không thể giải mã]. `;
           }
         }
       }
@@ -448,10 +475,10 @@ export class MessageHandlerService {
 
   async prepareSendMessageById(
     userId: number,
-    params: { contactId?: string; content: string },
+    params: { contactId?: string; contactType?: string; content: string },
   ): Promise<ExecutionResult> {
     this.logger.log(
-      `[prepareSendMessageById] user=${userId}, contactId=${params.contactId}`,
+      `[prepareSendMessageById] user=${userId}, contactId=${params.contactId}, contactType=${params.contactType}`,
     );
 
     if (!params.contactId) {
@@ -461,57 +488,115 @@ export class MessageHandlerService {
     }
 
     const contactId = parseInt(params.contactId);
-    const directChat = await this.prisma.directChat.findUnique({
-      where: { id: contactId },
-      include: {
-        Creator: { select: { Profile: { select: { fullName: true } } } },
-        Recipient: { select: { Profile: { select: { fullName: true } } } },
-      },
-    });
 
-    if (directChat) {
-      const otherUser =
-        directChat.creatorId === userId
-          ? directChat.Recipient
-          : directChat.Creator;
-      const targetName = otherUser?.Profile?.fullName || 'Unknown';
-      const recipientUserId =
-        directChat.recipientId === userId
-          ? directChat.creatorId
-          : directChat.recipientId;
+    // Check based on contactType if provided
+    if (params.contactType === 'group') {
+      const groupChat = await this.prisma.groupChat.findUnique({
+        where: { id: contactId },
+      });
 
-      const confirmationMessage = `Gửi cho ${targetName}: "${params.content}". Xác nhận không? Nói "có" để gửi.`;
-      return {
-        response: confirmationMessage,
-        pending: {
-          type: 'send_message',
-          targetId: directChat.id,
-          targetName,
-          content: params.content,
-          lastBotMessage: confirmationMessage,
-          chatType: 'direct',
-          recipientUserId,
-        } as any,
-      };
-    }
+      if (groupChat) {
+        const confirmationMessage = `Gửi vào group ${groupChat.name}: "${params.content}". Xác nhận không? Nói "có" để gửi.`;
+        return {
+          response: confirmationMessage,
+          pending: {
+            type: 'send_message',
+            targetId: groupChat.id,
+            targetName: groupChat.name,
+            content: params.content,
+            lastBotMessage: confirmationMessage,
+            chatType: 'group',
+          } as any,
+        };
+      }
+    } else if (params.contactType === 'direct') {
+      const directChat = await this.prisma.directChat.findUnique({
+        where: { id: contactId },
+        include: {
+          Creator: { select: { Profile: { select: { fullName: true } } } },
+          Recipient: { select: { Profile: { select: { fullName: true } } } },
+        },
+      });
 
-    const groupChat = await this.prisma.groupChat.findUnique({
-      where: { id: contactId },
-    });
+      if (directChat) {
+        const otherUser =
+          directChat.creatorId === userId
+            ? directChat.Recipient
+            : directChat.Creator;
+        const targetName = otherUser?.Profile?.fullName || 'Unknown';
+        const recipientUserId =
+          directChat.recipientId === userId
+            ? directChat.creatorId
+            : directChat.recipientId;
 
-    if (groupChat) {
-      const confirmationMessage = `Gửi vào group ${groupChat.name}: "${params.content}". Xác nhận không? Nói "có" để gửi.`;
-      return {
-        response: confirmationMessage,
-        pending: {
-          type: 'send_message',
-          targetId: groupChat.id,
-          targetName: groupChat.name,
-          content: params.content,
-          lastBotMessage: confirmationMessage,
-          chatType: 'group',
-        } as any,
-      };
+        const confirmationMessage = `Gửi cho ${targetName}: "${params.content}". Xác nhận không? Nói "có" để gửi.`;
+        return {
+          response: confirmationMessage,
+          pending: {
+            type: 'send_message',
+            targetId: directChat.id,
+            targetName,
+            content: params.content,
+            lastBotMessage: confirmationMessage,
+            chatType: 'direct',
+            recipientUserId,
+          } as any,
+        };
+      }
+    } else {
+      // Fallback: Try DirectChat first (more common), then GroupChat
+      const directChat = await this.prisma.directChat.findUnique({
+        where: { id: contactId },
+        include: {
+          Creator: { select: { Profile: { select: { fullName: true } } } },
+          Recipient: { select: { Profile: { select: { fullName: true } } } },
+        },
+      });
+
+      if (directChat) {
+        const otherUser =
+          directChat.creatorId === userId
+            ? directChat.Recipient
+            : directChat.Creator;
+        const targetName = otherUser?.Profile?.fullName || 'Unknown';
+        const recipientUserId =
+          directChat.recipientId === userId
+            ? directChat.creatorId
+            : directChat.recipientId;
+
+        const confirmationMessage = `Gửi cho ${targetName}: "${params.content}". Xác nhận không? Nói "có" để gửi.`;
+        return {
+          response: confirmationMessage,
+          pending: {
+            type: 'send_message',
+            targetId: directChat.id,
+            targetName,
+            content: params.content,
+            lastBotMessage: confirmationMessage,
+            chatType: 'direct',
+            recipientUserId,
+          } as any,
+        };
+      }
+
+      const groupChat = await this.prisma.groupChat.findUnique({
+        where: { id: contactId },
+      });
+
+      if (groupChat) {
+        const confirmationMessage = `Gửi vào group ${groupChat.name}: "${params.content}". Xác nhận không? Nói "có" để gửi.`;
+        return {
+          response: confirmationMessage,
+          pending: {
+            type: 'send_message',
+            targetId: groupChat.id,
+            targetName: groupChat.name,
+            content: params.content,
+            lastBotMessage: confirmationMessage,
+            chatType: 'group',
+          } as any,
+        };
+      }
     }
 
     return {
@@ -521,7 +606,7 @@ export class MessageHandlerService {
 
   async prepareSendVoiceMessageById(
     userId: number,
-    params: { contactId?: string },
+    params: { contactId?: string; contactType?: string },
     audioBase64?: string,
   ): Promise<ExecutionResult> {
     this.logger.log(
@@ -540,60 +625,123 @@ export class MessageHandlerService {
     }
 
     const contactId = parseInt(params.contactId);
-    const directChat = await this.prisma.directChat.findUnique({
-      where: { id: contactId },
-      include: {
-        Creator: { select: { Profile: { select: { fullName: true } } } },
-        Recipient: { select: { Profile: { select: { fullName: true } } } },
-      },
-    });
 
-    if (directChat) {
-      const otherUser =
-        directChat.creatorId === userId
-          ? directChat.Recipient
-          : directChat.Creator;
-      const targetName = otherUser?.Profile?.fullName || 'Unknown';
-      const recipientUserId =
-        directChat.recipientId === userId
-          ? directChat.creatorId
-          : directChat.recipientId;
+    // Check based on contactType if provided
+    if (params.contactType === 'group') {
+      const groupChat = await this.prisma.groupChat.findUnique({
+        where: { id: contactId },
+      });
 
-      const confirmationMessage = `Gửi tin nhắn voice cho ${targetName}. Xác nhận không? Nói "có" để gửi.`;
-      return {
-        response: confirmationMessage,
-        pending: {
-          type: 'send_voice_message',
-          targetId: directChat.id,
-          targetName,
-          content: 'voice_message',
-          lastBotMessage: confirmationMessage,
-          audioBase64,
-          chatType: 'direct',
-          recipientUserId,
-        } as any,
-      };
-    }
+      if (groupChat) {
+        const confirmationMessage = `Gửi tin nhắn voice vào group ${groupChat.name}. Xác nhận không? Nói "có" để gửi.`;
+        return {
+          response: confirmationMessage,
+          pending: {
+            type: 'send_voice_message',
+            targetId: groupChat.id,
+            groupId: groupChat.id,
+            targetName: groupChat.name,
+            content: 'voice_message',
+            lastBotMessage: confirmationMessage,
+            audioBase64,
+            chatType: 'group',
+          } as any,
+        };
+      }
+    } else if (params.contactType === 'direct') {
+      const directChat = await this.prisma.directChat.findUnique({
+        where: { id: contactId },
+        include: {
+          Creator: { select: { Profile: { select: { fullName: true } } } },
+          Recipient: { select: { Profile: { select: { fullName: true } } } },
+        },
+      });
 
-    const groupChat = await this.prisma.groupChat.findUnique({
-      where: { id: contactId },
-    });
+      if (directChat) {
+        const otherUser =
+          directChat.creatorId === userId
+            ? directChat.Recipient
+            : directChat.Creator;
+        const targetName = otherUser?.Profile?.fullName || 'Unknown';
+        const recipientUserId =
+          directChat.recipientId === userId
+            ? directChat.creatorId
+            : directChat.recipientId;
 
-    if (groupChat) {
-      const confirmationMessage = `Gửi tin nhắn voice vào group ${groupChat.name}. Xác nhận không? Nói "có" để gửi.`;
-      return {
-        response: confirmationMessage,
-        pending: {
-          type: 'send_voice_message',
-          targetId: groupChat.id,
-          groupId: groupChat.id,
-          targetName: groupChat.name,
-          content: 'voice_message',
-          lastBotMessage: confirmationMessage,
-          audioBase64,
-          chatType: 'group',
-        } as any,
-      };
+        const confirmationMessage = `Gửi tin nhắn voice cho ${targetName}. Xác nhận không? Nói "có" để gửi.`;
+        return {
+          response: confirmationMessage,
+          pending: {
+            type: 'send_voice_message',
+            targetId: directChat.id,
+            directChatId: directChat.id,
+            targetName,
+            content: 'voice_message',
+            lastBotMessage: confirmationMessage,
+            audioBase64,
+            chatType: 'direct',
+            recipientUserId,
+          } as any,
+        };
+      }
+    } else {
+      // Fallback: Try direct chat first (more common), then group chat
+      const directChat = await this.prisma.directChat.findUnique({
+        where: { id: contactId },
+        include: {
+          Creator: { select: { Profile: { select: { fullName: true } } } },
+          Recipient: { select: { Profile: { select: { fullName: true } } } },
+        },
+      });
+
+      if (directChat) {
+        const otherUser =
+          directChat.creatorId === userId
+            ? directChat.Recipient
+            : directChat.Creator;
+        const targetName = otherUser?.Profile?.fullName || 'Unknown';
+        const recipientUserId =
+          directChat.recipientId === userId
+            ? directChat.creatorId
+            : directChat.recipientId;
+
+        const confirmationMessage = `Gửi tin nhắn voice cho ${targetName}. Xác nhận không? Nói "có" để gửi.`;
+        return {
+          response: confirmationMessage,
+          pending: {
+            type: 'send_voice_message',
+            targetId: directChat.id,
+            directChatId: directChat.id,
+            targetName,
+            content: 'voice_message',
+            lastBotMessage: confirmationMessage,
+            audioBase64,
+            chatType: 'direct',
+            recipientUserId,
+          } as any,
+        };
+      }
+
+      const groupChat = await this.prisma.groupChat.findUnique({
+        where: { id: contactId },
+      });
+
+      if (groupChat) {
+        const confirmationMessage = `Gửi tin nhắn voice vào group ${groupChat.name}. Xác nhận không? Nói "có" để gửi.`;
+        return {
+          response: confirmationMessage,
+          pending: {
+            type: 'send_voice_message',
+            targetId: groupChat.id,
+            groupId: groupChat.id,
+            targetName: groupChat.name,
+            content: 'voice_message',
+            lastBotMessage: confirmationMessage,
+            audioBase64,
+            chatType: 'group',
+          } as any,
+        };
+      }
     }
 
     return {

@@ -11,20 +11,25 @@ import {
   ACTION_SPECIFIC_CONFIRMATION_CUES,
 } from '../../utils/voice-cues.constants';
 import { FuzzySearchService } from '../../utils/fuzzy-search.service';
-
+import { ChatGroq } from '@langchain/groq';
 @Injectable()
 export class LlmService {
-  private llm: ChatGoogleGenerativeAI;
-
+  // private llm: ChatGoogleGenerativeAI;
+  private llm: ChatGroq;
   constructor(
     private readonly logger: LoggerService,
     private readonly prisma: PrismaService,
     private readonly fuzzySearchService: FuzzySearchService,
   ) {
-    this.llm = new ChatGoogleGenerativeAI({
-      model: 'gemini-2.5-flash-lite',
-      maxOutputTokens: 2048,
-      apiKey: process.env.GEMINI_API_KEY,
+    // this.llm = new ChatGoogleGenerativeAI({
+    //   model: 'gemini-2.5-flash-lite',
+    //   maxOutputTokens: 2048,
+    //   apiKey: process.env.GEMINI_API_KEY,
+    // });
+    this.llm = new ChatGroq({
+      apiKey: process.env.GROQ_API_KEY,
+      model: 'llama-3.3-70b-versatile', // hoặc mixtral-8x7b-32768 mixtral-8x7b  gemma2-9b llama-3.1-8b-instant
+      temperature: 0.3,
     });
   }
 
@@ -33,18 +38,46 @@ export class LlmService {
     text: string,
     pending: any,
   ): Promise<LlmResult> {
+    console.log(`[LLM] === callLLM() START === text: "${text}"`);
+
     // Check if we should use LLM or fallback to rule-based
-    if (process.env.GEMINI_API_KEY) {
-      try {
-        return await this.classifyIntentWithLLM(userId, text, pending);
-      } catch (err) {
-        this.logger.warn(
-          `LLM classification failed, falling back to rule-based: ${err.message}`,
-        );
-      }
+    if (!process.env.GEMINI_API_KEY) {
+      console.warn(`[LLM] GEMINI_API_KEY not set, using rule-based matching`);
+      this.logger.warn(`[LLM] GEMINI_API_KEY not set`);
+      return await this.classifyIntentWithRules(text, pending);
+    }
+
+    console.log(
+      `[LLM] GEMINI_API_KEY is set, calling classifyIntentWithLLM...`,
+    );
+
+    try {
+      // Add timeout of 30 seconds to prevent hanging
+      const timeoutPromise = new Promise<never>((_, reject) =>
+        setTimeout(
+          () => reject(new Error('LLM API call timeout (30s)')),
+          30000,
+        ),
+      );
+
+      const result = await Promise.race([
+        this.classifyIntentWithLLM(userId, text, pending),
+        timeoutPromise,
+      ]);
+
+      console.log(`[LLM] === callLLM() SUCCESS ===`);
+      return result;
+    } catch (err) {
+      console.error(
+        `[LLM ERROR] Classification failed: ${(err as Error).message}`,
+        err,
+      );
+
+      console.log(`[LLM] Falling back to rule-based matching...`);
     }
 
     // Fallback to rule-based matching
+    console.log(`[LLM] === callLLM() FALLBACK to RULES ===`);
     return await this.classifyIntentWithRules(text, pending);
   }
 
@@ -417,18 +450,41 @@ Respond with JSON only:
       new StringOutputParser(),
     ]);
 
-    const resultText = await chain.invoke({
-      text,
-      pendingContext,
-      contactsList,
-    });
+    let resultText: string;
+    try {
+      console.log(`[LLM] Calling Gemini API with prompt...`);
+      resultText = await chain.invoke({
+        text,
+        pendingContext,
+        contactsList,
+      });
+      console.log(`[LLM] Gemini API call succeeded`);
+    } catch (apiErr) {
+      console.error(
+        `[LLM API ERROR] Gemini call failed: ${(apiErr as Error).message}`,
+      );
+      console.error(`[LLM API ERROR] Full details:`, apiErr);
+      throw apiErr;
+    }
 
-    // Parse JSON from response - strip markdown code blocks if present
+    console.log(`[LLM DEBUG] Raw LLM response for "${text}":`, resultText);
+
+    // Parse JSON from response - extract JSON block from anywhere in the response
     let cleanedText = resultText.trim();
-    if (cleanedText.startsWith('```json')) {
-      cleanedText = cleanedText.replace(/^```json\n/, '').replace(/\n```$/, '');
-    } else if (cleanedText.startsWith('```')) {
-      cleanedText = cleanedText.replace(/^```\n/, '').replace(/\n```$/, '');
+
+    // Try to find JSON block in markdown code blocks
+    const jsonBlockMatch =
+      cleanedText.match(/```json\s*\n([\s\S]*?)\n```/) ||
+      cleanedText.match(/```\s*\n([\s\S]*?)\n```/);
+
+    if (jsonBlockMatch) {
+      cleanedText = jsonBlockMatch[1].trim();
+    } else {
+      // Try to find JSON object directly (starts with { and ends with })
+      const jsonMatch = cleanedText.match(/\{[\s\S]*\}/);
+      if (jsonMatch) {
+        cleanedText = jsonMatch[0];
+      }
     }
 
     const result = JSON.parse(cleanedText);
@@ -443,6 +499,10 @@ Respond with JSON only:
       `[LLM DEBUG] Has dateFilter: ${!!result.parameters?.dateFilter}`,
     );
 
+    console.log(
+      `[LLM DEBUG] Initial parameters:`,
+      JSON.stringify(result.parameters),
+    );
     this.logger.log(`[LLM] Gemini classified intent: ${result.function}`);
     this.logger.log(`[LLM] Full result: ${JSON.stringify(result)}`);
     this.logger.log(`[LLM] Parameters: ${JSON.stringify(result.parameters)}`);
@@ -452,6 +512,13 @@ Respond with JSON only:
 
     // ===== POST-PROCESSING: FUZZY MATCH CONTACT IF EMPTY =====
     // If LLM extracted contactName, fuzzy search for the contact
+    console.log(
+      `[LLM DEBUG] POST-PROCESSING check: function=${result.function}, contactName="${result.parameters?.contactName || 'EMPTY'}", contactId="${result.parameters?.contactId || 'EMPTY'}"`,
+    );
+    this.logger.log(
+      `[LLM] POST-PROCESSING check: function=${result.function}, contactName="${result.parameters?.contactName || 'EMPTY'}", contactId="${result.parameters?.contactId || 'EMPTY'}"`,
+    );
+
     if (
       result.parameters?.contactName &&
       !result.parameters?.contactId &&
@@ -474,13 +541,15 @@ Respond with JSON only:
             userId,
             contactName,
           );
-
+          console.log('[LLM] contact type :', contact);
           if (contact) {
-            // Convert contact to contactId based on type
+            // Set contactId and contactType from fuzzy match result
             if (contact.type === 'group') {
               result.parameters.contactId = String(contact.groupId);
+              result.parameters.contactType = 'group';
             } else if (contact.type === 'direct') {
               result.parameters.contactId = String(contact.directChatId);
+              result.parameters.contactType = 'direct';
             }
             this.logger.log(
               `[LLM] POST-PROCESSING: Matched "${contactName}" to ID: ${result.parameters.contactId} (type: ${contact.type})`,
@@ -496,6 +565,10 @@ Respond with JSON only:
           );
         }
       }
+    } else {
+      this.logger.log(
+        `[LLM] POST-PROCESSING: Skipped (contactName empty or contactId already set)`,
+      );
     }
 
     // ===== FALLBACK: Extract contactName from text if LLM didn't provide it =====
@@ -705,8 +778,12 @@ Respond with JSON only:
     }
 
     // ===== FALLBACK: Fix isMyMessages for read_latest_messages =====
-    // If LLM extracted isMyMessages incorrectly, fix it based on keywords
-    if (result.function === 'read_latest_messages') {
+    // CRITICAL: Only fill in isMyMessages if LLM didn't provide it
+    // Do NOT override LLM-extracted values with fallback defaults
+    if (
+      result.function === 'read_latest_messages' &&
+      !result.parameters?.isMyMessages
+    ) {
       const textLower = text.toLowerCase();
 
       // Keywords for RECEIVED messages (isMyMessages should be FALSE)
@@ -731,27 +808,32 @@ Respond with JSON only:
         'i sent',
       ];
 
-      // Check if text contains received keywords → force isMyMessages=false
+      // Check if text contains received keywords → set isMyMessages=false
       if (receivedKeywords.some((kw) => textLower.includes(kw))) {
         this.logger.log(
-          `[LLM] FALLBACK isMyMessages: Text contains 'received' keyword, forcing isMyMessages=false (was: ${result.parameters.isMyMessages})`,
+          `[LLM] FALLBACK isMyMessages: Text contains 'received' keyword, setting isMyMessages=false`,
         );
         result.parameters.isMyMessages = false;
       }
-      // Check if text contains sent keywords → force isMyMessages=true
+      // Check if text contains sent keywords → set isMyMessages=true
       else if (sentKeywords.some((kw) => textLower.includes(kw))) {
         this.logger.log(
-          `[LLM] FALLBACK isMyMessages: Text contains 'sent' keyword, forcing isMyMessages=true (was: ${result.parameters.isMyMessages})`,
+          `[LLM] FALLBACK isMyMessages: Text contains 'sent' keyword, setting isMyMessages=true`,
         );
         result.parameters.isMyMessages = true;
       }
       // If neither keyword found, default to false (received messages)
       else {
         this.logger.log(
-          `[LLM] FALLBACK isMyMessages: No keyword found, defaulting isMyMessages=false (was: ${result.parameters.isMyMessages})`,
+          `[LLM] FALLBACK isMyMessages: No keyword found, defaulting to isMyMessages=false`,
         );
         result.parameters.isMyMessages = false;
       }
+    } else if (result.function === 'read_latest_messages') {
+      // LLM already provided isMyMessages value - preserve it
+      this.logger.log(
+        `[LLM] FALLBACK isMyMessages: LLM provided value isMyMessages=${result.parameters.isMyMessages}, preserving it`,
+      );
     }
 
     // ===== HEURISTIC OVERRIDE =====
