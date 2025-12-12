@@ -7,7 +7,6 @@ import {
   Body,
   Query,
   Param,
-  UseGuards,
   UseFilters,
   ParseIntPipe,
   BadRequestException,
@@ -95,7 +94,7 @@ export class AdminController {
   }
 
   @Get('users/:userId/report-history')
-  @UseGuards(AdminGuard)
+  // @UseGuards(AdminGuard)
   @AdminOnly()
   async getUserReportHistory(
     @Param('userId', ParseIntPipe) userId: number,
