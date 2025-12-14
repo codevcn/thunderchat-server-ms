@@ -5,9 +5,16 @@ import { EProviderTokens } from '@/utils/enums'
 import { PrismaService } from '@/configs/db/prisma.service'
 import type { TActiveCallSession, TCallSessionActiveId } from './call.type'
 import type { TDirectChat } from '@/utils/entities/direct-chat.entity'
-import { v4 as uuidv4 } from 'uuid'
+import { v4 as uuidv4, v5 as uuidv5 } from 'uuid'
 import { EHangupReason, ECallStatus } from './call.enum'
 import { RtcTokenBuilder, RtcRole, RtmTokenBuilder, RtmRole } from 'agora-access-token'
+
+// Namespace UUID để convert sessionId string thành UUID
+const CALL_SESSION_NAMESPACE = '6ba7b810-9dad-11d1-80b4-00c04fd430c8'
+
+const convertSessionIdToUuid = (sessionId: TCallSessionActiveId): string => {
+  return uuidv5(sessionId, CALL_SESSION_NAMESPACE)
+}
 @Injectable()
 export class CallService {
   private readonly MAX_RETRY_COUNT_CREATE_TEMP_SESSION: number = 3
@@ -29,9 +36,10 @@ export class CallService {
 
     // Lưu vào DB (lấy từ frontend)
     try {
+      const dbSessionId = convertSessionIdToUuid(session.id)
       await this.prismaService.callSession.create({
         data: {
-          id: session.id,
+          id: dbSessionId,
           directChatId: session.directChatId,
           callerUserId: session.callerUserId,
           calleeUserId: session.calleeUserId,
@@ -39,7 +47,7 @@ export class CallService {
           isVideoCall: session.isVideoCall,
         },
       })
-      console.log(`✅ DB session created: ${session.id}`)
+      console.log(`✅ DB session created: ${session.id} → ${dbSessionId}`)
     } catch (error) {
       console.error(`❌ DB session creation failed: ${session.id}`, error)
       // Tiếp tục, không throw - vẫn track in-memory
@@ -100,6 +108,7 @@ export class CallService {
     reason?: EHangupReason
   ): Promise<void> {
     try {
+      const dbSessionId = convertSessionIdToUuid(sessionId)
       const updateData: any = { status }
 
       if (
@@ -112,7 +121,7 @@ export class CallService {
       }
 
       await this.prismaService.callSession.update({
-        where: { id: sessionId },
+        where: { id: dbSessionId },
         data: updateData,
       })
       console.log(`✅ DB status updated: ${sessionId} → ${status}`)
@@ -138,9 +147,10 @@ export class CallService {
       this.usersCalling.set(session.calleeUserId, sessionId)
       // Cũng insert vào DB
       try {
+        const dbSessionId = convertSessionIdToUuid(sessionId)
         await this.prismaService.callSession.create({
           data: {
-            id: session.id,
+            id: dbSessionId,
             directChatId: session.directChatId,
             callerUserId: session.callerUserId,
             calleeUserId: session.calleeUserId,
@@ -148,7 +158,7 @@ export class CallService {
             isVideoCall: session.isVideoCall,
           },
         })
-        console.log(`✅ DB session created from payload: ${sessionId}`)
+        console.log(`✅ DB session created from payload: ${sessionId} → ${dbSessionId}`)
       } catch (error) {
         console.error(`❌ DB session creation failed: ${sessionId}`, error)
       }
@@ -202,7 +212,8 @@ export class CallService {
   async endCall(
     sessionId: TCallSessionActiveId,
     reason: EHangupReason = EHangupReason.NORMAL,
-    sessionPayload?: TActiveCallSession
+    sessionPayload?: TActiveCallSession,
+    isTimeout: boolean = false
   ): Promise<TActiveCallSession> {
     let session = this.getActiveCallSession(sessionId)
 
@@ -216,9 +227,10 @@ export class CallService {
       this.usersCalling.set(session.calleeUserId, sessionId)
       // Cũng insert vào DB
       try {
+        const dbSessionId = convertSessionIdToUuid(sessionId)
         await this.prismaService.callSession.create({
           data: {
-            id: session.id,
+            id: dbSessionId,
             directChatId: session.directChatId,
             callerUserId: session.callerUserId,
             calleeUserId: session.calleeUserId,
@@ -226,7 +238,7 @@ export class CallService {
             isVideoCall: session.isVideoCall,
           },
         })
-        console.log(`✅ DB session created from payload: ${sessionId}`)
+        console.log(`✅ DB session created from payload: ${sessionId} → ${dbSessionId}`)
       } catch (error) {
         console.error(`❌ DB session creation failed: ${sessionId}`, error)
       }
@@ -237,11 +249,15 @@ export class CallService {
       throw new NotFoundException(ECallMessages.SESSION_NOT_FOUND)
     }
 
+    // Determine final status based on isTimeout flag
+    const finalStatus = isTimeout ? ECallStatus.TIMEOUT : ECallStatus.ENDED
+    console.log(`📝 endCall: isTimeout=${isTimeout}, finalStatus=${finalStatus}`)
+
     // Update in-memory
-    session.status = ECallStatus.ENDED
+    session.status = finalStatus
 
     // Save to DB
-    await this.saveCallStatusToDb(sessionId, ECallStatus.ENDED, reason)
+    await this.saveCallStatusToDb(sessionId, finalStatus, reason)
 
     // Remove from users calling map
     if (this.usersCalling.get(session.callerUserId) === sessionId) {

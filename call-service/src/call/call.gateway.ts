@@ -284,7 +284,7 @@ export class CallGateway
       const { userId } = await this.authService.validateCallSocketAuth(client)
       const { callerUserId, calleeUserId } = session
       const peerId = userId === callerUserId ? calleeUserId : callerUserId
-      await this.callService.endCall(sessionId, dto.reason, dto.session)
+      await this.callService.endCall(sessionId, dto.reason, dto.session, dto.isTimeout)
       this.callConnectionService.announceCallHangup(peerId, dto.reason)
     } catch (error) {
       DevLogger.logForWebsocket('Error in onHangup:', error)

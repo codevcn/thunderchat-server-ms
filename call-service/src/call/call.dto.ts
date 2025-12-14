@@ -50,6 +50,7 @@ export class CallHangupDTO {
   @Type(() => CallSessionPayloadDTO)
   session: CallSessionPayloadDTO
   @IsOptional() @IsEnum(EHangupReason) reason?: EHangupReason
+  @IsOptional() @IsBoolean() isTimeout?: boolean
 }
 
 export class SDPOfferAnswerDTO {

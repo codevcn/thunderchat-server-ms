@@ -294,7 +294,7 @@ export class CallHandlerService {
     const statusMap: Record<string, string> = {
       CANCELLED: 'bị hủy',
       REJECTED: 'bị từ chối',
-      TIMEOUT: 'hết hạn',
+      TIMEOUT: 'không trả lời',
       BUSY: 'bận',
       OFFLINE: 'không trực tuyến',
       MISSED: 'nhỡ',

@@ -108,6 +108,7 @@ export enum ECallListenSocketEvents {
   call_request = 'voice_call:request',
   call_accept = 'voice_call:accept',
   call_reject = 'voice_call:reject',
+  call_cancel = 'voice_call:cancel',
   call_offer_answer = 'voice_call:offer_answer',
   call_ice = 'voice_call:ice',
   call_hangup = 'voice_call:hangup',

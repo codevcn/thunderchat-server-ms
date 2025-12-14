@@ -375,9 +375,10 @@ export class MessagingGateway
         createdAt: new Date().toISOString(),
       }
       await this.directChatService.updateLastSentMessage(directChatId, newMessage.id)
-      const embedding = await this.smartSearch.createEmbedding(content)
-
-      await this.smartSearch.saveMessageEmbedding(newMessage.id, embedding, metadata)
+      if (type === EMessageTypes.TEXT && content && content.trim()) {
+        const embedding = await this.smartSearch.createEmbedding(content)
+        await this.smartSearch.saveMessageEmbedding(newMessage.id, embedding, metadata)
+      }
 
       return newMessage
     } else if (groupId) {
@@ -727,8 +728,8 @@ export class MessagingGateway
         throw new BaseWsException(EGatewayMessages.INVALID_MESSAGE_FORMAT)
     }
 
-    // Create embedding for group chat messages with text content
-    if (content && content.trim()) {
+    // Create embedding for group chat messages with text content only
+    if (type === EMessageTypeAllTypes.TEXT && content && content.trim()) {
       const metadata = {
         messageId: newMessage.id,
         authorId: clientId,
