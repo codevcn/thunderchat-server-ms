@@ -174,8 +174,6 @@ export class LlmService {
           };
         }
 
-        // Cancellation words: no, không, hủy, cancel - MUST be more strict
-        // Only match exact standalone words to avoid false positives
         const cancellationWords = ['no', 'không', 'hủy', 'cancel'];
         const isSimpleCancellation = cancellationWords.some((word) => {
           return new RegExp(`(^|\\s)${word}(\\s|$)`, 'i').test(normalizedText);
@@ -416,6 +414,14 @@ EXTRACTION RULES:
   
 - For change_user_name: extract newName from the voice command
 - For search_message: extract searchKeyword
+
+CRITICAL RULE FOR CONFIRMATION WITH ACTION:
+- When user says "rồi" or "có" (confirmation words) BUT ALSO mentions an action with contact name:
+  * PRIORITIZE THE ACTION INTENT over confirm_action
+  * Example: "rồi cho Công Hải" contains "rồi" (confirmation) + "cho Công Hải" (call action) → This is MAKE_CALL, NOT confirm_action
+  * Example: "rồi gửi cho Minh" contains "rồi" (confirmation) + "gửi" (send message action) → This is SEND_MESSAGE, NOT confirm_action
+  * Keywords that indicate action: gọi, cho, gửi, ưng, tạo, mời, thêm, đọc, tìm, etc.
+  * Rule: If ANY action keyword + contact name is present, extract that action. Only use confirm_action if ONLY confirmation words and no action intent.
 
 IMPORTANT: When extracting contact names:
 - Extract the EXACT name user mentioned, even with STT errors
@@ -840,6 +846,8 @@ Respond with JSON only:
     // If LLM returns send_voice_message but text contains call keywords, override to make_call
     const callKeywordsForOverride = [
       'gọi',
+      'rồi',
+      'rội',
       'rọi',
       'goi',
       'call',
@@ -1045,6 +1053,44 @@ Respond with JSON only:
           result.parameters?.content,
       };
       result.response = `Gửi sticker ${emotion} đến ${recipientName || 'người'}`;
+    }
+
+    // ===== HEURISTIC OVERRIDE: confirm_action + call keywords → make_call =====
+    // If LLM returns confirm_action but text contains call keywords, user likely wants to make a call
+    // Example: "rồi cho công hải" = "OK, call Công Hải" (rồi=confirm, cho=call)
+    const callKeywordsForCheck = [
+      'gọi',
+      'rọi',
+      'goi',
+      'call',
+      'alo',
+      'cho',
+      'gọi điện',
+      'gọi đến',
+      'gọi video',
+    ];
+
+    if (
+      result.function === 'confirm_action' &&
+      callKeywordsForCheck.some((kw) => text.toLowerCase().includes(kw))
+    ) {
+      // Try to extract contact name from text
+      const contactMatch = text.match(
+        /(?:gọi|cho|call|alo)\s+(?:cho\s+)?([a-záàảãạăằắẳẵặâầấẩẫậèéẻẽẹêềếểễệìíỉĩịòóỏõọôồốổỗộơờớởỡợùúủũụưừứửữựỳýỷỹỵđA-Z0-9\s]+?)(?:\s+(?:video|thoại|điện)|$)/i,
+      );
+
+      if (contactMatch && contactMatch[1]) {
+        this.logger.log(
+          `[LLM] Heuristic override: Text contains confirm + call keywords, changing confirm_action → make_call`,
+        );
+        const contactName = contactMatch[1].trim();
+        result.function = 'make_call';
+        result.parameters = {
+          contactName,
+          isVideo: text.toLowerCase().includes('video'),
+        };
+        result.response = `Gọi ${text.toLowerCase().includes('video') ? 'video' : 'thoại'} cho ${contactName}`;
+      }
     }
 
     // ===== FINAL LOG BEFORE RETURN =====

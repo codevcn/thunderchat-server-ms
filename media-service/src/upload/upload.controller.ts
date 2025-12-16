@@ -37,7 +37,12 @@ export class UploadController implements IUploadController {
 
   @Get('/file')
   async getFile(@Query() params: GetFileDTO, @Req() req: Request, @Res() res: Response) {
-    await this.s3FileService.getFileFromURL(params.fkey, req.headers, res)
+    try {
+      await this.s3FileService.getFileFromURL(params.fkey, req.headers, res)
+    } catch (error) {
+      console.error('>>> Error in getFile controller:', error)
+      throw error
+    }
   }
 
   @Get()
